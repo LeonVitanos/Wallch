@@ -1,0 +1,444 @@
+/*
+Wallch - Wallpaper Changer
+A tool for changing Desktop Wallpapers automatically
+with lots of features
+Copyright © 2010-2014 by Alex Solanos and Leon Vitanos
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+*/
+
+#include "potd_viewer.h"
+#include "ui_potd_viewer.h"
+
+#include <QtWidgets>
+#include <QtNetwork>
+
+PotdViewer::PotdViewer(QWidget *parent) :
+    QDialog(parent),
+    ui(new Ui::potd_viewer)
+{
+    ui->setupUi(this);
+
+    selectedDate_=QDate::currentDate();
+    skipStepsAfterThree_=false;
+    forceStop_=false;
+
+    ui->previousButton->setIcon(QIcon::fromTheme("media-seek-backward", QIcon(":/icons/Pictures/media-seek-backward.svg")));
+    ui->nextButton->setIcon(QIcon::fromTheme("media-seek-forward", QIcon(":/icons/Pictures/media-seek-forward.svg")));
+
+    ui->save_progressBar->hide();
+    ui->dateEdit->setDate(selectedDate_);
+}
+
+PotdViewer::~PotdViewer()
+{
+    if(reply_){
+        reply_->deleteLater();
+    }
+    if(originalMovie_){
+        originalMovie_->deleteLater();
+    }
+    delete ui;
+}
+
+void PotdViewer::resizeEvent(QResizeEvent *)
+{
+    if(ui->label->pixmap())
+    {
+        QSize scaledSize = originalPixmap_.size();
+        scaledSize.scale(ui->label->size(), Qt::KeepAspectRatio);
+        if (!ui->label->pixmap() || scaledSize != ui->label->pixmap()->size()){
+            updateLabel();
+        }
+    }
+}
+
+void PotdViewer::updateLabel()
+{
+    if(directLinkOfFullImage_.endsWith("gif"))
+    {
+        ui->label->setMovie(originalMovie_);
+        originalMovie_->start();
+    }
+    else
+    {
+        ui->label->setPixmap(originalPixmap_.scaled(ui->label->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+}
+
+void PotdViewer::urlQDate()
+{
+    /*
+     * Step 1
+     * Find the html link, and download its source
+     */
+    ui->saveimageButton->setEnabled(false);
+    ui->save_progressBar->hide();
+
+    htmlSource_.clear();
+
+    if((selectedDate_.year()==2004 && (selectedDate_.month()==11 || selectedDate_.month()==12)) || selectedDate_.year()==2005 || selectedDate_.year()==2006){
+        url_ = "http://en.wikipedia.org/wiki/Wikipedia:Picture_of_the_day/"+  Global::monthInEnglish(selectedDate_.month()) + selectedDate_.toString("_d,_yyyy");
+    }
+    else
+    {
+        url_ = "http://en.wikipedia.org/wiki/Template:POTD/"+selectedDate_.toString("yyyy-MM-dd");
+    }
+    // schedule the request
+    startRequest(url_);
+}
+
+void PotdViewer::startRequest(QUrl url)
+{
+    if(reply_){
+        reply_->deleteLater();
+        reply_=NULL;
+    }
+    reply_ = qnam_.get(QNetworkRequest(url));
+    connect(reply_, SIGNAL(finished()), this, SLOT(httpFinished()));
+    connect(reply_, SIGNAL(readyRead()), this, SLOT(httpReadyRead()));
+}
+
+void PotdViewer::movieDestroyed(){
+    originalMovie_=NULL;
+}
+
+void PotdViewer::httpFinished()
+{
+    /*
+     * Step 2
+     * When finished check for errors or redirection page (tough wikipedia has not redirection you never know)
+     */
+
+    if(!reply_){
+        return;
+    }
+    QVariant redirectionTarget = reply_->attribute(QNetworkRequest::RedirectionTargetAttribute);
+    if (reply_->error()) {
+        enableWidgets(true);
+        ui->label->setText(tr("Try another date. Maybe Wikipedia has't\nselected a picture of the day for:")+" "+ui->dateEdit->date().toString());
+        ui->textBrowser_3->clear();
+        QMessageBox::information(this, "HTTP",tr("Download failed")+": "+reply_->errorString()+".");
+        return;
+    } else if (!redirectionTarget.isNull()) {
+        QUrl newUrl = url_.resolved(redirectionTarget.toUrl());
+        url_ = newUrl;
+        reply_->deleteLater();
+        startRequest(url_);
+        return;
+    }
+
+    reply_->deleteLater();
+    reply_ = NULL;
+
+    if(!skipStepsAfterThree_)
+    {
+        /*
+         * Step 3
+         * Get the image's link of the html source downloaded.
+         * The link collected here will still not be a direct link to the image
+         */
+
+        QString imageSummix;
+        int imageSummixCount=0;
+        if(htmlSource_.contains("/wiki/File:"))
+        {
+            QRegExp filter("<a href=\"/wiki/File:(.+)</a></small>");
+            int result = filter.indexIn(htmlSource_);
+            if(result != -1){
+                htmlSource_=filter.cap(1);
+            }
+
+            while (!imageSummix.contains("\""))
+            {
+                imageSummixCount++;
+                imageSummix=htmlSource_.left(imageSummixCount);
+            }
+        }
+        else
+        {
+            enableWidgets(true);
+            ui->label->clear();
+            QMessageBox::information(this, tr("Error!"),tr("Couldn't find image url. Try another date!"));
+            return;
+        }
+
+        /*
+         * Step 4
+         * Find the desctription of the current potd
+         */
+
+        if(htmlSource_.contains("<p>") && htmlSource_.contains("</small>"))
+        {
+            QRegExp filter2("<p>(.+)</small>");
+            int result2 = filter2.indexIn(htmlSource_);
+            if(result2 != -1){
+                htmlSource_=filter2.cap(1);
+            }
+            htmlSource_.replace("/wiki", "http://en.wikipedia.org/wiki");
+            ui->textBrowser_3->setText(htmlSource_);
+        }
+        else if(htmlSource_.contains("<p>") && htmlSource_.contains("</p>")){
+            QRegExp filter2("<p>(.+)</p>");
+            int result2 = filter2.indexIn(htmlSource_);
+            if(result2 != -1){
+                htmlSource_=filter2.cap(1);
+            }
+            htmlSource_.replace("/wiki", "http://en.wikipedia.org/wiki");
+            ui->textBrowser_3->setText(htmlSource_);
+        }
+        else
+        {
+            ui->textBrowser_3->setText(tr("We couldn't find the description for this date")+"...");
+        }
+
+        /*
+         * Step 5
+         * We will download the html source of the undirect link to the image
+         * therefore we create a bool to skip steps three-four-five
+        */
+
+        skipStepsAfterThree_=true;
+        url_="http://en.wikipedia.org/wiki/File:"+imageSummix.left(imageSummixCount-1);
+        startRequest(url_);
+    }
+    else
+    {
+        skipStepsAfterThree_=false;
+
+        /*
+         * Step 6
+         * Find the direct link to the full size image and to the preview image from the second html source we downloaded
+        */
+
+        if(htmlSource_.contains("Deleted_photo.png"))
+        {
+            directLinkOfFullImage_=directLinkOfPreviewImage_="http://upload.wikimedia.org/wikipedia/commons/e/e0/Deleted_photo.png";
+        }
+        else
+        {
+            if(htmlSource_.contains("fullImageLink"))
+            {
+                QRegExp filter("fullImageLink\" id=\"file\"><a href=\"(.+)\"");
+                filter.setMinimal(true);
+                int result = filter.indexIn(htmlSource_);
+                if(result != -1)
+                {
+                    directLinkOfFullImage_=filter.cap(1);
+                }
+                directLinkOfFullImage_="http:"+directLinkOfFullImage_;
+            }
+            else
+            {
+                enableWidgets(true);
+                ui->label->clear();
+                QMessageBox::information(this, tr("Error!"),tr("Couldn't find image url. Contact us, and include the specific date that shows this error!"));
+                return;
+            }
+
+            if(htmlSource_.contains("Size of this preview")){
+                QRegExp filter2("Size of this preview: <a href=\"(.+)\"");
+                filter2.setMinimal(true);
+                int result2 = filter2.indexIn(htmlSource_);
+                if(result2 != -1)
+                {
+                    directLinkOfPreviewImage_=filter2.cap(1);
+                }
+                directLinkOfPreviewImage_="http:"+directLinkOfPreviewImage_;
+            }
+            else
+            {
+                directLinkOfPreviewImage_=directLinkOfFullImage_;
+            }
+        }
+
+        /*
+         * Step 7
+         * Download the preview size image
+         */
+
+        ui->save_progressBar->setValue(0);
+        ui->save_progressBar->show();
+        ui->label->clear();
+        reply_ = qnam_.get(QNetworkRequest(directLinkOfPreviewImage_));
+        connect(reply_, SIGNAL(finished()),this, SLOT(imageDownloaded()));
+        connect(reply_, SIGNAL(downloadProgress(qint64,qint64)),this, SLOT(updateDataReadProgress(qint64,qint64)));
+    }
+}
+
+void PotdViewer::imageDownloaded()
+{
+    /*
+     * Step 8
+     * Set the image to the label
+     */
+
+    if(reply_==NULL){
+        return;
+    }
+
+    if(directLinkOfFullImage_.endsWith("gif")){
+        QBuffer *buffer = new QBuffer(this);
+        buffer->open(QIODevice::WriteOnly);
+        buffer->write(reply_->readAll());
+        buffer->close();
+        originalMovie_ = new QMovie(buffer, "GIF", this);
+        connect(originalMovie_, SIGNAL(destroyed()), this, SLOT(movieDestroyed()));
+    }
+    else
+    {
+        QImage* image = new QImage();
+        image->loadFromData(reply_->readAll());
+        if(image->isNull()){
+            return;
+        }
+        originalPixmap_=QPixmap::fromImage(*image);
+        delete image;
+    }
+
+    updateLabel();
+
+    ui->save_progressBar->hide();
+    ui->saveimageButton->setEnabled(true);
+    enableWidgets(true);
+}
+
+void PotdViewer::httpReadyRead()
+{
+    /*
+     * This slot gets called every time the QNetworkReply has new data.
+     * All of the new data is being read and written into the file.
+     * That way less RAM is used than if the reading was done at the
+     * finished() signal of QNetworkReply
+     */
+    if(reply_){
+        htmlSource_+=reply_->readAll();
+    }
+}
+
+void PotdViewer::updateDataReadProgress(qint64 bytesRead, qint64 totalBytes)
+{
+    ui->save_progressBar->setMaximum(totalBytes);
+    ui->save_progressBar->setValue(bytesRead);
+}
+
+void PotdViewer::on_quitButton_clicked()
+{
+    close();
+}
+
+void PotdViewer::on_saveimageButton_clicked()
+{
+    //acts as save or cancel.
+    if(QDate::fromString(settings->value("last_day_potd_was_set").toString(),"dd.MM.yyyy")==ui->dateEdit->date()){
+        QString format=".jpg";
+        QString savePath = gv.homePath+"/potd_"+settings->value("last_day_potd_was_set", "unkownDate").toString()+format;
+        QString filename = QFileDialog::getSaveFileName(this, tr("Save As"), savePath, format.toUpper()+" "+tr("Files")+" (*."+format+");"+tr("All Files")+" (*)");
+
+        if(!filename.isEmpty()){
+            if(QFile::exists(filename)){
+                QFile::remove(filename);
+            }
+            if(!QFile::copy(Global::getFilename(gv.wallchHomePath+POTD_IMAGE+"*"), filename)){
+                QMessageBox::warning(this, tr("Error"), tr("Something went wrong while saving the file!"));
+            }
+        }
+    }
+    else
+    {
+        if(downloadingImage_){
+            //cancel has been pressed
+            downloadingImage_=false;
+            ui->saveimageButton->setText(tr("Save"));
+            httpRequestAborted_=true;
+            reply_->abort();
+            ui->save_progressBar->hide();
+            enableWidgets(true);
+        }
+        else
+        {
+            //save has been pressed
+            downloadingImage_=true;
+            ui->saveimageButton->setText(tr("Cancel"));
+            httpRequestAborted_=false;
+            QFileInfo link(directLinkOfFullImage_);
+            formatOfImage_="."+link.suffix();
+            ui->save_progressBar->setValue(0);
+            ui->save_progressBar->show();
+            enableWidgets(false);
+            reply_ = qnam_.get(QNetworkRequest(directLinkOfFullImage_));
+            connect(reply_, SIGNAL(finished()),this, SLOT(saveImage()));
+            connect(reply_, SIGNAL(downloadProgress(qint64,qint64)),this, SLOT(updateDataReadProgress_save(qint64,qint64)));
+        }
+    }
+}
+
+void PotdViewer::saveImage()
+{
+    downloadingImage_=false;
+    ui->saveimageButton->setText(tr("Save"));
+    ui->save_progressBar->hide();
+    enableWidgets(true);
+    ui->saveimageButton->setEnabled(true);
+
+    QString filename = QFileDialog::getSaveFileName(this, tr("Save As"),gv.homePath+"/potd_"+selectedDate_.toString("dd.MM.yyyy")+formatOfImage_,formatOfImage_.toUpper()+" "+tr("Files")+" (*."+formatOfImage_+");"+tr("All Files")+" (*)");
+    if(!filename.isEmpty()){
+        QFile file(filename);
+        if(!file.open(QIODevice::WriteOnly)){
+            return;
+        }
+        file.write(reply_->readAll());
+        file.close();
+    }
+}
+
+void PotdViewer::updateDataReadProgress_save(qint64 bytesRead, qint64 totalBytes)
+{
+    if(httpRequestAborted_){
+        return;
+    }
+
+    ui->save_progressBar->setMaximum(totalBytes);
+    ui->save_progressBar->setValue(bytesRead);
+}
+
+void PotdViewer::enableWidgets(bool state)
+{
+    ui->dateEdit->setEnabled(state);
+    ui->nextButton->setEnabled(state);
+    ui->previousButton->setEnabled(state);
+}
+
+
+void PotdViewer::on_dateEdit_dateChanged(const QDate &date_calendar)
+{
+    if(originalMovie_!=NULL){
+        originalMovie_->deleteLater();
+    }
+    enableWidgets(false);
+    selectedDate_=date_calendar;
+    ui->label->setText(tr("Downloading")+"...");
+    urlQDate();
+}
+
+void PotdViewer::on_previousButton_clicked()
+{
+    ui->dateEdit->setDate(selectedDate_.addDays(-1));
+}
+
+void PotdViewer::on_nextButton_clicked()
+{
+    ui->dateEdit->setDate(selectedDate_.addDays(+1));
+}

@@ -1,0 +1,41 @@
+#!/bin/sh
+#Wallch WallpaperChanger -A tool for having fun changing desktop wallpapers-
+#Copyright © 2010-2011 by Leon Vytanos and Alex Solanos
+#This program is free software; you can redistribute it and/or
+#modify it under the terms of the GNU General Public License
+#as published by the Free Software Foundation; either version 3
+#of the License, or (at your option) any later version.
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#You should have received a copy of the GNU General Public License
+#along with this program; if not, write to the Free Software
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+if [ -d /home/$USER/.config/autostart ]; then
+false
+else
+mkdir /home/$USER/.config/autostart/
+fi
+#checking to see what constant changing will do (constant from album or live earth wallpaper)
+if [ X"$1" = X"live-earth" ]; then
+desktop_app="WallpaperChangerLiveEarthOnBoot.desktop"
+live_earth="live-earth"
+else
+desktop_app="WallpaperChangerOnBootConstantApp.desktop"
+live_earth=""
+fi
+echo "#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=Wallch
+Comment=A program to change your desktop wallpapers...!
+Exec=/usr/share/wallch/files/Scripts/constant_on_boot $live_earth
+Terminal=false
+Type=Application
+Icon=/home/$USER/.config/Wallch/wallpaper.png
+Categories=Application;Accessories;Utility;
+StartupNotify=false
+Name[en_US]=Wallch
+X-GNOME-Autostart-enabled=true" > /home/$USER/.config/autostart/$desktop_app

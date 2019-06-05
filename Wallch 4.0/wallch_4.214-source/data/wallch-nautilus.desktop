@@ -1,0 +1,22 @@
+[Desktop Entry]
+Version=4
+Name=Wallch
+Comment=Change desktop wallpapers automatically
+Exec=/usr/bin/wallch %U
+Icon=wallch
+Terminal=false
+Type=Application
+Categories=Utility;Application;
+MimeType=inode/directory;
+
+Actions=Change_Wallpaper;Start;
+
+[Desktop Action Change_Wallpaper]
+Name=Change Wallpaper Once
+Exec=/usr/bin/wallch --change
+TargetEnvironmet=Unity
+
+[Desktop Action Start]
+Name=Start/Stop Wallpapers
+Exec=/usr/bin/wallch --start
+TargetEnvironment=Unity

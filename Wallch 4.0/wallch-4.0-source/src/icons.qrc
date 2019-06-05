@@ -1,0 +1,39 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>Pictures/wallch.png</file>
+        <file>Pictures/monitor320x200.png</file>
+        <file>Pictures/ambiance_checked.png</file>
+        <file>Pictures/ambiance_checked_and_hovered.png</file>
+        <file>Pictures/ambiance_not_checked.png</file>
+        <file>Pictures/ambiance_separator.png</file>
+        <file>Pictures/change.png</file>
+        <file>Pictures/radiance_checked_and_hovered.png</file>
+        <file>Pictures/radiance_checked.png</file>
+        <file>Pictures/radiance_not_checked.png</file>
+        <file>Pictures/radiance_seperator.png</file>
+        <file>Pictures/page_3_clock.png</file>
+        <file>Pictures/page_1_earth.png</file>
+        <file>Pictures/page_4_website.png</file>
+        <file>Pictures/page_2_potd.png</file>
+        <file>Pictures/process_request.gif</file>
+        <file>Pictures/applications-accessories.svg</file>
+        <file>Pictures/go-down.svg</file>
+        <file>Pictures/list-add.svg</file>
+        <file>Pictures/list-remove.svg</file>
+        <file>Pictures/media-playback-start.svg</file>
+        <file>Pictures/media-playback-stop.svg</file>
+        <file>Pictures/media-seek-backward.svg</file>
+        <file>Pictures/media-seek-forward.svg</file>
+        <file>Pictures/image-loading.svg</file>
+        <file>Pictures/media-playback-pause.svg</file>
+        <file>Pictures/window-close.svg</file>
+        <file>Pictures/go-up.svg</file>
+        <file>Pictures/info.svg</file>
+        <file>Pictures/folder.svg</file>
+        <file>Pictures/application-exit.svg</file>
+        <file>Pictures/preferences-desktop.svg</file>
+        <file>Pictures/task-due.svg</file>
+        <file>Pictures/btn_donate_LG.gif</file>
+        <file>Pictures/mellori-logo.png</file>
+    </qresource>
+</RCC>

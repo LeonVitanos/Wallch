@@ -1,0 +1,29 @@
+#!/bin/sh
+#WallpaperChanger -A tool for having fun changing desktop wallpapers-
+#Copyright © 2010-2011 by Leon Vytanos and Alex Solanos
+#This program is free software; you can redistribute it and/or
+#modify it under the terms of the GNU General Public License
+#as published by the Free Software Foundation; either version 3
+#of the License, or (at your option) any later version.
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#You should have received a copy of the GNU General Public License
+#along with this program; if not, write to the Free Software
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+cd /home/$USER/.config/Wallch/Checks/
+ping -c 1 www.google.com > /dev/null
+if [ `echo $?` != 0 ]; then
+echo "Error, there is not internet connection."
+echo "Error" > /home/$USER/.config/Wallch/Checks/1 #Temporary unavailable
+exit
+fi
+wget https://dl.dropbox.com/u/11379868/1 2> /dev/null
+if [ -s /home/$USER/.config/Wallch/Checks/1 ]; then
+false
+else
+echo "Error, could not resolve host."
+echo "Error" > /home/$USER/.config/Wallch/Checks/1 #Temporary unavailable
+exit
+fi

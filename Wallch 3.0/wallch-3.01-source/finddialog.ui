@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>FindDialog</class>
+ <widget class="QDialog" name="FindDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>386</width>
+    <height>81</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>386</width>
+    <height>81</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>386</width>
+    <height>81</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Find images</string>
+  </property>
+  <widget class="QCheckBox" name="case_sensitive">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>50</y>
+     <width>371</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>&amp;Case Sensitive</string>
+   </property>
+  </widget>
+  <widget class="QWidget" name="">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>371</width>
+     <height>29</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Search for:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLineEdit" name="term"/>
+    </item>
+    <item>
+     <widget class="QPushButton" name="search">
+      <property name="text">
+       <string>Search</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

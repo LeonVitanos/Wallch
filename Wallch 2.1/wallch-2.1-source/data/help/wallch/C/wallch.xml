@@ -1,0 +1,525 @@
+<?xml version="1.0"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+    "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+  <!ENTITY legal SYSTEM "legal.xml">
+  <!ENTITY GFDL  SYSTEM "fdl-appendix.xml">
+  <!ENTITY app "Wallch">
+  <!ENTITY application "<application>&app;</application>">
+  <!ENTITY appversion "2.28">
+  <!ENTITY manrevision "2.28">
+]>
+<!--
+      (Do not remove this comment block.)
+  Template Maintained by the GNOME Documentation Project:
+  http://developer.gnome.org/projects/gdp
+  Template version: 2.0 beta
+  Template last modified Feb 12, 2002
+-->
+
+<!-- =============Document Header ============================= -->
+<article id="index" lang="en">
+<!-- please do not change the id; for translations, change lang to -->
+<!-- appropriate code -->
+
+  <articleinfo>
+    <title>&application; Manual</title>
+    <abstract role="description">
+      <para>
+        &application; allows your Desktop Wallpaper to change automatically.
+      </para>
+    </abstract>
+    <copyright>
+      <year>2010-2011</year>
+      <holder>Leon Vytanos (leon.check.me@gmail.com)</holder>
+      <holder>Alex Solanos (alexsol.developer@gmail.com)</holder>
+    </copyright>
+
+  <!-- translators: uncomment this:
+
+  <copyright>
+   <year>2006</year>
+   <holder>ME-THE-TRANSLATOR (Latin translation)</holder>
+  </copyright>
+
+  -->
+
+<!-- An address can be added to the publisher information.  If a role is
+     not specified, the publisher/author is the same for all versions of the
+     document.  -->
+    <publisher role="maintainer">
+      <publishername>Wallch Team</publishername>
+<email>wallch.developers@gmail.com</email>
+    </publisher>
+
+   &legal;
+   <!-- This file  contains link to license for the documentation (GNU FDL), and
+        other legal stuff such as "NO WARRANTY" statement. Please do not change
+        any of this. -->
+
+    <authorgroup>
+      <author>
+        <firstname>Leon</firstname>
+        <surname>Vytanos</surname>
+	<email>leon.check.me@gmail.com</email>
+      </author>
+      <author>
+        <firstname>Alex</firstname>
+        <surname>Solanos</surname>
+	<email>alexsol.developer@gmail.com</email>
+      </author>
+
+<!-- This is appropriate place for other contributors: translators,
+      maintainers,  etc. Commented out by default.
+       <othercredit role="translator">
+        <firstname>Latin</firstname>
+        <surname>Translator 1</surname>
+        <affiliation>
+          <orgname>Latin Translation Team</orgname>
+          <address> <email>translator@gnome.org</email> </address>
+        </affiliation>
+        <contrib>Latin translation</contrib>
+      </othercredit>
+-->
+    </authorgroup>
+
+   
+
+    <legalnotice>
+      <title>Feedback</title>
+      <para>
+        To report a bug regarding this application, you can report it 
+    <ulink url="https://bugs.launchpad.net/wallpaper-changer" type="http">
+    at launchpad</ulink>.
+      </para>
+<!-- Translators may also add here feedback address for translations -->
+    </legalnotice>
+  </articleinfo>
+
+  <indexterm zone="index">
+    <primary>&application;</primary>
+  </indexterm>
+  <indexterm zone="index">
+    <primary>wallch</primary>
+  </indexterm>
+
+<!-- ============= Document Body ============================= -->
+<!-- ============= Introduction ============================== -->
+<section id="intro">
+  <title>Introduction</title>
+  <!-- manrevision 2.0 compatibility -->
+  <anchor id="aboutex"/>
+  <anchor id="notice"/>
+  <indexterm>
+    <primary>&application;</primary>
+    <secondary>Manual</secondary>
+    <tertiary>wallch</tertiary>
+  </indexterm>
+
+  <para>
+  &app; is a General purpose Wallpaper Changer for the GNOME and UNITY desktop which can change the desktop background image after an adjustable  time. The aim of &app; is to make it easier for you to keep your desktop "fresh" and new!
+  </para>
+
+</section>
+<sect1 id="getting-started"> 
+    <title>Getting Started</title> 
+
+    <sect2 id="start">
+      <title>To Start <application>&app;</application></title>
+
+<orderedlist>
+    <listitem id="bs4u1a6">
+     <para>Start Wallch.</para>
+     <informaltable>
+      <tgroup cols="2">
+       <colspec colwidth="1.219*" colname="1" colnum="1"/>
+       <colspec colwidth="4.188*" colname="2" colnum="2"/>
+       <tbody valign="top">
+        <row id="bsptywf">
+         <entry colname="1">
+          <para>GNOME:</para>
+         </entry>
+         <entry colname="2">
+          <para>Click Applications &gt; Accessories &gt; Wallch Wallpaper Changer.</para>
+         </entry>
+        </row>
+        <row id="bsptywg">
+         <entry colname="1">
+          <para>UNITY:</para>
+         </entry>
+         <entry colname="2">
+          <para>Press the Super Key, search for "wallch" and click it.</para>
+         </entry>
+        </row>
+        <row id="bsptywh">
+         <entry colname="1">
+          <para>Command Line:</para>
+         </entry>
+         <entry colname="2">
+          <para>Enter <command>wallch</command> and press Return.</para>
+         </entry>
+        </row>
+       </tbody>
+      </tgroup>
+     </informaltable>
+    </listitem>
+   </orderedlist>
+    </sect2>
+
+    <sect2 id="when-start">
+      <title>When You Start <application>&app;</application></title>
+      <para>When you start <application>&app;</application>, the following window is displayed.</para>
+
+      <!-- ==== Figure ==== -->
+      <figure id="start-fig"> 
+	<title><application>&app;</application> Start Up Window</title> 
+	<screenshot> 
+	  <mediaobject> 
+	    <imageobject>
+	      <imagedata fileref="figures/wallch.jpg" format="JPG"/> 
+	    </imageobject>
+	    <textobject> 
+	      <phrase>Shows <application>&app;</application> main window with
+		  sidebar opened on playlist. Contains
+		  menubar, display area, sidebar, elapsed time slider, seek control
+		  buttons, volume slider and statusbar.
+          </phrase>
+	    </textobject> 
+	  </mediaobject> 
+	</screenshot> 
+      </figure>
+      <!-- ==== End of Figure ==== -->
+
+      <!-- Include any descriptions of the GUI immediately after the screenshot of the main UI, -->
+      <!-- for example, the items on the menubar and on the toolbar. This section is optional. -->
+      <para>The <application>&app;</application> window contains the following elements:
+      </para>
+<variablelist>
+<varlistentry>
+          <term><interface>Menubar</interface></term>
+
+          <listitem>
+            <para><variablelist>
+                <varlistentry>
+                  <term><guimenu>File</guimenu></term>
+
+                  <listitem>
+                    <para>Use this menu to add files like a &app; album, single images or a folder with it's subfolers; to start, pause or stop the process; to move to the next image  
+                 or to quit the application.</para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term><guimenu>Edit</guimenu></term>
+
+                  <listitem>
+                    <para>Use this menu to view your History logs, set your Preferences and use some extra functionalities.</para>
+                  </listitem>
+                </varlistentry>
+
+
+                <varlistentry>
+                  <term><guimenu>Help</guimenu></term>
+
+                  <listitem>
+                    <para>View information about &app; through the
+                    <guimenuitem>About</guimenuitem> menuitem. Open this
+                    document with the <guimenuitem>Contents</guimenuitem>
+                    menuitem or by pressing <keycap>F1</keycap>, view Statistics about the application, ask a question or report a bug.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
+          </listitem>
+        </varlistentry>
+      
+	
+	<varlistentry>
+	  <term><interface>Item's List.</interface></term>
+	  <listitem>
+	    <para>The item's list is the images that &app; will use to change the Desktop Background. Use the buttons right of it to add and remove images or change their position on the list.
+            </para>
+	  </listitem>
+	</varlistentry>
+
+
+        <varlistentry>
+          <term><interface>Preview of item.</interface></term>
+          <listitem>
+            <para>When you select an image on the Item's List a preview of the image will be available.
+            </para>
+	  </listitem>
+        </varlistentry>
+
+	<varlistentry>
+	  <term><interface>Time.</interface></term>
+	  <listitem>
+	    <para>The time interval for the wallpaper changing mode.
+            </para>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term><interface>Random images/time.</interface></term>
+	  <listitem>
+	    <para>These two checkboxes enable you to a) change Desktop Background by picking randomly images from the list and b) change images in a random time (20 min max).
+            </para>
+	  </listitem>
+	</varlistentry>
+
+        <varlistentry>
+          <term><interface>Seek control buttons.</interface></term>
+          <listitem>
+            <para>The seek control buttons enable you to move to the next image and to Start/Pause/Stop the current process.
+            </para>
+	  </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><interface>Take Screenshot.</interface></term>
+          <listitem>
+            <para>Take Screenshot of the entire screen.
+            </para>
+	  </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><interface>Take Webcam Image.</interface></term>
+          <listitem>
+            <para>Take a picture from your web camera.
+            </para>
+	  </listitem>
+        </varlistentry>
+
+	
+      </variablelist>
+    </sect2>
+  </sect1>
+
+<section id="using">
+  <title>Usage</title>
+
+<term><interface>The usage is simple:</interface></term>
+<para>1. Add your wallpapers to the Item's List by simply dragging and dropping them to the List or by clicking the Add button to add images ( Ctrl + I ), or by clicking the Add Folder Button to add images that are in a folder with it's subfolders ( Ctrl + F ), or by adding a Wallch album by dragging and dropping it at the List or from <menuchoice>
+		<guisubmenu>File</guisubmenu>
+		<guimenuitem>Add</guimenuitem>
+                <guimenuitem>Add a Wallch album</guimenuitem>
+	      </menuchoice>. ( Ctrl + O ). </para>
+<para>2. Set the interval of the wallpaper changing mode via the slider.</para>
+<para>3. Press “Start” to start the process. That’s it.</para>
+    <note>
+
+      <para>
+        One thing that you have to take note is that once you “Start” the program, you won’t be able to add/remove wallpapers anymore. You will have to “Stop” the application to make changes to the list.
+      </para>
+    </note>
+<note>
+      <para>
+        You can also change Desktop Wallpaper choosing images randomly or in a random time if the respective checkboxes are checked.
+      </para>
+    </note>
+<note>
+      <para>
+        Right click on an item on the List to a) Set It as a Desktop Background ( Alternative: Double Click it or select it and press <keycap>Return</keycap> ), b) remove non-existent items that are on the list but not in your hard drive, d) permanently delete image from hard drive, e) open image's location, f) copy image's path, g) copy image itself to clipboard (to paste it at Gimp for example), h) rotate the image or i) view the image's properties. 
+      </para>
+    </note>
+<para></para>
+<term><interface>Controlling &app; from the tray (not recommended for Unity)</interface></term>
+      <para>
+When &app; is minimized to the tray, right-clicking the icon in the tray will reveal a menu in which you'll have a 'Show' action which will restore &app;, all seeking buttons and some options like showing the preferences dialog, the about dialog and closing &app;.
+      </para>
+
+
+<note>
+      <para>
+        If the wallpaper changing mode is running just click on the tray icon and it will proceed to the next image. If the wallpaper changing module is not running it will just restore the app. Also middle-click to close &app; instantly.
+      </para>
+    </note>
+
+<note>
+      <para>
+        On the other hand, if you are using Unity you will need to configure systray whitelist manually so as to use Wallch's minimize-to-tray function. 
+Get the current whitelist with the following command from terminal:
+gsettings get com.canonical.Unity.Panel systray-whitelist . Then set the new whitelist with this command:
+gsettings set com.canonical.Unity.Panel systray-whitelist "[ retype your previous apps/entries got from previous command, 'wallch']"
+
+Logout, login again and launch Wallch. You should see app in systray when it is minimized (if 'Minimize to tray' is selected from Wallch's Preferences Window).
+      </para>
+    </note>
+
+
+
+	
+  
+</section>
+
+ <section id="prefs">
+    <title>Preferences</title>
+    <para>To modify the preferences of <application>&app;</application>, choose
+      <menuchoice>
+        <guimenu>Edit</guimenu>
+	<guimenuitem>Preferences</guimenuitem>
+      </menuchoice>.</para>
+
+    <sect2 id="prefs-general">
+      <title>General</title>
+      <variablelist>
+	
+	<varlistentry>
+	  <term>Change Wallpapers on Pc-Start up</term>
+	  <listitem>
+	    <itemizedlist>
+	      <listitem>
+	      	<para><guilabel>Change Desktop Wallpaper (Once)</guilabel>: On Pc Start-up, &app; will change for once the current Desktop Wallpaper by picking randomly an image from the album specified from the Wallch's Preferences window.</para>
+	      </listitem>
+	      <listitem>
+                <para><guilabel>Start changing Desktop Wallpapers</guilabel>: On Pc Start-up, &app; will start the wallpaper changing module by picking randomly images from the album specified from the Wallch's Preferences window. The time interval will be the last used.
+	        </para>
+              </listitem>
+	          <listitem>
+				<para><guilabel>Auto-enable Live Earth Wallpaper</guilabel>: On Pc Start-up, Live Earth Wallpaper will be automatically activated changing your wallpaper every 30 min.</para>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </varlistentry>	
+
+<varlistentry>
+	  <term>Minimize to tray</term>
+	  <listitem>
+	    <para>Select it if you want &app; to be minimized to tray (not recommended for Unity users).
+            </para>
+          </listitem>
+        </varlistentry>	
+
+<varlistentry>
+	  <term>Style</term>
+	  <listitem>
+	    <para>You can tell &app; how to display your wallpaper by selecting the 'Style' to display. Tile will tile the wallpaper to fill up the screen, this is useful for small wallpapers that would otherwise look distorted when zoomed in. Zoom fills up the screen like a magnifying glass. Center will center the wallpaper to the center of your screen. Scale will strech out the wallpaper to fill your screen, but will not change the aspect ratio, so that the wallpaper will fill up your screen the best it can, without modifying the picture itself.  And finally, you can use stretch and span for multimonitor screens.
+            </para>
+          </listitem>
+        </varlistentry>	
+
+<varlistentry>
+	  <term>Language</term>
+	  <listitem>
+	    <para>Change the language of the program.
+            </para>
+          </listitem>
+        </varlistentry>	
+
+<varlistentry>
+	  <term>Create a &app; album</term>
+	  <listitem>
+	    <para>&app; allows you to create a photo album with your wallpapers, which you can later load through the program or use it for the Start-up options.
+            </para>
+          </listitem>
+        </varlistentry>	
+
+
+
+      </variablelist>
+    </sect2>
+    <sect2 id="notifications">
+      <title>Notifications</title>
+      <variablelist>
+	<varlistentry>
+	  <listitem>
+	    <para>&app; provides also a desktop and/or sound notificationwhen a wallpaper changes which you can deactivate if you want from the Preferences window. You can also select your own sound to be played as for the sound notification function. 
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </sect2>
+    <sect2 id="history">
+      <title>History</title>
+      <variablelist>
+	<varlistentry>
+	  <listitem>
+	    <para>&app; can keep history logs of the time and the options of the changed wallpaper. The default option is not to keep history but you can change it to keep Simple history ( month and day ), Advanced History ( month,day and time ) or Very analytical history ( month,day and time and secs ). You can view History logs from
+        <menuchoice>
+        <guimenu>Edit</guimenu>
+	<guimenuitem>History</guimenuitem>
+      </menuchoice>.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </sect2>
+</section>
+
+<section id="extras">
+    <title>Extras</title>
+    <para>To view the extras dialog choose
+      <menuchoice>
+        <guimenu>Edit</guimenu>
+	<guimenuitem>Extras</guimenuitem>
+      </menuchoice>.</para>
+
+<sect2 id="live earth">
+      <title>Live Earth Wallpaper</title>
+      <variablelist>
+	<varlistentry>
+	  <listitem>
+	    <para>The most interesting thing about &app; is the ability to set Live Earth images as the desktop wallpaper. Just press the “Activate Live Earth Wallpaper” button.
+            </para>
+
+    <note>
+
+      <para>
+        
+Live Earth Wallpaper module can’t work concurrently with the main wallpaper changing module. If you have “Started” the wallpaper changing module, you won’t be able to activate the Live Earth Wallpaper and vice versa. In addition, the changing interval is set to 30 minutes.
+
+      </para>
+    </note>
+
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </sect2>
+
+<sect2 id="lockscreen">
+      <title>Lock Screen Background</title>
+      <variablelist>
+	<varlistentry>
+	  <listitem>
+	    <para>Change the Gnome screensaver lock screen background.
+            </para>
+
+    <note>
+
+      <para>
+        
+Before proceeding, please note that this feature is available only in GNOME 2 Version (so it will only work in Ubuntu Natty and some older versions, because they come with GNOME 2 by default) and will also change the GDM login screen background, unless you're already using a custom GDM background.
+
+      </para>
+    </note>
+
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </sect2>
+
+  </section>
+
+
+<section id="about">
+  <title>About</title>
+  <para>
+    &app; was written ( In random order ) by Alex Solanos <email>alexsol.developer@gmail.com</email>.
+    and Leon Vytanos <email>leon.check.me@gmail.com</email>.
+    To find more information about &app;, please visit the
+    <ulink url="http://wallch.t35.com" type="http">
+    &app; website</ulink>.
+  </para>
+  <para>
+    To report a bug regarding this application, you can report it 
+    <ulink url="https://bugs.launchpad.net/wallpaper-changer" type="http">
+    at launchpad</ulink>.
+  </para>
+  <para>This program is distributed under the terms of the GNU
+    General Public license as published by the Free Software
+    Foundation; either version 3 of the License, or (at your option)
+    any later version. A copy of this license can be found at the
+    <ulink url="http://www.gnu.org/licenses/gpl.html" type="http">GNU site</ulink>, or in the file
+    COPYING included with the source code of this program.
+  </para>
+</section>
+
+</article>

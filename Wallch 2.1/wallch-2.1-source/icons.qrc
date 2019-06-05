@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>Pictures/screen.png</file>
+        <file>Pictures/world_sunlight_map_rectangular.jpg</file>
+        <file>Pictures/wallch.png</file>
+    </qresource>
+</RCC>

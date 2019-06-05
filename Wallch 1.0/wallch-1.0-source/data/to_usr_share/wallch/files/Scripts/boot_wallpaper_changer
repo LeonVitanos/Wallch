@@ -1,0 +1,35 @@
+#!/bin/sh
+#Wallch WallpaperChanger -A tool for having fun changing desktop wallpapers-
+#Copyright © 2010-2011 by Leon Vytanos and Alex Solanos
+#This program is free software; you can redistribute it and/or
+#modify it under the terms of the GNU General Public License
+#as published by the Free Software Foundation; either version 3
+#of the License, or (at your option) any later version.
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#You should have received a copy of the GNU General Public License
+#along with this program; if not, write to the Free Software
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+album=`cat /home/$USER/.config/Wallch/Checks/path_to_album_boot`
+if [ -s "$album" ]; then false; else echo "Once on Boot:`date '+%a'` `date '+%d'` `date '+%h'` `date '+%r'` The file '$album' does not exist. Exiting!" >> /home/$USER/.config/Wallch/Error_log; exit; fi
+lines=`wc -l < "$album"`
+yesorno=`cat "$album"`
+if [ X"$yesorno" = X"" ]; then exit; fi
+current_image_on_desktop=`gconftool-2 --get /desktop/gnome/background/picture_filename`
+b=`cat /home/$USER/.config/Wallch/Checks/current_line`
+b=`expr $b + 1`
+image=$(sed -n "${b}p;${b}q" "$album")
+if [ $b -gt $lines ]; then b=1; fi
+image=$(sed -n "${b}p;${b}q" "$album")
+if [ X"$image" = X"$current_image_on_desktop" ]; then
+b=`expr $b + 1`
+image=$(sed -n "${b}p;${b}q" "$album")
+if [ X"$image" = X"$current_image_on_desktop" ]; then
+b=`expr $b + 1`
+image=$(sed -n "${b}p;${b}q" "$album")
+fi
+fi
+echo $b > /home/$USER/.config/Wallch/Checks/current_line
+gconftool-2 --type string --set /desktop/gnome/background/picture_filename "$image"

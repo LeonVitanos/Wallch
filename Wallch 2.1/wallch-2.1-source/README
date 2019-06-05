@@ -1,0 +1,26 @@
+		Wallch (Wallpaper Changer)
+by Alex Solanos(alexsol.developer@gmail.com) and Leon Vytanos(leon.check.me@gmail.com)
+
+SEE COPYING FILE FOR LICENSE INFO PLEASE!
+
+To build the program you'll need:
+debhelper (>= 8), libqt4-dev, libnotifymm-dev, libhighgui-dev, qt4-qmake, desktop-file-utils
+
+The program requires:
+imagemagick, mpg321, libc6 (>= 2.4), libgcc1 (>= 1:4.1.1), libglib2.0-0 (>= 2.12.0), libhighgui2.1, libnotify4 (>= 0.7.0), libqt4-dbus (>= 4:4.5.3), libqtcore4 (>= 4:4.7.0~beta1), libqtgui4 (>= 4:4.6.2), libstdc++6 (>= 4.4.0)
+
+You have to install all of them if you want to install Wallch through this tarball.
+
+To install:
+        qmake *.pro
+	sudo make install
+
+To unistall:
+	sudo ./uninstall
+
+To execute through terminal:
+	wallch
+
+
+You'll may find helpful info at Help->Contents at the Menu of Wallch or 'man wallch'.
+ENJOY

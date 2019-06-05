@@ -1,0 +1,34 @@
+#!/bin/bash
+#Wallch WallpaperChanger -A tool for having fun changing desktop wallpapers-
+#Copyright © 2010-2011 by Leon Vytanos and Alex Solanos
+#This program is free software; you can redistribute it and/or
+#modify it under the terms of the GNU General Public License
+#as published by the Free Software Foundation; either version 3
+#of the License, or (at your option) any later version.
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#You should have received a copy of the GNU General Public License
+#along with this program; if not, write to the Free Software
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+lines=`wc -l < /home/$USER/.config/Wallch/Checks/to_be_fixed`
+lines=`expr $lines + 1`
+if [ X"$(cat ~/.config/Wallch/Checks/randomimage)" != X"0" ]; then #random is enabled, move to a random image!
+shownow=$RANDOM
+let "shownow %= $lines"
+else
+shownow=$(cat /home/$USER/.config/Wallch/Checks/this_to_show_next_time)
+shownow=$(expr $shownow + 1)
+fi
+if [ X"$(gconftool-2 --get /desktop/gnome/background/picture_filename)" = X"$(sed -n "${shownow}p;${shownow}q" ~/.config/Wallch/Checks/to_be_fixed_on_launch)" ]; then
+if [ $shownow -ge $lines ]; then
+shownow=1;
+else
+shownow=$(expr $shownow + 1)
+fi
+fi
+if [ $shownow -ge $lines ]; then
+shownow=1;
+fi
+echo $shownow > /home/$USER/.config/Wallch/Checks/this_to_show_next_time

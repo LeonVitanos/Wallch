@@ -1,0 +1,5 @@
+wallch (1.0-0ubuntu1) natty; urgency=low
+
+  * Initial Release. (LP: #677794)
+
+ -- Alex Solanos <alexsol.developer@gmail.com>  Tue, 22 Feb 2011 20:49:18 +0200
