@@ -4,7 +4,7 @@ This is my first project, in which i took my first steps of programming together
 
 ![alt text](https://i.imgur.com/j6vWRv1.jpg)
 
-It served as a wallpaper changer from images stored on the hard drive, but what made it popular to the Linux community, was some unique features, like the [Live Earth Wallpaper](https://www.die.net/earth/rectangular.html?zoom=2) and [Wikipedia's Picture Of The Day](https://en.wikipedia.org/wiki/Wikipedia:Picture_of_the_day). In order for those features to work, we had a Raspberry Pi powered on all the time and running scripts which were downloading, processing (merging live weather images,downsizing, etc...) and uploading the corresponding images every half hour for the 'Live Earth' feature, and every day for the 'Picture Of The Day' feature.
+It served as a wallpaper changer from images stored on the hard drive, but what made it popular to the Linux community, was some unique features, like the [Live Earth Wallpaper](https://www.die.net/earth/rectangular.html?zoom=2) and [Wikipedia's Picture Of The Day](https://en.wikipedia.org/wiki/Wikipedia:Picture_of_the_day). In order for those features to work, we had a Raspberry Pi powered on all the time and running scripts which were downloading, processing (merging live weather images, downsizing, etc...) and uploading the corresponding images 24/7.
 
 With the help of an [OMG! Ubuntu! article](https://www.omgubuntu.co.uk/2012/03/spare-10-minutes-help-translate-test-wallpaper-app-wallch), Wallch has been translated to more than 7 languages!
 
