@@ -21,3 +21,6 @@ With the help of an [OMG! Ubuntu! article](https://www.omgubuntu.co.uk/2012/03/s
 Wallch counts 50k+ downloads at the [sourceforge repository](https://sourceforge.net/projects/wall-changer/), not counting downloads from the ppas or from the Ubuntu Software Center (where most people download apps), which is pretty neat! :squirrel:
 
 ![alt text](https://i.imgur.com/xhW4KOv.png)
+
+## License
+See the [LICENSE](https://github.com/LeonVitanos/Wallch/blob/master/LICENSE) file for license rights and limitations (GPLv3).
