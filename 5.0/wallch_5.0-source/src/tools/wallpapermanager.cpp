@@ -381,7 +381,8 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
     case DesktopEnvironment::Gnome:
     case DesktopEnvironment::UnityGnome:
         case DesktopEnvironment::Mate:
-        Global::gsettingsSet("org.gnome.desktop.background", "picture-uri", "file://"+image);
+        // From Ubuntu 22.04, there is a different setting for light and dark theme
+        Global::gsettingsSet("org.gnome.desktop.background", Global::gsettingsGet("org.gnome.desktop.interface", "color-scheme") == "prefer-dark" ? "picture-uri-dark" : "picture-uri", "file://"+image);
         break;
     case DesktopEnvironment::LXDE:
         QProcess::startDetached("pcmanfm", QStringList() << "-w" << image);

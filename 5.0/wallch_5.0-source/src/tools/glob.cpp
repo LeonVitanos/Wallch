@@ -954,8 +954,9 @@ void Global::saveSecondsLeftNow(int secondsLeft, short forType){
 #ifdef Q_OS_UNIX
 void Global::gsettingsSet(const QString &schema, const QString &key, const QString &value){
     GSettings *settings = g_settings_new(schema.toLocal8Bit().data());
-
-    g_settings_set_string (settings, key.toLocal8Bit().data(), value.toLocal8Bit().data());
+    gboolean result = g_settings_set_string (settings, key.toLocal8Bit().data(), value.toLocal8Bit().data());
+    if(!result)
+        QMessageBox::warning(0, QObject::tr("Error"), QObject::tr("Could not apply change. If your Desktop Environment is not listed at \"Preferences->Integration->Current Desktop Environment\", then it is not supported."));
 
     g_settings_sync ();
 
