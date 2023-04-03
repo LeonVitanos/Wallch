@@ -1,0 +1,17 @@
+#page_0_wallpapers, #page_1_earth, #page_2_potd, #page_3_clock, #page_4_web, #page_5_other, #menubarMenu{
+    background-image: url(:/themes/radiance_not_checked.png);
+    font: 10pt "Ubuntu";
+    border: 0px;
+}
+
+#page_0_wallpapers:checked, #page_1_earth:checked, #page_2_potd:checked, #page_3_clock:checked, #page_4_web:checked, #page_5_other:checked{
+    background-image: url(:/themes/radiance_checked.png);
+}
+
+#page_0_wallpapers:!checked:hover, #page_1_earth:!checked:hover, #page_2_potd:!checked:hover, #page_3_clock:!checked:hover, #page_4_web:!checked:hover, #page_5_other:!checked:hover, #menubarMenu:!checked:hover{
+    background-image: url(:/themes/radiance_checked_and_hovered.png);
+}
+
+#widget_toolbar{
+    background-image: url(:/themes/radiance_not_checked.png);
+}
