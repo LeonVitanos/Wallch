@@ -60,7 +60,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define LE_IMAGE "liveEarth"
 #define POTD_IMAGE "potd"
-#define WC_IMAGE "wallpaperClock"
 #define LW_IMAGE "liveWebsite"
 
 #define LW_PREVIEW_IMAGE "liveWebsitePreview.png"
@@ -146,7 +145,6 @@ struct GlobalVar {
     int wallpapersChangedCurrentSession;
     QDateTime timeLaunched;
     bool showNotification;
-    bool wallpaperClocksRunning;
     bool liveWebsiteRunning;
     bool potdRunning;
     bool liveEarthRunning;
@@ -156,7 +154,6 @@ struct GlobalVar {
     bool potdIncludeDescription;
     bool leEnableTag;
     bool potdDescriptionBottom;
-    short wallpaperClocksHourImages;
     short refreshhourinterval;
     short websiteWaitAfterFinishSeconds;
     bool websiteLoadImages;
@@ -181,7 +178,6 @@ struct GlobalVar {
 
     QStringList websiteExtraUsernames;
     QStringList websiteExtraPasswords;
-    QString defaultWallpaperClock;
     QString nextShortcut;
     QString potdOnlineUrl;
     QString potdOnlineUrlB;
@@ -211,8 +207,8 @@ struct GlobalVar {
 #endif
         saveHistory(true), randomTimeFrom(300), randomTimeTo(1200), doNotToggleRadiobuttonFallback(false), previewImagesOnScreen(true), pauseOnBattery(false), amPmEnabled(false),
         mainwindowLoaded(false), setAverageColor(false), websiteLoginEnabled(false), websiteCropEnabled(false), wallpapersChangedCurrentSession(0), timeLaunched(QDateTime::currentDateTime()),
-        showNotification(false), wallpaperClocksRunning(false), liveWebsiteRunning(false), potdRunning(false), liveEarthRunning(false), wallpapersRunning(false),
-        iconMode(true), rotateImages(false), potdIncludeDescription(true), leEnableTag(false), potdDescriptionBottom(true), wallpaperClocksHourImages(0), refreshhourinterval(0), websiteWaitAfterFinishSeconds(3),
+        showNotification(false), liveWebsiteRunning(false), potdRunning(false), liveEarthRunning(false), wallpapersRunning(false),
+        iconMode(true), rotateImages(false), potdIncludeDescription(true), leEnableTag(false), potdDescriptionBottom(true), refreshhourinterval(0), websiteWaitAfterFinishSeconds(3),
         websiteLoadImages(true), websiteJavaEnabled(false), websiteJavascriptCanReadClipboard(false), websiteJavascriptEnabled(true), websiteSimpleAuthEnabled(false),
         websiteInterval(6), screenHeight(0), screenWidth(0), potdDescriptionLeftMargin(100), potdDescriptionRightMargin(0), potdDescriptionBottomTopMargin(0), appStartTime(QDateTime::currentDateTime()),
         websiteWebpageToLoad("http://google.com"), defaultPicturesLocation(homePath+"/"+QStandardPaths::displayName(QStandardPaths::PicturesLocation)), potdDescriptionFont("Ubuntu"),
@@ -231,9 +227,7 @@ public:
     ~Global();
     static void saveHistory(const QString &image, short feature);
     static void rotateImg(const QString &filename, short rotation_type, bool show_messagebox);
-    static void readClockIni();
     void desktopNotify(const QString text, bool checkImage, const QString &image);
-    QString wallpaperClockNow(const QString &path, bool minuteCheck, bool hourCheck, bool amPmCheck, bool dayWeekCheck, bool dayMonthCheck, bool monthCheck);
     static QString setAverageColor(const QString &image);
     static QStringList listFolders(const QString &parentFolder, bool recursively, bool includeParent);
     static void generateRandomImages(int imagesNumber, int firstOne);

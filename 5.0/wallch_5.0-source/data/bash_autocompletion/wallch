@@ -4,7 +4,7 @@ _wallch()
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="-h --help --change --start --earth --potd --clock --website --stop --next --previous --pause --cache --fcache --quit --version"
+    opts="-h --help --change --start --earth --potd --website --stop --next --previous --pause --cache --fcache --quit --version"
 
     if [[ ${cur} == -* ]] ; then
         COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )

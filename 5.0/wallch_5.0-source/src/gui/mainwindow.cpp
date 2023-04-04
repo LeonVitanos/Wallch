@@ -257,12 +257,6 @@ void MainWindow::connectSignalSlots(){
     connect(imageFetcher_, SIGNAL(fail()), this, SLOT(onlineRequestFailed()));
     connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineImageRequestReady(QString)));
     connect(cacheManager_, SIGNAL(requestCurrentFolders()), this, SLOT(beginFixCacheForFolders()));
-    connect(ui->month_checkBox, SIGNAL(clicked()), this, SLOT(clockCheckboxClicked()));
-    connect(ui->day_month_checkBox, SIGNAL(clicked()), this, SLOT(clockCheckboxClicked()));
-    connect(ui->day_week_checkBox, SIGNAL(clicked()), this, SLOT(clockCheckboxClicked()));
-    connect(ui->am_checkBox, SIGNAL(clicked()), this, SLOT(clockCheckboxClicked()));
-    connect(ui->hour_checkBox, SIGNAL(clicked()), this, SLOT(clockCheckboxClicked()));
-    connect(ui->minutes_checkBox, SIGNAL(clicked()), this, SLOT(clockCheckboxClicked()));
     connect(ui->website, SIGNAL(textChanged(QString)), this, SLOT(update_website_settings()));
     connect(ui->website_slider, SIGNAL(valueChanged(int)), this, SLOT(update_website_settings()));
     connect(ui->website_crop_checkbox, SIGNAL(clicked()), this, SLOT(update_website_settings()));
@@ -272,7 +266,6 @@ void MainWindow::connectSignalSlots(){
     connect(ui->final_webpage, SIGNAL(textChanged(QString)), this, SLOT(update_website_settings()));
     connect(ui->wallpapersList->verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(launchTimerToUpdateIcons()));
     connect(scaleWatcher_, SIGNAL(finished()), this, SLOT(setupAnimationsAndChangeImage()));
-    connect(clocksPreviewWatcher_, SIGNAL(finished()), this, SLOT(clocksPreviewGenerationFinished()));
     connect(settingsMenu_, SIGNAL(aboutToHide()), this, SLOT(unhoverMenuButton()));
     connect(ui->days_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(ui->hours_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
@@ -302,7 +295,6 @@ void MainWindow::retrieveSettings()
     gv.randomTimeFrom = settings->value("random_time_from", 300).toInt();
     gv.randomTimeTo = settings->value("random_time_to", 1200).toInt();
     gv.iconMode = settings->value("icon_style", true).toBool();
-    gv.defaultWallpaperClock = settings->value("default_wallpaper_clock", "").toString();
     gv.randomImagesEnabled = settings->value("random_images_enabled", true).toBool();
     gv.previewImagesOnScreen = settings->value("preview_images_on_screen", true).toBool();
 }
@@ -332,11 +324,6 @@ void MainWindow::setupTimers(){
     //Timer that updates the configuration for timing once it is changed
     updateCheckTime_ = new QTimer(this);
     connect(updateCheckTime_, SIGNAL(timeout()), this, SLOT(updateTiming()));
-
-    //Timer if you click one of the checkboxes of wallpaper clock, if wallpaper clock is running
-    wallpaperClockWait_ = new QTimer(this);
-    wallpaperClockWait_->setSingleShot(true);
-    connect(wallpaperClockWait_, SIGNAL(timeout()), this, SLOT(clockCheckboxClickedWhileRunning()));
 
     //Timer that update the icons of the visible items
     iconUpdater_ = new QTimer(this);
@@ -408,9 +395,7 @@ void MainWindow::initializePrivateVariables(Global *globalParser, ImageFetcher *
     cacheManager_ = new CacheManager();
     opacityEffect_ = new QGraphicsOpacityEffect(this);
     opacityEffect2_ = new QGraphicsOpacityEffect(this);
-    clocksRadioButtonsGroup = new QButtonGroup(this);
     scaleWatcher_ = new QFutureWatcher<QImage>(this);
-    clocksPreviewWatcher_ = new QFutureWatcher<QImage>(this);
 }
 
 void MainWindow::setupMenu()
@@ -583,16 +568,6 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
         on_page_2_potd_clicked();
         startPotd(false);
     }
-    else if(gv.wallpaperClocksRunning)
-    {
-        ui->deactivate_clock->setEnabled(true);
-        ui->activate_clock->setEnabled(false);
-        totalSeconds_=secondsLeft_=timeoutCount;
-        startUpdateSeconds();
-        setProgressbarsValue(100);
-        on_page_3_clock_clicked();
-        animateProgressbarOpacity(1);
-    }
     else if(gv.liveWebsiteRunning)
     {
         secondsLeft_=timeoutCount;
@@ -649,9 +624,6 @@ void MainWindow::closeWhatsRunning(){
     else if(gv.potdRunning){
         on_deactivate_potd_clicked();
     }
-    else if(gv.wallpaperClocksRunning){
-        on_deactivate_clock_clicked();
-    }
     else if(gv.liveWebsiteRunning){
         on_deactivate_website_clicked();
     }
@@ -671,7 +643,7 @@ void MainWindow::onlineImageRequestReady(QString image){
     if(gv.setAverageColor){
         setButtonColor();
     }
-    imageTransition(false, image);
+    imageTransition(image);
     processRequestStop();
 }
 
@@ -694,9 +666,6 @@ void MainWindow::deletePressed(){
         {
             removeImageFromDisk();
         }
-    }
-    else if(ui->stackedWidget->currentIndex() == 3 && ui->clocksTableWidget->selectedItems().count() > 0){
-        uninstall_clock();
     }
 }
 
@@ -741,7 +710,7 @@ void MainWindow::setProgressbarsValue(short value){
 #endif
 }
 
-void MainWindow::imageTransition(bool wallpaperClock, const QString &filename /*=QString()*/)
+void MainWindow::imageTransition(const QString &filename /*=QString()*/)
 {
     if(!gv.previewImagesOnScreen || !gv.mainwindowLoaded){
         return;
@@ -751,36 +720,7 @@ void MainWindow::imageTransition(bool wallpaperClock, const QString &filename /*
         scaleWatcher_->cancel();
     }
 
-    if(clocksPreviewWatcher_->isRunning()){
-        clocksPreviewWatcher_->cancel();
-    }
-
-    if(wallpaperClock){
-        //generate the wallpaper clock preview
-        clocksPreviewWatcher_->setFuture(QtConcurrent::run(this, &MainWindow::wallpaperClocksPreview));
-    }
-    else
-    {
-        //scale the image
-        scaleWatcher_->setFuture(QtConcurrent::run(this, &MainWindow::scaleWallpapersPreview, filename));
-    }
-}
-
-void MainWindow::clocksPreviewGenerationFinished(){
-    if(clocksPreviewWatcher_->isCanceled()){
-        //last moment cancel, if we don't return, we crash
-        return;
-    }
-    //the wallpaper clock preview has been generated. Now scale it
-    scaleWatcher_->setFuture(QtConcurrent::run(this, &MainWindow::scaleWallpapersPreview));
-}
-
-QImage MainWindow::scaleWallpapersPreview(){
-    if(clocksPreviewWatcher_->isCanceled() || scaleWatcher_->isCanceled()){
-        return QImage();
-    }
-    QImage image = clocksPreviewWatcher_->future().result();
-    return QImage(image.scaled(QSize(image.width()*imagePreviewResizeFactorX_, image.height()*imagePreviewResizeFactorY_), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    scaleWatcher_->setFuture(QtConcurrent::run(this, &MainWindow::scaleWallpapersPreview, filename));
 }
 
 QImage MainWindow::scaleWallpapersPreview(QString filename){
@@ -1181,20 +1121,6 @@ void MainWindow::dropEvent(QDropEvent *event)
         }
         break;
     }
-    case 3:
-    {
-        QList<QUrl> urlList = event->mimeData()->urls();
-        for (QList<QUrl>::const_iterator i = urlList.begin(); i != urlList.end();i++)
-        {
-            QString dropped_temp=(*i).toString();
-            QString droppedfile = dropped_temp.mid(7, dropped_temp.length()-2);
-            if(droppedfile.endsWith(".wcz")){
-                //wallpaper clock! Install it!
-                installWallpaperClock(droppedfile);
-            }
-        }
-        break;
-    }
     default:
         event->acceptProposedAction();
         return;
@@ -1295,7 +1221,7 @@ void MainWindow::processRequestStop(){
     if(gv.potdRunning){
         QString filename=globalParser_->getFilename(gv.wallchHomePath+POTD_IMAGE+"*");
         if(!filename.isEmpty() && ui->stackedWidget->currentIndex()==2 && QFile::exists(filename)){
-            imageTransition(false, filename);
+            imageTransition(filename);
         }
     }
 }
@@ -1723,16 +1649,6 @@ void MainWindow::actionsOnWallpaperChange(){
         }
         globalParser_->saveSecondsLeftNow(secondsLeft_, 0);
     }
-    else if(gv.wallpaperClocksRunning){
-        calculateSecondsLeftForWallClocks();
-        totalSeconds_=secondsLeft_;
-        QString currentWallpaperClock = globalParser_->wallpaperClockNow(gv.defaultWallpaperClock, ui->minutes_checkBox->isChecked(), ui->hour_checkBox->isChecked(), ui->am_checkBox->isChecked(),
-                                                                ui->day_week_checkBox->isChecked(), ui->day_month_checkBox->isChecked(), ui->month_checkBox->isChecked());
-        WallpaperManager::setBackground(currentWallpaperClock, true, false, 4);
-        if(gv.setAverageColor){
-            setAverageColor(currentWallpaperClock);
-        }
-    }
     else if(gv.liveWebsiteRunning){
         ui->timeout_text_label->show();
         ui->website_timeout_label->show();
@@ -1793,9 +1709,9 @@ void MainWindow::updateSeconds(){
     if(gv.pauseOnBattery){
         if(globalParser_->runsOnBattery()){
             if(!manuallyStartedOnBattery_){
-                bool array[5] = {gv.wallpapersRunning, gv.liveEarthRunning, gv.potdRunning, gv.wallpaperClocksRunning, gv.liveWebsiteRunning};
+                bool array[4] = {gv.wallpapersRunning, gv.liveEarthRunning, gv.potdRunning, gv.liveWebsiteRunning};
 
-                for(int i=0;i<5;i++){
+                for(int i=0;i<4;i++){
                     if(array[i]){
                         previouslyRunningFeature_=i;
                         break;
@@ -1849,7 +1765,7 @@ void MainWindow::updateSeconds(){
                 actionsOnWallpaperChange();
                 gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsLeft_);
             }
-            else if (!(gv.wallpaperClocksRunning&& (secondsLeft_-secondsToChange<-1 || secondsLeft_-secondsToChange>1))){
+            else if (!(secondsLeft_-secondsToChange<-1 || secondsLeft_-secondsToChange>1)){
                 //the time has yet to come, just update
                 if(abs(secondsLeft_-secondsToChange)>1){
                     secondsLeft_=secondsToChange;
@@ -1878,15 +1794,6 @@ void MainWindow::updateSeconds(){
                 {
                     setProgressbarsValue((secondsLeft_*100)/(totalSeconds_));
                 }
-            }
-        }
-        else if(gv.wallpaperClocksRunning){
-            if(totalSeconds_==0){
-                setProgressbarsValue(100);
-            }
-            else
-            {
-                setProgressbarsValue((secondsLeft_*100)/(totalSeconds_));
             }
         }
         else if(gv.liveWebsiteRunning){
@@ -1963,9 +1870,6 @@ void MainWindow::stopEverythingThatsRunning(short excludingFeature)
     else if(excludingFeature!=3 && gv.potdRunning){
         on_deactivate_potd_clicked();
     }
-    else if(excludingFeature!=4 && gv.wallpaperClocksRunning){
-        on_deactivate_clock_clicked();
-    }
     else if(excludingFeature!=5 && gv.liveWebsiteRunning){
         on_deactivate_website_clicked();
     }
@@ -1984,9 +1888,6 @@ void MainWindow::pauseEverythingThatsRunning()
     }
     else if(gv.potdRunning){
         on_deactivate_potd_clicked();
-    }
-    else if(gv.wallpaperClocksRunning){
-        on_deactivate_clock_clicked();
     }
     else if(gv.liveWebsiteRunning){
         on_deactivate_website_clicked();
@@ -2119,7 +2020,7 @@ void MainWindow::updateScreenLabel()
 
         QString filename=globalParser_->getFilename(gv.wallchHomePath+"liveEarth*");
         if(!filename.isEmpty()){
-            imageTransition(false, filename);
+            imageTransition(filename);
         }
         else
         {
@@ -2134,7 +2035,7 @@ void MainWindow::updateScreenLabel()
 
         QString filename=globalParser_->getFilename(gv.wallchHomePath+POTD_IMAGE+"*");
         if(!filename.isEmpty()){
-            imageTransition(false, filename);
+            imageTransition(filename);
         }
         else
         {
@@ -2144,27 +2045,10 @@ void MainWindow::updateScreenLabel()
         break;
 
     }
-    case 3:
-
-        if(ui->clocksTableWidget->rowCount()==0)
-        {
-            changeTextOfScreenLabelTo(tr("Preview not available"));
-        }
-        else if(ui->clocksTableWidget->rowCount()!=0 && ui->clocksTableWidget->selectedItems().count()==0)
-        {
-            changeTextOfScreenLabelTo(tr("Preview not available"));
-        }
-        else if(ui->clocksTableWidget->rowCount()!=0 && ui->clocksTableWidget->selectedItems().count()!=0)
-        {
-            imageTransition(true);
-        }
-
-        break;
-
     case 4:
 
         if(QFile::exists(gv.wallchHomePath+LW_PREVIEW_IMAGE)){
-            imageTransition(false, gv.wallchHomePath+LW_PREVIEW_IMAGE);
+            imageTransition(gv.wallchHomePath+LW_PREVIEW_IMAGE);
         }
         else
         {
@@ -2205,7 +2089,7 @@ void MainWindow::changeTextOfScreenLabelTo(const QString &text)
 
 #ifdef Q_OS_UNIX
 void MainWindow::unityProgressbarSetEnabled(bool enabled){
-    if(gv.wallpapersRunning || gv.liveEarthRunning || gv.potdRunning || gv.wallpaperClocksRunning || gv.liveWebsiteRunning ){
+    if(gv.wallpapersRunning || gv.liveEarthRunning || gv.potdRunning || gv.liveWebsiteRunning ){
         globalParser_->setUnityProgressBarEnabled(enabled);
         if(enabled){
             globalParser_->setUnityProgressbarValue(0);
@@ -2538,7 +2422,7 @@ void MainWindow::on_wallpapersList_itemSelectionChanged()
         if(!processingOnlineRequest_){
             ui->screen_label_info->setText(fixBasenameSize(globalParser_->basenameOf(filename)));
         }
-        imageTransition(false, filename);
+        imageTransition(filename);
     }
 }
 
@@ -2997,9 +2881,6 @@ void MainWindow::checkBatteryStatus(){
             break;
         case 2:
             on_activate_potd_clicked();
-            break;
-        case 3:
-            on_activate_clock_clicked();
             break;
         case 4:
             on_activate_website_clicked();
@@ -3841,609 +3722,6 @@ void MainWindow::restartLeIfRunningAfterSettingChange()
     on_activate_livearth_clicked();
 }
 
-//Wallpaper clocks code
-
-void MainWindow::on_install_clock_clicked()
-{
-    QStringList paths = QFileDialog::getOpenFileNames(this, tr("Import Wallpaper Clock(s)"), gv.homePath, "*.wcz");
-
-    if(paths.isEmpty()){
-        return;
-    }
-
-    Q_FOREACH(QString path, paths){
-        installWallpaperClock(path);
-    }
-    if(!gv.wallpaperClocksRunning){
-        ui->clocksTableWidget->selectRow(ui->clocksTableWidget->rowCount());
-    }
-    ui->clocksTableWidget->setFocus();
-}
-
-void MainWindow::installWallpaperClock(const QString &currentPath){
-
-    currentWallpaperClockPath_=gv.wallchHomePath+"Wallpaper_clocks/"+QFileInfo(currentPath).baseName();
-    if(QDir(gv.wallchHomePath+"Wallpaper_clocks/").exists()){
-        if(QFile::exists(currentWallpaperClockPath_))
-        {
-            QMessageBox::warning(this, tr("Error!"), QString(tr("Wallpaper clock already installed.")+" ("+currentWallpaperClockPath_+")"));
-            return;
-        }
-    }
-    else
-    {
-        if(!QDir().mkpath(gv.wallchHomePath+"Wallpaper_clocks/")){
-            QMessageBox::warning(this, tr("Error!"), QString(tr("Could not create an essential path for the Wallpaper clock use. Your Wallpaper clock could not be installed.")));
-            return;
-        }
-    }
-
-#ifdef Q_OS_UNIX
-    unzipArchive_ = new QProcess(this);
-    QStringList params;
-    params << "-qq" << "-o" << currentPath << "-d" << currentWallpaperClockPath_;
-    connect(unzipArchive_, SIGNAL(finished(int)), this, SLOT(addClockToList()));
-    unzipArchive_->start("unzip", params);
-    unzipArchive_->waitForFinished();
-#else
-    unzip(currentPath, currentWallpaperClockPath_);
-#endif
-    ui->clocksTableWidget->setFocus();
-    if(!gv.wallpaperClocksRunning)
-        ui->clocksTableWidget->selectRow(ui->clocksTableWidget->rowCount()-1);
-}
-
-void MainWindow::addClockToList(){
-#ifdef Q_OS_UNIX
-    if(unzipArchive_ && !unzipArchive_->isOpen()){
-        unzipArchive_->deleteLater();
-    }
-#endif
-
-    QFile file(currentWallpaperClockPath_+"/clock.ini");
-    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
-        globalParser_->error("I could not open your clock.ini file successfully!");
-        return;
-    }
-    QString clockName, clockWidth, clockHeight;
-
-    QTextStream in(&file);
-    bool name_found=false, w_found=false, h_found=false;
-    while(!in.atEnd())
-    {
-        QString line=in.readLine();
-        if(!name_found){
-            if(line.left(5)=="name=")
-            {
-                clockName=line.right(line.count()-5);
-                name_found=true;
-            }
-        }
-        if(!w_found){
-            if(line.left(6)=="width=")
-            {
-                clockWidth=line.right(line.count()-6);
-                w_found=true;
-            }
-        }
-        if(!h_found){
-            if(line.left(7)=="height=")
-            {
-                clockHeight=line.right(line.count()-7);
-                h_found=true;
-            }
-        }
-
-    }
-    file.close();
-    int old_r_count=ui->clocksTableWidget->rowCount();
-    ui->clocksTableWidget->insertRow(ui->clocksTableWidget->rowCount());
-    //adding radio button, which one is selected is the one that will be used when Wallpaper clocks are activated
-    QWidget* wdg = new QWidget;
-    QRadioButton *radiobutton_item = new QRadioButton(this);
-    clocksRadioButtonsGroup->addButton(radiobutton_item);
-    connect(radiobutton_item, SIGNAL(clicked()), this, SLOT(clockRadioButton_check_state_changed()));
-    radiobutton_item->setFocusPolicy(Qt::NoFocus);
-    QHBoxLayout* layout = new QHBoxLayout(wdg);
-    layout->addWidget(radiobutton_item);
-    layout->setAlignment( Qt::AlignCenter );
-    layout->setMargin(0);
-    wdg->setLayout(layout);
-    ui->clocksTableWidget->setCellWidget(old_r_count, 0, wdg);
-
-    //adding preview image
-    QLabel *label_item = new QLabel(this);
-    label_item->setAlignment(Qt::AlignCenter);
-    label_item->setPixmap(QPixmap(currentWallpaperClockPath_+"/preview100x75.jpg").scaled(80, 60, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    ui->clocksTableWidget->setCellWidget(old_r_count, 1, label_item);
-
-    //adding title of clock and dimensions
-    QTableWidgetItem *name_item = new QTableWidgetItem;
-    name_item->setText(clockName+"\n"+clockWidth+"x"+clockHeight);
-    name_item->setData(32, currentWallpaperClockPath_);
-    name_item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-    ui->clocksTableWidget->setItem(old_r_count,2,name_item);
-
-    if(!gv.wallpaperClocksRunning)
-    {
-        ui->activate_clock->setEnabled(true);
-    }
-}
-
-#ifdef Q_OS_WIN
-void MainWindow::unzip(QString input, const QString &outputDirectory){
-    QDir baseDir(outputDirectory);
-    baseDir.mkpath(baseDir.path());
-    QZipReader unzip(input, QIODevice::ReadOnly);
-    QList<QZipReader::FileInfo> allFiles = unzip.fileInfoList();
-
-    Q_FOREACH (QZipReader::FileInfo fi, allFiles)
-    {
-        const QString absPath = outputDirectory + QDir::separator() + fi.filePath;
-        if(fi.isDir){
-            if (!baseDir.mkpath(fi.filePath)){
-                continue;
-            }
-            if (!QFile::setPermissions(absPath, fi.permissions)){
-                continue;
-            }
-        }
-        else if (fi.isFile)
-        {
-            QFile file(absPath);
-            if( file.open(QFile::WriteOnly) )
-            {
-                file.write(unzip.fileData(fi.filePath), unzip.fileData(fi.filePath).size());
-                file.setPermissions(fi.permissions);
-                file.close();
-            }
-        }
-        qApp->processEvents(QEventLoop::AllEvents);
-    }
-    unzip.close();
-
-    addClockToList();
-}
-#endif
-
-void MainWindow::uninstall_clock()
-{
-    if(currentlyUninstallingWallpaperClock_ || ui->clocksTableWidget->rowCount()==0 ){
-        return;
-    }
-
-    if(gv.wallpaperClocksRunning)
-    {
-        return;
-    }
-
-    currentlyUninstallingWallpaperClock_=true;
-
-    if(!QDir(gv.defaultWallpaperClock).removeRecursively()){
-        globalParser_->error("Could not delete wallpaper clock, check folder's and subfolders' permissions.");
-    }
-
-    if(ui->clocksTableWidget->rowCount()==1){
-        ui->activate_clock->setEnabled(false);
-        gv.defaultWallpaperClock="None";
-        settings->setValue("default_wallpaper_clock", gv.defaultWallpaperClock);
-        settings->sync();
-        if(gv.previewImagesOnScreen){
-            changeTextOfScreenLabelTo(tr("Preview not available"));
-        }
-    }
-
-    ui->clocksTableWidget->removeRow(ui->clocksTableWidget->currentRow());
-
-    currentlyUninstallingWallpaperClock_=false;
-}
-
-void MainWindow::on_clocksTableWidget_customContextMenuRequested()
-{
-    if(ui->clocksTableWidget->selectedRanges().count() == 0){
-        return;
-    }
-    clockwidgetMenu_ = new QMenu(this);
-    clockwidgetMenu_->addAction(tr("Uninstall"), this, SLOT(uninstall_clock()));
-    clockwidgetMenu_->actions().at(0)->setIcon(QIcon::fromTheme("list-remove", QIcon(":/images/list-remove.png")));
-    if(gv.wallpaperClocksRunning){
-        clockwidgetMenu_->actions().at(0)->setEnabled(false);
-    }
-    clockwidgetMenu_->popup(MENU_POPUP_POS);
-}
-
-void MainWindow::clockRadioButton_check_state_changed()
-{
-    int rowCount=ui->clocksTableWidget->rowCount();
-    for(int i=0; i<rowCount; i++)
-    {
-        QWidget* w = ui->clocksTableWidget->cellWidget(i, 0 );
-        if( w )
-        {
-            QRadioButton* radioButton = w->findChild<QRadioButton*>();
-            if( radioButton && radioButton->isChecked())
-            {
-                ui->clocksTableWidget->selectRow(i);
-                break;
-            }
-        }
-    }
-}
-
-void MainWindow::on_clocksTableWidget_currentCellChanged(int currentRow, int currentColumn, int previousRow, int previousColumn)
-{
-    Q_UNUSED(currentColumn);
-    Q_UNUSED(previousColumn);
-
-    if(currentRow==previousRow || (ui->clocksTableWidget->rowCount()==1 && currentlyUninstallingWallpaperClock_)){
-        return;
-    }
-
-    gv.defaultWallpaperClock=ui->clocksTableWidget->item(currentRow,2)->data(32).toString();
-    settings->setValue("default_wallpaper_clock", gv.defaultWallpaperClock);
-
-    if(gv.wallpaperClocksRunning){
-        globalParser_->readClockIni();
-        QString currentWallpaperClock = globalParser_->wallpaperClockNow(gv.defaultWallpaperClock, ui->minutes_checkBox->isChecked(), ui->hour_checkBox->isChecked(), ui->am_checkBox->isChecked(),
-                                  ui->day_week_checkBox->isChecked(), ui->day_month_checkBox->isChecked(), ui->month_checkBox->isChecked());
-        WallpaperManager::setBackground(currentWallpaperClock, true, false, 4);
-        if(gv.setAverageColor){
-            setButtonColor();
-        }
-    }
-
-    QWidget* w = ui->clocksTableWidget->cellWidget(currentRow, 0 );
-    if( w )
-    {
-        QRadioButton* radioButton = w->findChild<QRadioButton*>();
-        if( radioButton )
-        {
-            radioButton->setChecked(true);
-        }
-    }
-
-    //just installed first wallpaper clock.. Selection has not yet been applied, so select first row in order to preview
-    if(ui->clocksTableWidget->rowCount()==1 && ui->clocksTableWidget->selectedItems().count()==0){
-        ui->clocksTableWidget->selectRow(0);
-    }
-
-    if(ui->clocksTableWidget->rowCount()==0 || ui->clocksTableWidget->selectedItems().count()==0)
-    {
-        if(gv.previewImagesOnScreen){
-            hideScreenLabel();
-        }
-    }
-    else
-    {
-        if(gv.previewImagesOnScreen){
-            imageTransition(true);
-        }
-    }
-}
-
-void MainWindow::on_activate_clock_clicked()
-{
-    stopEverythingThatsRunning(4);
-    if(!loadedPages_[3]){
-        loadWallpaperClocksPage();
-    }
-    if(!ui->activate_clock->isEnabled()){
-        globalParser_->desktopNotify(tr("No wallpaper clocks have been installed."), false, "info");
-        globalParser_->error("No wallpaper clocks have been installed.");
-        return;
-    }
-
-    on_page_3_clock_clicked();
-
-    if(ui->minutes_checkBox->isChecked() || ui->hour_checkBox->isChecked() || (ui->am_checkBox->isChecked() && gv.amPmEnabled) ||
-            ui->day_week_checkBox->isChecked() || ui->day_month_checkBox->isChecked() || ui->month_checkBox->isChecked())
-    {
-        globalParser_->readClockIni();
-        QString currentWallpaperClock = globalParser_->wallpaperClockNow(gv.defaultWallpaperClock, ui->minutes_checkBox->isChecked(), ui->hour_checkBox->isChecked(), ui->am_checkBox->isChecked(),
-                                                                  ui->day_week_checkBox->isChecked(), ui->day_month_checkBox->isChecked(), ui->month_checkBox->isChecked());
-        WallpaperManager::setBackground(currentWallpaperClock, true, false, 4);
-        if(gv.setAverageColor){
-            setAverageColor(currentWallpaperClock);
-        }
-
-        ui->activate_clock->setEnabled(false);
-        ui->deactivate_clock->setEnabled(true);
-
-        gv.wallpaperClocksRunning=true;
-        globalParser_->updateStartup();
-#ifdef Q_OS_UNIX
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
-            dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, true);
-        }
-#endif //#ifdef Q_OS_UNIX
-        Q_EMIT signalRecreateTray();
-
-        calculateSecondsLeftForWallClocks();
-
-        totalSeconds_=secondsLeft_;
-        globalParser_->resetSleepProtection(secondsLeft_);
-        startUpdateSeconds();
-        setProgressbarsValue(100);
-        animateProgressbarOpacity(1);
-    }
-    else
-    {
-        if (QMessageBox::question(this,tr("Wallpaper Clock"), tr("You haven't selected any of the options (day of week etc...), thus the wallpaper clock will not be activated. You can use the wallpaper of the selecte wallpaper clock as a background, instead.")) == QMessageBox::Yes)
-        {
-            QString pic=gv.defaultWallpaperClock+"/bg.jpg";
-            WallpaperManager::setBackground(pic, true, true, 4);
-            if(gv.setAverageColor){
-                setButtonColor();
-            }
-        }
-    }
-}
-
-void MainWindow::on_deactivate_clock_clicked()
-{
-    if(!ui->deactivate_clock->isEnabled()){
-        return;
-    }
-
-    secondsLeft_=0;
-    gv.wallpaperClocksRunning=false;
-    globalParser_->updateStartup();
-    if(updateSecondsTimer_->isActive()){
-        updateSecondsTimer_->stop();
-    }
-    animateProgressbarOpacity(0);
-    ui->deactivate_clock->setEnabled(false);
-    ui->activate_clock->setEnabled(true);
-    stoppedBecauseOnBattery_=false;
-
-#ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome){
-        dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
-    }
-#endif //#ifdef Q_OS_UNIX
-    Q_EMIT signalUncheckRunningFeatureOnTray();
-}
-
-void MainWindow::calculateSecondsLeftForWallClocks(){
-    QTime timeNow = QTime::currentTime();
-
-    double secondsLeftForNextMinute=0;
-    if(timeNow.minute()==59 && timeNow.hour()!=23){
-        secondsLeftForNextMinute=timeNow.msecsTo(QTime(timeNow.hour()+1,0,1));
-    }
-    else if (timeNow.minute()==59 && timeNow.hour()==23){
-        secondsLeftForNextMinute=timeNow.msecsTo(QTime(23,59,59))+2;
-    }
-    else{
-        secondsLeftForNextMinute=timeNow.msecsTo(QTime(timeNow.hour(),timeNow.minute()+1,1));
-    }
-
-    secondsLeftForNextMinute-=500;
-
-    secondsLeftForNextMinute/=1000;
-
-    secondsLeftForNextMinute=qRound(secondsLeftForNextMinute);
-
-    if(ui->minutes_checkBox->isChecked())
-    {
-        secondsLeft_=secondsLeftForNextMinute;
-    }
-    else if(ui->hour_checkBox->isChecked())
-    {
-        secondsLeft_=(((QString::number(timeNow.minute()/gv.refreshhourinterval).toInt()+1)*gv.refreshhourinterval-timeNow.minute()-1)*60+secondsLeftForNextMinute);
-    }
-    else if(ui->am_checkBox->isChecked() && gv.amPmEnabled)
-    {
-        float secondsLeftForAmPm=0;
-        if (timeNow.hour()>=12){
-            secondsLeftForAmPm=timeNow.secsTo(QTime(23,59,59))+2;
-        }
-        else
-        {
-            secondsLeftForAmPm=timeNow.secsTo(QTime(12,0,1));
-        }
-        secondsLeft_=secondsLeftForAmPm;
-    }
-    else if(ui->day_week_checkBox->isChecked() || ui->day_month_checkBox->isChecked())
-    {
-        float seconds_left_for_next_day=timeNow.secsTo(QTime(23,59,59))+2;
-        secondsLeft_=seconds_left_for_next_day;
-    }
-    else if(ui->month_checkBox->isChecked())
-    {
-        float seconds_left_for_next_day=timeNow.secsTo(QTime(23,59,59))+2;
-        secondsLeft_=seconds_left_for_next_day;
-    }
-}
-
-QImage MainWindow::wallpaperClocksPreview()
-{
-    const QString wallClockPath=gv.defaultWallpaperClock;
-    bool minuteCheck=ui->minutes_checkBox->isChecked();
-    bool hourCheck=ui->hour_checkBox->isChecked();
-    bool amPmCheck=ui->am_checkBox->isChecked();
-    bool dayWeekCheck=ui->day_week_checkBox->isChecked();
-    bool dayMonthCheck=ui->day_month_checkBox->isChecked();
-    bool monthCheck=ui->month_checkBox->isChecked();
-
-    short hour_inte=0;
-    short am_pm_en=0;
-    short images_of_hour=0;
-
-    //reading clock.ini of wallpaper clock in order to get the gv.refreshhourinterval,if there are images for am or pm and the total of hour images
-    QFile file(wallClockPath+"/clock.ini");
-    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
-        globalParser_->error("I could not open the clock.ini file ("+wallClockPath+"/clock.ini) for reading successfully!");
-        return QImage();
-    }
-
-    QTextStream in(&file);
-    while(!in.atEnd())
-    {
-        QString line=in.readLine();
-        if(line.startsWith("refreshhourinterval=")){
-            hour_inte=QString(line.right(line.count()-20)).toInt();
-        }
-        else if(line.startsWith("ampmenabled=")){
-            am_pm_en=QString(line.right(line.count()-12)).toInt();
-        }
-        else if(line.startsWith("ampmenabled=")){
-            images_of_hour=QString(line.right(line.count()-11)).toInt();
-        }
-    }
-    file.close();
-    if(hour_inte==0){
-        return QImage();
-    }
-    QDateTime datetime = QDateTime::currentDateTime();
-
-    //12h format is needed for the analog clocks
-    short hour_12h_format=0;
-    QString am_or_pm;
-    if (datetime.time().hour()>=12){
-        am_or_pm="pm";
-    }
-    else
-    {
-        am_or_pm="am";
-    }
-
-    if(images_of_hour==24 || datetime.time().hour()<12 ){
-        hour_12h_format=datetime.time().hour();
-    }
-    else if(images_of_hour!=24 && datetime.time().hour()>=12){
-        hour_12h_format=datetime.time().hour()-12;
-    }
-
-    QImage merged = QImage(wallClockPath+"/bg.jpg");
-
-    QPainter painter(&merged);
-    if(clocksPreviewWatcher_->isCanceled()){
-        return QImage();
-    }
-
-    if(monthCheck){
-        painter.drawPixmap(0, 0, QPixmap(wallClockPath+"/month"+QString::number(datetime.date().month())+".png"));
-    }
-    if(dayWeekCheck){
-        painter.drawPixmap(0, 0, QPixmap(wallClockPath+"/weekday"+QString::number(datetime.date().dayOfWeek())+".png"));
-    }
-    if(dayMonthCheck){
-        painter.drawPixmap(0, 0, QPixmap(wallClockPath+"/day"+QString::number(datetime.date().day())+".png"));
-    }
-    if(hourCheck){
-        painter.drawPixmap(0, 0, QPixmap(wallClockPath+"/hour"+QString::number(hour_12h_format*(60/hour_inte)+QString::number(datetime.time().minute()/hour_inte).toInt())+".png"));
-    }
-    if(minuteCheck){
-        painter.drawPixmap(0, 0, QPixmap(wallClockPath+"/minute"+QString::number(datetime.time().minute())+".png"));
-    }
-    if(am_pm_en && amPmCheck){
-        painter.drawPixmap(0, 0, QPixmap(wallClockPath+"/"+am_or_pm+".png"));
-    }
-
-    painter.end();
-
-    if(clocksPreviewWatcher_->isCanceled()){
-        return QImage();
-    }
-
-    return merged;
-}
-
-void MainWindow::clockCheckboxClickedWhileRunning()
-{
-    if(ui->minutes_checkBox->isChecked() || ui->hour_checkBox->isChecked() || (ui->am_checkBox->isChecked() && gv.amPmEnabled) || ui->day_week_checkBox->isChecked() || ui->day_month_checkBox->isChecked() || ui->month_checkBox->isChecked())
-    {
-        QString currentWallpaperClock = globalParser_->wallpaperClockNow(gv.defaultWallpaperClock, ui->minutes_checkBox->isChecked(), ui->hour_checkBox->isChecked(), ui->am_checkBox->isChecked(),
-                                                                  ui->day_week_checkBox->isChecked(), ui->day_month_checkBox->isChecked(), ui->month_checkBox->isChecked());
-        WallpaperManager::setBackground(currentWallpaperClock, true, false, 4);
-        if(gv.setAverageColor){
-            setAverageColor(currentWallpaperClock);
-        }
-
-        QTime time = QTime::currentTime();
-
-        float seconds_left_for_min=0;
-        if(time.minute()==59 && time.hour()!=23){
-            seconds_left_for_min=time.secsTo(QTime(time.hour()+1,0,1));
-        }
-        else if (time.minute()==59 && time.hour()==23){
-            seconds_left_for_min=time.secsTo(QTime(23,59,59))+2;
-        }
-        else
-        {
-            seconds_left_for_min=time.secsTo(QTime(time.hour(),time.minute()+1,1));
-        }
-
-        ui->activate_clock->setEnabled(false);
-        ui->deactivate_clock->setEnabled(true);
-
-        if(ui->minutes_checkBox->isChecked()){
-            secondsLeft_=seconds_left_for_min;
-        }
-        else if(ui->hour_checkBox->isChecked()){
-            secondsLeft_=(((QString::number(time.minute()/gv.refreshhourinterval).toInt()+1)*gv.refreshhourinterval-time.minute()-1)*60+seconds_left_for_min);
-        }
-        else if(ui->am_checkBox->isChecked() && gv.amPmEnabled)
-        {
-            float seconds_left_for_am_pm=0;
-            if (time.hour()>=12){
-                seconds_left_for_am_pm=time.secsTo(QTime(23,59,59))+2;
-            }
-            else{
-                seconds_left_for_am_pm=time.secsTo(QTime(12,0,1));
-            }
-            secondsLeft_=seconds_left_for_am_pm;
-        }
-        else if(ui->day_week_checkBox->isChecked() || ui->day_month_checkBox->isChecked() || ui->month_checkBox->isChecked())
-        {
-            float seconds_left_for_next_day=time.secsTo(QTime(23,59,59))+2;
-            secondsLeft_=seconds_left_for_next_day;
-        }
-
-        totalSeconds_=secondsLeft_;
-        startUpdateSeconds();
-        setProgressbarsValue(100);
-    }
-    else
-    {
-        QString currentWallpaperClock = globalParser_->wallpaperClockNow(gv.defaultWallpaperClock, ui->minutes_checkBox->isChecked(), ui->hour_checkBox->isChecked(), ui->am_checkBox->isChecked(),
-                                                                  ui->day_week_checkBox->isChecked(), ui->day_month_checkBox->isChecked(), ui->month_checkBox->isChecked());
-        WallpaperManager::setBackground(currentWallpaperClock, true, false, 4);
-        if(gv.setAverageColor){
-            setAverageColor(currentWallpaperClock);
-        }
-        on_deactivate_clock_clicked();
-    }
-}
-
-void MainWindow::on_wallpaper_clocks_source_linkActivated()
-{
-    globalParser_->openUrl("http://www.vladstudio.com/wallpaperclocks/browse.php");
-}
-
-void MainWindow::clockCheckboxClicked()
-{
-    imageTransition(true);
-
-    settings->setValue("month", ui->month_checkBox->isChecked());
-    settings->setValue("day_of_month", ui->day_month_checkBox->isChecked());
-    settings->setValue("day_of_week", ui->day_week_checkBox->isChecked());
-    settings->setValue("am_pm", ui->am_checkBox->isChecked());
-    settings->setValue("hour", ui->hour_checkBox->isChecked());
-    settings->setValue("minute", ui->minutes_checkBox->isChecked());
-    settings->sync();
-
-    if(gv.wallpaperClocksRunning)
-    {
-        if(wallpaperClockWait_->isActive()){
-            wallpaperClockWait_->stop();
-        }
-
-        wallpaperClockWait_->start(500);
-    }
-}
-
 //Live Website Code
 void MainWindow::on_activate_website_clicked()
 {   
@@ -4918,48 +4196,6 @@ void MainWindow::loadWallpaperClocksPage()
 {
     loadedPages_[3]=true;
 
-    ui->install_clock->setIcon(QIcon::fromTheme("list-add", QIcon(":/images/list-add.png")));
-
-    HideGrayLinesDelegate *delegate = new HideGrayLinesDelegate(ui->clocksTableWidget);
-    ui->clocksTableWidget->setItemDelegate(delegate);
-
-    ui->wallpaper_clocks_source->setText("<span style=\"font-style:italic;\">"+tr("Download wallpaper clocks from")+" </span><a href=\"http://www.vladstudio.com/wallpaperclocks/browse.php\"><span style=\"font-style:italic; text-decoration: underline; color: #ff5500;\">VladStudio.com</span></a>");
-    ui->clocksTableWidget->setColumnWidth(0, 20);
-
-    //add to the listwidget the wallpaper clocks that exist in ~/.wallch/Wallpaper_clocks (AppData/Local/Mellori Studio/Wallch/Wallpaper_clocks for Windows)
-#ifdef Q_OS_UNIX
-    unzipArchive_=NULL;
-#endif
-    Q_FOREACH(currentWallpaperClockPath_, globalParser_->listFolders(gv.wallchHomePath+"Wallpaper_clocks", true, false))
-    {
-        addClockToList();
-    }
-
-    short clocksCount=ui->clocksTableWidget->rowCount();
-
-    for(short i=0;i<clocksCount;i++){
-        if(ui->clocksTableWidget->item(i,2)->data(32)==gv.defaultWallpaperClock){
-            ui->clocksTableWidget->selectRow(i);
-            ui->clocksTableWidget->setFocus();
-            break;
-        }
-    }
-
-    ui->activate_clock->setEnabled(!gv.wallpaperClocksRunning && clocksCount!=0);
-
-    if(!clocksCount)
-    {
-        gv.defaultWallpaperClock="None";
-        settings->setValue("default_wallpaper_clock", gv.defaultWallpaperClock);
-        settings->sync();
-    }
-
-    ui->month_checkBox->setChecked(settings->value("month",true).toBool());
-    ui->day_month_checkBox->setChecked(settings->value("day_of_month",true).toBool());
-    ui->day_week_checkBox->setChecked(settings->value("day_of_week",true).toBool());
-    ui->am_checkBox->setChecked(settings->value("am_pm",true).toBool());
-    ui->hour_checkBox->setChecked(settings->value("hour",true).toBool());
-    ui->minutes_checkBox->setChecked(settings->value("minute",true).toBool());
 }
 
 void MainWindow::loadLiveWebsitePage(){
@@ -5611,7 +4847,7 @@ void MainWindow::on_stackedWidget_currentChanged(int page)
     else if(page==2)
         ui->help_label->setText("Outstanding photos that are selected daily from Wikipedia");
     else if(page==3)
-        ui->help_label->setText("Wallpapers choosen from VladStudio that show the time and date");
+        ui->help_label->setText("Empty Page");
     else if(page==4)
         ui->help_label->setText("Screenshot of a website");
     else
@@ -5764,9 +5000,9 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, long* r
        {
            //Just to note, when we plug the cable, Windows for some reason sends discharging,
            //and after 1 second sends charging so just ignore first discharging message
-           bool array[5] = {gv.wallpapersRunning, gv.liveEarthRunning, gv.potdRunning, gv.wallpaperClocksRunning, gv.liveWebsiteRunning};
+           bool array[4] = {gv.wallpapersRunning, gv.liveEarthRunning, gv.potdRunning, gv.liveWebsiteRunning};
 
-           for(int i=0;i<5;i++){
+           for(int i=0;i<4;i++){
                if(array[i]){
                    previouslyRunningFeature_=i;
                    pauseEverythingThatsRunning();
@@ -5789,9 +5025,6 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, long* r
                    break;
                case 2:
                    on_activate_potd_clicked();
-                   break;
-               case 3:
-                   on_activate_clock_clicked();
                    break;
                case 4:
                    on_activate_website_clicked();

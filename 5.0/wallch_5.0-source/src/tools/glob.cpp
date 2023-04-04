@@ -620,108 +620,6 @@ QStringList Global::listFolders(const QString &parentFolder, bool recursively, b
     }
 }
 
-void Global::readClockIni()
-{
-    //Reading clock.ini of wallpaper clock to get useful info from there.
-    QFile file(gv.defaultWallpaperClock+"/clock.ini");
-    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
-        Global::error("Could not open the clock.ini file ("+gv.defaultWallpaperClock+"/clock.ini) for reading successfully!");
-        return;
-    }
-
-    QTextStream in(&file);
-    while(!in.atEnd())
-    {
-        QString line=in.readLine();
-        if(line.startsWith("refreshhourinterval="))
-        {
-            gv.refreshhourinterval=QString(line.right(line.count()-20)).toInt();
-        }
-        else if(line.startsWith("ampmenabled="))
-        {
-            gv.amPmEnabled=QString(line.right(line.count()-12)).toInt();
-        }
-        else if(line.startsWith("hourimages="))
-        {
-            gv.wallpaperClocksHourImages=QString(line.right(line.count()-11)).toInt();
-        }
-    }
-    file.close();
-}
-
-QString Global::wallpaperClockNow(const QString &path, bool minuteCheck, bool hourCheck, bool amPmCheck, bool dayWeekCheck, bool dayMonthCheck, bool monthCheck)
-{
-    //returns where the saved wallpaper clock went
-
-    //getting system date and time
-    QDate date = QDate::currentDate();
-    QTime time = QTime::currentTime();
-
-    //knowing the current hour, we know if it am or pm
-    //12h format is needed for the analog clocks
-    short hour_12h_format=0;
-    QString am_or_pm;
-    if (time.hour()>=12){
-        am_or_pm="pm";
-    }
-    else
-    {
-        am_or_pm="am";
-    }
-
-    if(gv.wallpaperClocksHourImages==24 || time.hour()<12 ){
-        hour_12h_format=time.hour();
-    }
-    else if(gv.wallpaperClocksHourImages!=24 && time.hour()>=12){
-        hour_12h_format=time.hour()-12;
-    }
-
-    //create the image that will be used as desktop background
-    QPixmap merge(path+"/bg.jpg");
-
-    QPainter painter(&merge);
-    if(monthCheck){
-        painter.drawPixmap(0, 0, QPixmap(path+"/month"+QString::number(date.month())+".png"));
-    }
-    if(dayWeekCheck){
-        painter.drawPixmap(0, 0, QPixmap(path+"/weekday"+QString::number(date.dayOfWeek())+".png"));
-    }
-    if(dayMonthCheck){
-        painter.drawPixmap(0, 0, QPixmap(path+"/day"+QString::number(date.day())+".png"));
-    }
-    if(hourCheck){
-        painter.drawPixmap(0, 0, QPixmap(path+"/hour"+QString::number(hour_12h_format*(60/gv.refreshhourinterval)+QString::number(time.minute()/gv.refreshhourinterval).toInt())+".png"));
-    }
-    if(minuteCheck){
-        painter.drawPixmap(0, 0, QPixmap(path+"/minute"+QString::number(time.minute())+".png"));
-    }
-    if(gv.amPmEnabled && amPmCheck){
-        painter.drawPixmap(0, 0, QPixmap(path+"/"+am_or_pm+".png"));
-    }
-    painter.end();
-
-    Global::remove(gv.wallchHomePath+WC_IMAGE+"*");
-
-    QString currentWallpaperClock = gv.wallchHomePath+WC_IMAGE+QString::number(QDateTime::currentMSecsSinceEpoch())+".jpg";
-
-    merge.save(currentWallpaperClock);
-
-    if(gv.showNotification)
-    {
-        if(settings->value("clocks_notification", true).toBool()){
-            if(QTime::currentTime().minute() == 0){
-                desktopNotify(tr("Current wallpaper has been changed!")+"<br>"+tr("Time is")+": "+QTime::currentTime().toString("hh:mm"), true, currentWallpaperClock);
-            }
-        }
-        else
-        {
-            desktopNotify(tr("Current wallpaper has been changed!")+"<br>"+tr("Time is")+": "+QTime::currentTime().toString("hh:mm"), true, currentWallpaperClock);
-        }
-    }
-
-    return currentWallpaperClock;
-}
-
 QString Global::basenameOf(const QString &path){
     /*
      * Returns the fullname of the file that 'path' points to. E.g.:
@@ -1125,9 +1023,6 @@ void Global::updateStartup()
         else if(gv.liveWebsiteRunning){
             settings2.setValue("Wallch", wallch_exe_path+" --website");
         }
-        else if(gv.wallpaperClocksRunning){
-            settings2.setValue("Wallch", wallch_exe_path+" --clock");
-        }
         else if(settings->value("start_hidden", false).toBool()){
             settings2.setValue("Wallch", wallch_exe_path+" --none");
         }
@@ -1166,10 +1061,6 @@ void Global::updateStartup()
         else if(gv.liveWebsiteRunning){
             desktopFileCommand="/usr/bin/wallch --website";
             desktopFileComment="Enable Live Website";
-        }
-        else if(gv.wallpaperClocksRunning){
-            desktopFileCommand="/usr/bin/wallch --clock";
-            desktopFileComment="Enable Wallpaper Clock";
         }
         else if(settings->value("start_hidden", false).toBool()){
             desktopFileCommand="/usr/bin/wallch --none";

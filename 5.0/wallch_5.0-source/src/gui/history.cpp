@@ -197,11 +197,6 @@ void History::addHistoryEntry(QString time, QString path, short type){
             item->setText(time+" "+tr("Picture Of The Day Image"));
             item->setData(12, "link");
         }
-        else if(type==4)
-        {
-            item->setText(time+" "+tr("Wallpaper Clock Image"));
-            item->setData(12, "clock");
-        }
         else if(type==5)
         {
             item->setText(time+" "+tr("Live Website Image"));

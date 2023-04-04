@@ -33,14 +33,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define WALLPAPERS_HELP "/usr/share/gnome/help/wallch/C/howto_wallpapers.page";
 #define LIVEARTH_HELP "/usr/share/gnome/help/wallch/C/howto_livearth.page";
 #define POTD_HELP "/usr/share/gnome/help/wallch/C/howto_potd.page";
-#define WALLCLOCKS_HELP "/usr/share/gnome/help/wallch/C/howto_wallclocks.page";
 #define LIVEWEBSITE_HELP "/usr/share/gnome/help/wallch/C/howto_livewebsite.page";
 #define COLSANDGRADS_HELP "/usr/share/gnome/help/wallch/C/howto_colsandgrads.page";
 
 #define WALLPAPERS_LIST_ICON_SIZE QSize(60, 60)
 #define WALLPAPERS_LIST_ITEMS_OFFSET QSize(4, 3)
-#define WALLPAPER_CLOCKS_LIST_ICON_SIZE  QSize(100,75)
-#define WALLPAPER_CLOCKS_ITEM_ICON_SIZE QSize(82, 82)
 
 #include "about.h"
 #include "ui_mainwindow.h"
@@ -120,7 +117,6 @@ private:
     WallpaperManager *wallpaperManager_;
     CacheManager *cacheManager_;
     QTimer *updateSecondsTimer_;
-    QTimer *wallpaperClockWait_;
     QTimer *updateCheckTime_;
     QTimer *iconUpdater_;
     QTimer *researchFoldersTimer_;
@@ -130,7 +126,6 @@ private:
 #endif //#ifdef Q_OS_UNIX
 
     QMenu *listwidgetMenu_;
-    QMenu *clockwidgetMenu_;
 
     QList<QLabel*> menuSeparators_;
 
@@ -144,9 +139,6 @@ private:
     QFileSystemWatcher *watchFolders_;
 
     QFutureWatcher<QImage> *scaleWatcher_;
-    QFutureWatcher<QImage> *clocksPreviewWatcher_;
-
-    QButtonGroup *clocksRadioButtonsGroup;
 
     QRect availableGeometry_;
 
@@ -192,7 +184,6 @@ private:
     double imagePreviewResizeFactorX_;
     double imagePreviewResizeFactorY_;
     int currentSearchItemIndex;
-    bool currentlyUninstallingWallpaperClock_ = false;
     short timePassedForLiveWebsiteRequest_;
     short tempForDelayedPicturesLocationChange_;
 
@@ -221,7 +212,6 @@ private:
     bool manuallyStartedOnBattery_ = false;
     QString initialWebPage_;
     QString changedWebPage_;
-    QString currentWallpaperClockPath_;
     QString nameOfSelectionPriorFolderChange_;
     QString currentFolder_;
     QStringList searchList_;
@@ -234,7 +224,6 @@ private:
     QShortcut *historyShortcut_ = NULL;
 
 #ifdef Q_OS_WIN
-    void unzip(QString input, const QString &outputDirectory);
     bool nativeEvent(const QByteArray& eventType, void* message, long* result);
 #else
     DesktopStyle getDesktopStyle();
@@ -286,7 +275,7 @@ private:
     void doesMatch();
     void doesntMatch();
     void setProgressbarsValue(short value);
-    void imageTransition(bool wallpaperClock, const QString &filename = QString());
+    void imageTransition(const QString &filename = QString());
     void hideScreenLabel();
     void changeTextOfScreenLabelTo(const QString &text);
     bool updateIconOf(int row);
@@ -295,9 +284,7 @@ private:
     void pauseEverythingThatsRunning();
     bool websiteConfiguredCorrectly();
     void updatePotdProgress();
-    void calculateSecondsLeftForWallClocks();
     void currentFolderDoesNotExist();
-    QImage wallpaperClocksPreview();
     QString secondsToMh(int seconds);
     QString secondsToHms(int seconds);
     QString secondsToHm(int seconds);
@@ -313,7 +300,6 @@ private:
     void disableLiveWebsitePage();
     bool currentFolderExists();
     QImage scaleWallpapersPreview(QString filename);
-    QImage scaleWallpapersPreview();
     QStringList getCurrentWallpaperFolders();
 
 private Q_SLOTS:
@@ -322,7 +308,6 @@ private Q_SLOTS:
     void closeWhatsRunning();
     void checkBatteryStatus();
     void addFolderForMonitor(const QString &folder);
-    void installWallpaperClock(const QString &currentPath);
     void folderChanged();
     void researchFolders();
     void updateTiming();
@@ -341,7 +326,6 @@ private Q_SLOTS:
     void rotateLeft();
     void copyImage();
     void copyImagePath();
-    void clockCheckboxClickedWhileRunning();
     void readCoordinates(const QRect &cropArea);
     void setStyle();
     void setWebsitePreviewImage(QImage *image);
@@ -351,7 +335,6 @@ private Q_SLOTS:
     void openCloseAddLoginAnimationFinished();
     void updateSeconds();
     void liveWebsiteImageCreated(QImage *image, short errorCode);
-    void addClockToList();
     void changeCurrentThemeTo(const QString &theme);
     void showHideSearchBox();
     void showHideSearchBoxMenu();
@@ -387,18 +370,14 @@ private Q_SLOTS:
     void potdPreviewDestroyed();
     void updateColorButton(QImage image);
     void delayed_pictures_location_change();
-    void clockRadioButton_check_state_changed();
     void restartPotdIfRunningAfterSettingChange();
     void restartLeIfRunningAfterSettingChange();
     void justChangeWallpaper();
-    void clocksPreviewGenerationFinished();
     void setupAnimationsAndChangeImage();
     void unhoverMenuButton();
     void beginFixCacheForFolders();
     void wait_preview_changed();
     void preview_changed();
-    void clockCheckboxClicked();
-    void uninstall_clock();
     void update_website_settings();
     void doQuit();
     void onlineRequestFailed();
@@ -412,8 +391,6 @@ private Q_SLOTS:
     void on_wallpapersList_itemDoubleClicked();
     void on_wallpapersList_itemSelectionChanged();
     void on_timerSlider_valueChanged(int value);
-    void on_install_clock_clicked();
-    void on_wallpaper_clocks_source_linkActivated();
     void on_website_preview_clicked();
     void on_edit_crop_clicked();
     void on_website_crop_checkbox_clicked(bool checked);
@@ -450,8 +427,6 @@ private Q_SLOTS:
     void on_deactivate_livearth_clicked();
     void on_activate_potd_clicked();
     void on_deactivate_potd_clicked();
-    void on_activate_clock_clicked();
-    void on_deactivate_clock_clicked();
     void on_activate_website_clicked();
     void on_deactivate_website_clicked();
     void on_page_0_wallpapers_clicked();
@@ -460,10 +435,8 @@ private Q_SLOTS:
     void on_page_3_clock_clicked();
     void on_page_4_web_clicked();
     void on_page_5_other_clicked();
-    void on_clocksTableWidget_currentCellChanged(int currentRow, int currentColumn, int previousRow, int previousColumn);
     void on_include_description_checkBox_clicked(bool checked);
     void on_edit_potd_clicked();
-    void on_clocksTableWidget_customContextMenuRequested();
     void on_shuffle_images_checkbox_clicked();
     void on_stackedWidget_currentChanged(int page);
     void on_donateButton_clicked();

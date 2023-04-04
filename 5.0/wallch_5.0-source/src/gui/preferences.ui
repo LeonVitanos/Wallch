@@ -256,7 +256,7 @@
               <x>0</x>
               <y>0</y>
               <width>598</width>
-              <height>530</height>
+              <height>550</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -435,7 +435,6 @@ picture and change the desktop background once at System Startup</string>
                <property name="font">
                 <font>
                  <pointsize>-1</pointsize>
-                 <weight>75</weight>
                  <bold>true</bold>
                 </font>
                </property>
@@ -457,7 +456,6 @@ picture and change the desktop background once at System Startup</string>
                     <property name="font">
                      <font>
                       <pointsize>11</pointsize>
-                      <weight>50</weight>
                       <bold>false</bold>
                      </font>
                     </property>
@@ -528,7 +526,6 @@ picture and change the desktop background once at System Startup</string>
                     <property name="font">
                      <font>
                       <pointsize>11</pointsize>
-                      <weight>50</weight>
                       <bold>false</bold>
                      </font>
                     </property>
@@ -599,23 +596,6 @@ picture and change the desktop background once at System Startup</string>
                    <string>Notification on Wallpaper change</string>
                   </property>
                  </widget>
-                </item>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_20">
-                  <property name="leftMargin">
-                   <number>15</number>
-                  </property>
-                  <item>
-                   <widget class="QCheckBox" name="clocksNotifyCheckbox">
-                    <property name="focusPolicy">
-                     <enum>Qt::NoFocus</enum>
-                    </property>
-                    <property name="text">
-                     <string>For wallpaper clocks, show notification only when hour changes</string>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
                 </item>
                 <item>
                  <widget class="QCheckBox" name="showPreview_checkBox">
@@ -713,7 +693,6 @@ picture and change the desktop background once at System Startup</string>
                  <widget class="QCheckBox" name="unity_prog_checkbox">
                   <property name="font">
                    <font>
-                    <weight>50</weight>
                     <bold>false</bold>
                    </font>
                   </property>
@@ -753,7 +732,6 @@ picture and change the desktop background once at System Startup</string>
           <widget class="QLabel" name="label_5">
            <property name="font">
             <font>
-             <weight>75</weight>
              <italic>true</italic>
              <bold>true</bold>
             </font>
@@ -779,8 +757,8 @@ picture and change the desktop background once at System Startup</string>
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>615</width>
-              <height>486</height>
+              <width>383</width>
+              <height>274</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_8">
@@ -836,7 +814,6 @@ picture and change the desktop background once at System Startup</string>
                    <widget class="QLabel" name="label_4">
                     <property name="font">
                      <font>
-                      <weight>50</weight>
                       <bold>false</bold>
                      </font>
                     </property>
@@ -966,7 +943,6 @@ picture and change the desktop background once at System Startup</string>
           <widget class="QLabel" name="label_15">
            <property name="font">
             <font>
-             <weight>75</weight>
              <italic>true</italic>
              <bold>true</bold>
             </font>
@@ -1465,26 +1441,10 @@ picture and change the desktop background once at System Startup</string>
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>desktop_notification_checkbox</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>clocksNotifyCheckbox</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>151</x>
-     <y>91</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>156</x>
-     <y>121</y>
-    </hint>
-   </hints>
-  </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="buttonGroup_2"/>
-  <buttongroup name="buttonGroup"/>
   <buttongroup name="listTypeButtonGroup"/>
+  <buttongroup name="buttonGroup"/>
+  <buttongroup name="buttonGroup_2"/>
  </buttongroups>
 </ui>

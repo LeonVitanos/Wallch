@@ -54,8 +54,6 @@ Preferences::Preferences(QWidget *parent) :
 
     //'General' Page
     ui->desktop_notification_checkbox->setChecked(settings->value("notification", false).toBool());
-    ui->clocksNotifyCheckbox->setChecked(settings->value("clocks_notification", true).toBool());
-    ui->clocksNotifyCheckbox->setEnabled(ui->desktop_notification_checkbox->isChecked());
     ui->independent_interval_checkbox->setChecked(settings->value("independent_interval_enabled", true).toBool());
     ui->pause_battery->setChecked(settings->value("pause_on_battery", false).toBool());
     ui->language_combo->setCurrentIndex(settings->value("language", 0).toInt());
@@ -333,7 +331,6 @@ void Preferences::on_saveButton_clicked()
     }
 
     settings->setValue("notification", gv.showNotification);
-    settings->setValue("clocks_notification", ui->clocksNotifyCheckbox->isChecked());
     settings->setValue("rotation", gv.rotateImages);
     settings->setValue("first_timeout", gv.firstTimeout);
     settings->setValue("symlinks", gv.symlinks);
@@ -374,7 +371,6 @@ void Preferences::on_reset_clicked()
     {
         //General
         ui->desktop_notification_checkbox->setChecked(false);
-        ui->clocksNotifyCheckbox->setChecked(false);
         ui->independent_interval_checkbox->setChecked(true);
         ui->language_combo->setCurrentIndex(0);
         ui->startupCheckBox->setChecked(true);
