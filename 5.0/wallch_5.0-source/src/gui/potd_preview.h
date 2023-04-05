@@ -60,7 +60,7 @@ private:
     QString textColor_;
     QString backgroundColor_;
     const QString potdDescription_="The Laughing Kookaburra (Dacelo novaeguineae) is a carnivorous bird in the kingfisher family. Native to eastern Australia, it has also been introduced to parts of New Zealand, Tasmania and Western Australia. Male and female adults are similar in plumage, which is predominantly brown and white. A common and familiar bird, this species of kookaburra is well known for its laughing call. Photo: JJ Harrison";
-    const QStringList potdPreviewImages_ = QStringList() << "http://i.imgur.com/6rRVaA1.jpg" << "http://i.imgur.com/VLD6HRQ.jpg" << "http://melloristudio.com/wallch/potd_preview.jpg";
+    const QStringList potdPreviewImages_ = QStringList() << "http://i.imgur.com/6rRVaA1.jpg" << "http://i.imgur.com/VLD6HRQ.jpg";
 
     TryHard *tryFetch_ = NULL;
 

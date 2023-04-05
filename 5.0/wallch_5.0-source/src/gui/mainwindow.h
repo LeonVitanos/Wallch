@@ -407,7 +407,6 @@ private Q_SLOTS:
     void on_search_up_clicked();
     void on_search_down_clicked();
     void on_actionDonate_triggered();
-    void on_actionDownload_triggered();
     void on_actionReport_A_Bug_triggered();
     void on_actionGet_Help_Online_triggered();
     void on_actionWhat_is_my_screen_resolution_triggered();
@@ -439,10 +438,6 @@ private Q_SLOTS:
     void on_edit_potd_clicked();
     void on_shuffle_images_checkbox_clicked();
     void on_stackedWidget_currentChanged(int page);
-    void on_donateButton_clicked();
-    void on_melloristudio_link_label_linkActivated(const QString &link);
-    void on_donateButton_pressed();
-    void on_donateButton_released();
     void on_random_from_valueChanged(int value);
     void on_random_to_valueChanged(int value2);
     void on_random_time_from_combobox_currentIndexChanged(int index);

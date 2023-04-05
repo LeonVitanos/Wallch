@@ -416,7 +416,6 @@ void MainWindow::setupMenu()
     settingsMenu_->addSeparator();
     settingsMenu_->addAction(tr("History"), this, SLOT(on_actionHistory_triggered()), QKeySequence(tr("Ctrl+H")));
     settingsMenu_->addAction(tr("Statistics"), this, SLOT(on_actionStatistics_triggered()));
-    settingsMenu_->addAction(tr("Download 1000 HD Wallpapers"), this, SLOT(on_actionDownload_triggered()));
     settingsMenu_->addAction(tr("What is my screen resolution?"), this, SLOT(on_actionWhat_is_my_screen_resolution_triggered()));
     settingsMenu_->addSeparator();
     settingsMenu_->addAction(tr("About Wallch"), this, SLOT(on_action_About_triggered()));
@@ -2056,13 +2055,6 @@ void MainWindow::updateScreenLabel()
         }
 
         break;
-
-    case 5:
-
-        changeTextOfScreenLabelTo("Mellori Studio");
-
-        break;
-
     }
 }
 
@@ -4265,9 +4257,6 @@ void MainWindow::loadLiveWebsitePage(){
 void MainWindow::loadMelloriPage()
 {
     loadedPages_[5]=true;
-
-    ui->melloristudio_label->setText(tr("Wallch is developed by")+" <span style=\" font-weight:600; font-style:bold;\">Mellori Studio</span>.");
-    ui->melloristudio_link_label->setText(tr("Learn more about our projects at:")+" <a href=\"http://melloristudio.com\"><span style=\" text-decoration: underline; color:#ff5500;\">melloristudio.com</span></a>");
 }
 
 void MainWindow::openCloseAddLoginAnimationFinished(){
@@ -4582,11 +4571,6 @@ void MainWindow::on_actionDonate_triggered()
     globalParser_->openUrl(DONATE_URL);
 }
 
-void MainWindow::on_actionDownload_triggered()
-{
-    globalParser_->openUrl("http://melloristudio.com/wallch/1000-HD-Wallpapers");
-}
-
 void MainWindow::on_actionReport_A_Bug_triggered()
 {
     globalParser_->openUrl("https://bugs.launchpad.net/wallpaper-changer/+filebug");
@@ -4846,12 +4830,10 @@ void MainWindow::on_stackedWidget_currentChanged(int page)
         ui->help_label->setText("A \"live\" image of the sunlight and the clouds at earth, updating every ½ hour");
     else if(page==2)
         ui->help_label->setText("Outstanding photos that are selected daily from Wikipedia");
-    else if(page==3)
-        ui->help_label->setText("Empty Page");
     else if(page==4)
         ui->help_label->setText("Screenshot of a website");
     else
-        ui->help_label->setText("About Us");
+        ui->help_label->setText("Empty Page");
 
     settings->setValue("current_page" , page);
 }
@@ -4873,26 +4855,6 @@ void MainWindow::update_website_settings()
     settings->setValue("website_final_webpage", ui->final_webpage->text());
     settings->setValue("website_redirect", ui->redirect_checkBox->isChecked());
     settings->sync();
-}
-
-void MainWindow::on_donateButton_clicked()
-{
-    globalParser_->openUrl(DONATE_URL);
-}
-
-void MainWindow::on_melloristudio_link_label_linkActivated(const QString &link)
-{
-    globalParser_->openUrl(link);
-}
-
-void MainWindow::on_donateButton_pressed()
-{
-    ui->donateButton->setIcon(QIcon(":/images/donate_pressed.png"));
-}
-
-void MainWindow::on_donateButton_released()
-{
-    ui->donateButton->setIcon(QIcon(":/images/donate.png"));
 }
 
 // Animations in case user changes preview screen to show/hide
