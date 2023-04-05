@@ -88,18 +88,17 @@ void PotdViewer::urlQDate()
      * Step 1
      * Find the html link, and download its source
      */
+
     ui->saveimageButton->setEnabled(false);
     ui->save_progressBar->hide();
 
     htmlSource_.clear();
 
-    if((selectedDate_.year()==2004 && (selectedDate_.month()==11 || selectedDate_.month()==12)) || selectedDate_.year()==2005 || selectedDate_.year()==2006){
+    if((selectedDate_.year()==2004 && (selectedDate_.month()==11 || selectedDate_.month()==12)) || selectedDate_.year()==2005 || selectedDate_.year()==2006)
         url_ = "https://en.wikipedia.org/wiki/Wikipedia:Picture_of_the_day/"+  Global::monthInEnglish(selectedDate_.month()) + selectedDate_.toString("_d,_yyyy");
-    }
     else
-    {
         url_ = "https://en.wikipedia.org/wiki/Template:POTD/"+selectedDate_.toString("yyyy-MM-dd");
-    }
+
     // schedule the request
     startRequest(url_);
 }
@@ -110,13 +109,34 @@ void PotdViewer::startRequest(QUrl url)
         reply_->deleteLater();
         reply_=NULL;
     }
+
     reply_ = qnam_.get(QNetworkRequest(url));
     connect(reply_, SIGNAL(finished()), this, SLOT(httpFinished()));
     connect(reply_, SIGNAL(readyRead()), this, SLOT(httpReadyRead()));
 }
 
+void PotdViewer::startRequestAlternative(QUrl url)
+{
+    if(replyAlt_){
+        replyAlt_->deleteLater();
+        replyAlt_=NULL;
+    }
+
+    replyAlt_ = new QProcess(this);
+    replyAlt_->start("wget", QStringList() << "-O" << QDir(QDir::currentPath()).filePath("potd") << url.toString());
+    connect(replyAlt_ , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(httpFinished()));
+    connect(replyAlt_ , SIGNAL(error(QProcess::ProcessError)), this, SLOT(httpErrorOccured()));
+}
+
 void PotdViewer::movieDestroyed(){
     originalMovie_=NULL;
+}
+
+void PotdViewer::httpErrorOccured(){
+    enableWidgets(true);
+    ui->label->setText(tr("Check your internet connection or try another date. Maybe Wikipedia\nhasn't selected a picture of the day for")+" "+ui->dateEdit->date().toString());
+    ui->potdDescription->clear();
+    QMessageBox::information(this, "HTTPS",tr("Download failed")+": "+reply_->errorString()+".");
 }
 
 void PotdViewer::httpFinished()
@@ -126,27 +146,37 @@ void PotdViewer::httpFinished()
      * When finished check for errors or redirection page (tough wikipedia has not redirection you never know)
      */
 
-    if(!reply_){
+    if(!reply_ && !replyAlt_)
         return;
-    }
 
-    QVariant redirectionTarget = reply_->attribute(QNetworkRequest::RedirectionTargetAttribute);
-    if (reply_->error()) {
-        enableWidgets(true);
-        ui->label->setText(tr("Check your internet connection or try another date. Maybe Wikipedia\nhasn't selected a picture of the day for")+" "+ui->dateEdit->date().toString());
-        ui->potdDescription->clear();
-        QMessageBox::information(this, "HTTPS",tr("Download failed")+": "+reply_->errorString()+".");
-        return;
-    } else if (!redirectionTarget.isNull()) {
-        QUrl newUrl = url_.resolved(redirectionTarget.toUrl());
-        url_ = newUrl;
+    if (reply_ && reply_->error()){
+        QUrl url = reply_->url();
         reply_->deleteLater();
-        startRequest(url_);
+        reply_ = NULL;
+        startRequestAlternative(url);
         return;
     }
 
-    reply_->deleteLater();
-    reply_ = NULL;
+    if(reply_){
+        QVariant redirectionTarget = reply_->attribute(QNetworkRequest::RedirectionTargetAttribute);
+        if (!redirectionTarget.isNull()) {
+            QUrl newUrl = url_.resolved(redirectionTarget.toUrl());
+            url_ = newUrl;
+            reply_->deleteLater();
+            startRequest(url_);
+            return;
+        }
+        reply_->deleteLater();
+        reply_ = NULL;
+    }
+    else{
+        QFile f("potd");
+        if (!f.open(QFile::ReadOnly | QFile::Text)) return;
+        QTextStream in(&f);
+        htmlSource_ = in.readAll();
+        replyAlt_->deleteLater();
+        replyAlt_ = NULL;
+    }
 
     if(!skipStepsAfterThree_)
     {
@@ -160,7 +190,7 @@ void PotdViewer::httpFinished()
         int imageSummixCount=0;
         if(htmlSource_.contains("/wiki/File:"))
         {
-            QRegExp filter("<a href=\"/wiki/File:(.+)</a></small>");
+            QRegExp filter("/wiki/File:(.+)");
             int result = filter.indexIn(htmlSource_);
             if(result != -1){
                 htmlSource_=filter.cap(1);
@@ -217,7 +247,11 @@ void PotdViewer::httpFinished()
 
         skipStepsAfterThree_=true;
         url_="https://en.wikipedia.org/wiki/File:"+imageSummix.left(imageSummixCount-1);
-        startRequest(url_);
+
+        if(reply_)
+            startRequest(url_);
+        else
+            startRequestAlternative(url_);
     }
     else
     {
@@ -277,9 +311,18 @@ void PotdViewer::httpFinished()
         ui->save_progressBar->setValue(0);
         ui->save_progressBar->show();
         ui->label->clear();
-        reply_ = qnam_.get(QNetworkRequest(directLinkOfPreviewImage_));
-        connect(reply_, SIGNAL(finished()),this, SLOT(imageDownloaded()));
-        connect(reply_, SIGNAL(downloadProgress(qint64,qint64)),this, SLOT(updateDataReadProgress(qint64,qint64)));
+
+        if(reply_){
+            reply_ = qnam_.get(QNetworkRequest(directLinkOfPreviewImage_));
+            connect(reply_, SIGNAL(finished()),this, SLOT(imageDownloaded()));
+            connect(reply_, SIGNAL(downloadProgress(qint64,qint64)),this, SLOT(updateDataReadProgress(qint64,qint64)));
+        }
+        else{
+            replyAlt_ = new QProcess(this);
+            replyAlt_->start("wget", QStringList() << "-O" << QDir(QDir::currentPath()).filePath("potd") << directLinkOfPreviewImage_);
+
+            connect(replyAlt_ , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(imageDownloaded()));
+        }
     }
 }
 
@@ -290,22 +333,31 @@ void PotdViewer::imageDownloaded()
      * Set the image to the label
      */
 
-    if(reply_==NULL){
+    if(!reply_ && !replyAlt_)
         return;
-    }
 
     if(directLinkOfFullImage_.endsWith("gif")){
         QBuffer *buffer = new QBuffer(this);
-        buffer->open(QIODevice::WriteOnly);
-        buffer->write(reply_->readAll());
-        buffer->close();
-        originalMovie_ = new QMovie(buffer, "GIF", this);
+        originalMovie_ = NULL;
+        if(reply_){
+            buffer->open(QIODevice::WriteOnly);
+            buffer->write(reply_->readAll());
+            buffer->close();
+            originalMovie_ = new QMovie(buffer, "GIF", this);
+        }
+        else{
+            originalMovie_ = new QMovie(QDir(QDir::currentPath()).filePath("potd"), "GIF", this);
+        }
         connect(originalMovie_, SIGNAL(destroyed()), this, SLOT(movieDestroyed()));
     }
     else
     {
         QImage image;
-        image.loadFromData(reply_->readAll());
+        if(reply_)
+            image.loadFromData(reply_->readAll());
+        else
+            image = QImage(QDir(QDir::currentPath()).filePath("potd"));
+
         if(image.isNull()){
             return;
         }

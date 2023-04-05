@@ -52,6 +52,7 @@ private:
     bool downloadingImage_=false;
     QNetworkAccessManager qnam_;
     QNetworkReply *reply_=NULL;
+    QProcess *replyAlt_=NULL;
     QImage originalImage_;
     QMovie *originalMovie_=NULL;
     int httpGetId_;
@@ -64,12 +65,14 @@ private:
     QString htmlSource_;
     QString formatOfImage_;
     void startRequest(QUrl url);
+    void startRequestAlternative(QUrl url);
     void urlQDate();
     void enableWidgets(bool state);
 
 private Q_SLOTS:
     void movieDestroyed();
     void httpFinished();
+    void httpErrorOccured();
     void httpReadyRead();
     void updateDataReadProgress(qint64 bytesRead, qint64 totalBytes);
     void updateDataReadProgress_save(qint64 bytesRead, qint64 totalBytes);
