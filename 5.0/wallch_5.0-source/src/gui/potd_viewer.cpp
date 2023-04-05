@@ -190,11 +190,10 @@ void PotdViewer::httpFinished()
         int imageSummixCount=0;
         if(htmlSource_.contains("/wiki/File:"))
         {
-            QRegExp filter("/wiki/File:(.+)");
-            int result = filter.indexIn(htmlSource_);
-            if(result != -1){
-                htmlSource_=filter.cap(1);
-            }
+            QRegularExpression filter("/wiki/File:(.+)");
+            QRegularExpressionMatch match = filter.match(htmlSource_);
+            if(match.hasMatch())
+                htmlSource_=match.captured(1);
 
             while (!imageSummix.contains("\""))
             {
@@ -217,19 +216,19 @@ void PotdViewer::httpFinished()
 
         if(htmlSource_.contains("<p>") && htmlSource_.contains("</small>"))
         {
-            QRegExp filter2("<p>(.+)</small>");
-            int result2 = filter2.indexIn(htmlSource_);
-            if(result2 != -1){
-                htmlSource_=filter2.cap(1);
+            QRegularExpression filter2("<p>(.+)</small>");
+            QRegularExpressionMatch match = filter2.match(htmlSource_);
+            if(match.hasMatch()){
+                htmlSource_=match.captured(1);
             }
             htmlSource_.replace("/wiki", "https://en.wikipedia.org/wiki");
             ui->potdDescription->setText(htmlSource_);
         }
         else if(htmlSource_.contains("<p>") && htmlSource_.contains("</p>")){
-            QRegExp filter2("<p>(.+)</p>");
-            int result2 = filter2.indexIn(htmlSource_);
-            if(result2 != -1){
-                htmlSource_=filter2.cap(1);
+            QRegularExpression filter2("<p>(.+)</p>");
+            QRegularExpressionMatch match = filter2.match(htmlSource_);
+            if(match.hasMatch()){
+                htmlSource_=match.captured(1);
             }
             htmlSource_.replace("/wiki", "https://en.wikipedia.org/wiki");
             ui->potdDescription->setText(htmlSource_);
@@ -263,20 +262,15 @@ void PotdViewer::httpFinished()
         */
 
         if(htmlSource_.contains("Deleted_photo.png"))
-        {
             directLinkOfFullImage_=directLinkOfPreviewImage_="https://upload.wikimedia.org/wikipedia/commons/e/e0/Deleted_photo.png";
-        }
         else
         {
             if(htmlSource_.contains("fullImageLink"))
             {
-                QRegExp filter("fullImageLink\" id=\"file\"><a href=\"(.+)\"");
-                filter.setMinimal(true);
-                int result = filter.indexIn(htmlSource_);
-                if(result != -1)
-                {
-                    directLinkOfFullImage_=filter.cap(1);
-                }
+                QRegularExpression filter("fullImageLink\" id=\"file\"><a href=\"(.+)\"", QRegularExpression::InvertedGreedinessOption);
+                QRegularExpressionMatch match = filter.match(htmlSource_);
+                if(match.hasMatch())
+                    directLinkOfFullImage_=match.captured(1);
                 directLinkOfFullImage_="https:"+directLinkOfFullImage_;
             }
             else
@@ -288,19 +282,14 @@ void PotdViewer::httpFinished()
             }
 
             if(htmlSource_.contains("Size of this preview")){
-                QRegExp filter2("Size of this preview: <a href=\"(.+)\"");
-                filter2.setMinimal(true);
-                int result2 = filter2.indexIn(htmlSource_);
-                if(result2 != -1)
-                {
-                    directLinkOfPreviewImage_=filter2.cap(1);
-                }
+                QRegularExpression filter("Size of this preview: <a href=\"(.+)\"", QRegularExpression::InvertedGreedinessOption);
+                QRegularExpressionMatch match = filter.match(htmlSource_);
+                if(match.hasMatch())
+                    directLinkOfPreviewImage_=match.captured(1);
                 directLinkOfPreviewImage_="https:"+directLinkOfPreviewImage_;
             }
             else
-            {
                 directLinkOfPreviewImage_=directLinkOfFullImage_;
-            }
         }
 
         /*
@@ -337,9 +326,9 @@ void PotdViewer::imageDownloaded()
         return;
 
     if(directLinkOfFullImage_.endsWith("gif")){
-        QBuffer *buffer = new QBuffer(this);
         originalMovie_ = NULL;
         if(reply_){
+            QBuffer *buffer = new QBuffer(this);
             buffer->open(QIODevice::WriteOnly);
             buffer->write(reply_->readAll());
             buffer->close();
@@ -358,9 +347,9 @@ void PotdViewer::imageDownloaded()
         else
             image = QImage(QDir(QDir::currentPath()).filePath("potd"));
 
-        if(image.isNull()){
+        if(image.isNull())
             return;
-        }
+
         originalImage_ = image;
     }
 

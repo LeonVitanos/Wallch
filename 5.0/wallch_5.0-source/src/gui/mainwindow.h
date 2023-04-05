@@ -155,7 +155,7 @@ private:
     QTranslator *translator_;
     WebsitePreview *webPreview_;
 
-    QRegExp *match_;
+    QRegularExpression *match_;
     QMovie *processingRequestGif_;
     QPropertyAnimation *openCloseSearch_;
     QPropertyAnimation *rightWidgetAnimation_;

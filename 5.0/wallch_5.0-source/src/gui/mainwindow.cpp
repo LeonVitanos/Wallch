@@ -87,9 +87,8 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     ui->process_request_label->setMovie(processingRequestGif_);
 
     //for manually searching for files or re-selecting a picture after a folder contents have changed
-    match_ = new QRegExp();
-    match_->setCaseSensitivity(Qt::CaseInsensitive);
-    match_->setPatternSyntax(QRegExp::Wildcard);
+    match_ = new QRegularExpression();
+    match_->setPatternOptions(QRegularExpression::CaseInsensitiveOption);
 
     QTimer::singleShot(10, this, SLOT(setButtonColor()));
     QTimer::singleShot(20, this, SLOT(setStyle()));
@@ -2719,7 +2718,7 @@ void MainWindow::searchFor(const QString &term){
             searchList_ << globalParser_->basenameOf(ui->wallpapersList->item(i)->text());
         }
     }
-    match_->setPattern("*"+term+"*");
+    match_->setPattern(QRegularExpression::wildcardToRegularExpression("*"+term+"*"));
     currentSearchItemIndex = searchList_.indexOf(*match_, 0);
     if(currentSearchItemIndex < 0){
         doesntMatch();

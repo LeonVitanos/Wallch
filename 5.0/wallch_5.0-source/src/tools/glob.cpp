@@ -750,21 +750,20 @@ bool Global::remove(const QString &files){
 
         rmDir.setFilter(QDir::NoDotAndDotDot | QDir::Files);
 
-        QRegExp rmValidation;
-        rmValidation.setPatternSyntax(QRegExp::Wildcard);
-        rmValidation.setPattern(basenameOf(files));
+        QRegularExpression rmValidation;
+        rmValidation.setPattern(QRegularExpression::wildcardToRegularExpression(basenameOf(files)));
 
         bool result = true;
 
         Q_FOREACH(QString currentFile, rmDir.entryList()){
-            if(rmValidation.indexIn(currentFile)!=-1){
+            if(rmValidation.match(currentFile).hasMatch()){
                 //currentFile matches the validation
                 if(!QFile::remove(parentDirectory+"/"+currentFile)){
                     Global::error("Could not remove file '"+parentDirectory+"/"+currentFile+"'. Skipping...");
                     result = false;
+                    break;
                 }
             }
-
         }
         //result is false if at least one file wasn't deleted properly.
         return result;
@@ -793,16 +792,13 @@ QString Global::getFilename(const QString &file){
 
     parentDir.setFilter(QDir::NoDotAndDotDot | QDir::Files);
 
-    QRegExp fileValidation;
-    fileValidation.setPatternSyntax(QRegExp::Wildcard);
-    fileValidation.setPattern(basenameOf(file));
+    QRegularExpression fileValidation;
+    fileValidation.setPattern(QRegularExpression::wildcardToRegularExpression(basenameOf(file)));
 
     Q_FOREACH(QString curFile, parentDir.entryList()){
-        if(fileValidation.indexIn(curFile)!=-1){
+        if(fileValidation.match(curFile).hasMatch())
             return parentDirectory+'/'+curFile;
-        }
-
-    }
+     }
     return QString();
 
 }
