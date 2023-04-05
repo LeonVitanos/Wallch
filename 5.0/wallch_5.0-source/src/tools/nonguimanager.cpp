@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "nonguimanager.h"
 
 #include <QtConcurrent/QtConcurrentRun>
-#include <QDesktopWidget>
+#include <QScreen>
 
 #include <iostream>
 #include <getopt.h>
@@ -1925,9 +1925,9 @@ void NonGuiManager::viralSettingsOperations(){
         QApplication::installTranslator(translator);
     }
 
-    QDesktopWidget screen;
-    gv.screenWidth = screen.width();
-    gv.screenHeight = screen.height();
+    QGuiApplication::primaryScreen()->availableGeometry().width();
+    gv.screenWidth = QGuiApplication::primaryScreen()->availableGeometry().width();
+    gv.screenHeight = QGuiApplication::primaryScreen()->availableGeometry().height();
 
     if(settings->value("first-run", true).toBool()){
         settings->setValue("first-run", false);
@@ -2368,10 +2368,6 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
                 break;
             case 'c':
             {
-                // QDesktopWidget wants QApplication
-                QApplication app(argc, argv);
-                Q_UNUSED(app);
-
                 viralSettingsOperations();
                 wallpaperManager_ = new WallpaperManager();
 

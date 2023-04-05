@@ -34,7 +34,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QShortcut>
 #include <QProcess>
 #include <QKeyEvent>
-#include <QDesktopWidget>
+#include <QScreen>
 
 Preferences::Preferences(QWidget *parent) :
     QDialog(parent),
@@ -45,7 +45,7 @@ Preferences::Preferences(QWidget *parent) :
     ui->stackedWidget->setCurrentIndex(0);
     setupShortcuts();
     //move dialog to center of the screen
-    this->move(QApplication::desktop()->availableGeometry().center() - this->rect().center());
+    this->move(QGuiApplication::primaryScreen()->availableGeometry().center() - this->rect().center());
 
     /*
      * On the constructor all we need to do is to take the saved values from our .conf files (on Linux)

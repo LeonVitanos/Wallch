@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QFontMetrics>
 #include <QPainter>
 #include <QtConcurrent/QtConcurrent>
-#include <QDesktopWidget>
+#include <QScreen>
 
 PotdPreview::PotdPreview(QWidget *parent) :
     QDialog(parent),
@@ -68,7 +68,7 @@ PotdPreview::PotdPreview(QWidget *parent) :
     originalBottomTopMargin_=gv.potdDescriptionBottomTopMargin;
 
     //Moving the window to the center of screen!
-    this->move(QApplication::desktop()->availableGeometry().center() - this->rect().center());
+    this->move(QGuiApplication::primaryScreen()->availableGeometry().center() - this->rect().center());
 
     if(QFile::exists(gv.wallchHomePath+POTD_PREVIEW_IMAGE)){
         fetchFinished(QImage(gv.wallchHomePath+POTD_PREVIEW_IMAGE));
@@ -133,7 +133,7 @@ void PotdPreview::imageFetchfailed(){
     ui->progressBar->hide();
     ui->line->hide();
     this->resize(this->minimumWidth(), this->minimumHeight());
-    this->move(QDesktopWidget().availableGeometry().center() - this->rect().center());
+    this->move(QGuiApplication::primaryScreen()->availableGeometry().center() - this->rect().center());
 }
 
 void PotdPreview::downloadedImage(QByteArray array){

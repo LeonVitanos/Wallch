@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QSettings>
 #include <QFileDialog>
 #include <QImageReader>
-#include <QDesktopWidget>
+#include <QScreen>
 
 LEPoint::LEPoint(QWidget *parent) :
     QDialog(parent),
@@ -227,7 +227,7 @@ void LEPoint::cannotFetchLeImage()
     ui->progressBar->hide();
     ui->infoLabel->setText(tr("The Live Earth image used for setting the mark points, failed to download. Please check your internet connection or try later."));
     this->resize(this->minimumWidth(), this->minimumHeight());
-    this->move(QDesktopWidget().availableGeometry().center() - this->rect().center());
+    this->move(QGuiApplication::primaryScreen()->availableGeometry().center() - this->rect().center());
 }
 
 void LEPoint::leImageFetchSuccess(const QByteArray &array)

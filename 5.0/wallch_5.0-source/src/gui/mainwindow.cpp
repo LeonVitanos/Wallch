@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QRadioButton>
 #include <QFileDialog>
 #include <QNetworkReply>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QScrollBar>
 #include <QStandardItem>
 #include <QColorDialog>
@@ -58,9 +58,8 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     wallpaperManager_ = wallpaperManager;
     websiteSnapshot_ = websiteSnapshot;
 
-    QDesktopWidget desktopWidget;
+    availableGeometry_ = QGuiApplication::primaryScreen()->availableGeometry();
 
-    availableGeometry_ = desktopWidget.availableGeometry(desktopWidget.screen());
     imagePreviewResizeFactorX_ = SCREEN_LABEL_SIZE_X*2.0/(gv.screenWidth*1.0);
     imagePreviewResizeFactorY_ = SCREEN_LABEL_SIZE_Y*2.0/(gv.screenHeight*1.0);
 
@@ -76,7 +75,7 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
 
 
     //Moving the window to the center of screen!
-    this->move(desktopWidget.availableGeometry().center() - this->rect().center());
+    this->move(availableGeometry_.center() - this->rect().center());
 
     processingOnlineRequest_ = false;
 
