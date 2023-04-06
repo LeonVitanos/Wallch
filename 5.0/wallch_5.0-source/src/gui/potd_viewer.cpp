@@ -59,27 +59,24 @@ PotdViewer::~PotdViewer()
 
 void PotdViewer::resizeEvent(QResizeEvent *)
 {
-    if(ui->label->pixmap())
-    {
-        QSize scaledSize = originalImage_.size();
-        scaledSize.scale(ui->label->size(), Qt::KeepAspectRatio);
-        if (!ui->label->pixmap() || scaledSize != ui->label->pixmap()->size()){
-            updateLabel();
-        }
-    }
+    if(ui->label->pixmap(Qt::ReturnByValue).isNull())
+        return;
+
+    QSize scaledSize = originalImage_.size();
+    scaledSize.scale(ui->label->size(), Qt::KeepAspectRatio);
+    if (scaledSize != ui->label->pixmap(Qt::ReturnByValue).size())
+        updateLabel();
 }
 
 void PotdViewer::updateLabel()
 {
-    if(directLinkOfFullImage_.endsWith("gif"))
-    {
+    if(directLinkOfFullImage_.endsWith("gif")){
         ui->label->setMovie(originalMovie_);
         originalMovie_->start();
     }
     else
-    {
-        ui->label->setPixmap(Global::roundedCorners(originalImage_.scaled(ui->label->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation), 5));
-    }
+        ui->label->setPixmap(Global::roundedCorners(originalImage_.scaled(ui->label->size(),
+                                                                          Qt::KeepAspectRatio, Qt::SmoothTransformation), 5));
 }
 
 void PotdViewer::urlQDate()

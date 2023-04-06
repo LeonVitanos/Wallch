@@ -110,14 +110,13 @@ PotdPreview::~PotdPreview()
 
 void PotdPreview::resizeEvent(QResizeEvent *)
 {
-    if(loadingWindow || currentPixmap_.isNull())
+    if(loadingWindow || currentPixmap_.isNull() || ui->potdLabel->pixmap(Qt::ReturnByValue).isNull())
         return;
 
     QSize scaledSize = currentPixmap_.size();
     scaledSize.scale(ui->potdLabel->size(), Qt::KeepAspectRatio);
-    if (!ui->potdLabel->pixmap() || scaledSize != ui->potdLabel->pixmap()->size()){
+    if (scaledSize != ui->potdLabel->pixmap(Qt::ReturnByValue).size())
         updateLabel();
-    }
 }
 
 void PotdPreview::updateLabel()

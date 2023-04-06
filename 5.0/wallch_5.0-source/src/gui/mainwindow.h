@@ -129,6 +129,8 @@ private:
 
     QList<QLabel*> menuSeparators_;
 
+    QButtonGroup *btn_group;
+
     //building menubar's menu
     QMenu *settingsMenu_;
     QMenu *helpMenu_;
@@ -163,6 +165,8 @@ private:
     QPropertyAnimation *openCloseAddLogin_;
     QGraphicsOpacityEffect* opacityEffect_;
     QGraphicsOpacityEffect* opacityEffect2_;
+    QPropertyAnimation *increaseOpacityAnimation;
+    QPropertyAnimation *decreaseOpacityAnimation;
 #ifdef Q_OS_UNIX
     QProcess *unzipArchive_;
 #else
@@ -259,13 +263,13 @@ private:
     void animateProgressbarOpacity(bool show);
     void findSeconds(bool typeCountSeconds);
     void startPauseWallpaperChangingProcess();
+    void animateScreenLabel(bool onlyHide);
     void loadWallpapersPage();
     void loadLePage();
     void loadPotdPage();
     void loadWallpaperClocksPage();
     void loadLiveWebsitePage();
     void loadMelloriPage();
-    void setPreviewImage();
     void savePicturesLocations();
     void processRequestStart();
     void processRequestStop();
@@ -276,7 +280,6 @@ private:
     void doesntMatch();
     void setProgressbarsValue(short value);
     void imageTransition(const QString &filename = QString());
-    void hideScreenLabel();
     void changeTextOfScreenLabelTo(const QString &text);
     bool updateIconOf(int row);
     bool atLeastOneFolderFromTheSetExists();
@@ -301,6 +304,7 @@ private:
     bool currentFolderExists();
     QImage scaleWallpapersPreview(QString filename);
     QStringList getCurrentWallpaperFolders();
+    void iconsPathsChanged();
 
 private Q_SLOTS:
     void timeSpinboxChanged();
@@ -373,7 +377,7 @@ private Q_SLOTS:
     void restartPotdIfRunningAfterSettingChange();
     void restartLeIfRunningAfterSettingChange();
     void justChangeWallpaper();
-    void setupAnimationsAndChangeImage();
+    void setPreviewImage();
     void unhoverMenuButton();
     void beginFixCacheForFolders();
     void wait_preview_changed();
@@ -428,12 +432,7 @@ private Q_SLOTS:
     void on_deactivate_potd_clicked();
     void on_activate_website_clicked();
     void on_deactivate_website_clicked();
-    void on_page_0_wallpapers_clicked();
-    void on_page_1_earth_clicked();
-    void on_page_2_potd_clicked();
-    void on_page_3_clock_clicked();
-    void on_page_4_web_clicked();
-    void on_page_5_other_clicked();
+    void page_button_clicked(int btn);
     void on_include_description_checkBox_clicked(bool checked);
     void on_edit_potd_clicked();
     void on_shuffle_images_checkbox_clicked();

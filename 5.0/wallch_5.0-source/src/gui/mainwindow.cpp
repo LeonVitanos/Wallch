@@ -63,6 +63,14 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     imagePreviewResizeFactorX_ = SCREEN_LABEL_SIZE_X*2.0/(gv.screenWidth*1.0);
     imagePreviewResizeFactorY_ = SCREEN_LABEL_SIZE_Y*2.0/(gv.screenHeight*1.0);
 
+    btn_group = new QButtonGroup(this);
+    btn_group->addButton(ui->page_0_wallpapers, 0);
+    btn_group->addButton(ui->page_1_earth, 1);
+    btn_group->addButton(ui->page_2_potd, 2);
+    btn_group->addButton(ui->page_3_clock, 3);
+    btn_group->addButton(ui->page_4_web, 4);
+    btn_group->addButton(ui->page_5_other, 5);
+
     setupMenu();
     connectSignalSlots();
     retrieveSettings();
@@ -72,7 +80,6 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     applySettings();
     continueAlreadyRunningFeature(timeoutCount, lastRandomDelay);
     setAcceptDrops(true);
-
 
     //Moving the window to the center of screen!
     this->move(availableGeometry_.center() - this->rect().center());
@@ -107,45 +114,23 @@ void MainWindow::closeEvent(QCloseEvent * event)
 
 void MainWindow::actionsOnClose()
 {
-    if(loadedPages_[0]){
+    if(loadedPages_[0])
         savePicturesLocations();
-    }
+
     appAboutToClose_ = true;
     this->hide();
 }
 
 void MainWindow::resizeEvent(QResizeEvent *e){
-    if(!gv.mainwindowLoaded){
+    if(!gv.mainwindowLoaded)
         return;
-    }
-    if(ui->stackedWidget->currentIndex() == 0){
+
+    if(ui->stackedWidget->currentIndex() == 0)
         launchTimerToUpdateIcons();
-    }
 
-    //screen preview is not getting updated when we resize the window, so we do it manually
-    if(ui->screen_label->pixmap())
-    {
-        if(gv.previewImagesOnScreen && gv.mainwindowLoaded)
-        {
-            QPixmap *pixmap = new QPixmap(*ui->screen_label->pixmap());
-            if(pixmap){
-                ui->screen_label_transition->setPixmap(*pixmap);
-            }
-            else
-            {
-                ui->screen_label_transition->clear();
-            }
-
-            ui->screen_label->setPixmap(*pixmap);
-            delete pixmap;
-        }
-    }
-    else
-    {
-        QString temp = ui->screen_label_text->text();
-        ui->screen_label_text->clear();
-        ui->screen_label_text->setText(temp);
-    }
+    ui->screen_label->update();
+    ui->screen_label_transition->update();
+    ui->screen_label_text->update();
 
     QMainWindow::resizeEvent(e);
 }
@@ -263,12 +248,13 @@ void MainWindow::connectSignalSlots(){
     connect(ui->password, SIGNAL(textChanged(QString)), this, SLOT(update_website_settings()));
     connect(ui->final_webpage, SIGNAL(textChanged(QString)), this, SLOT(update_website_settings()));
     connect(ui->wallpapersList->verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(launchTimerToUpdateIcons()));
-    connect(scaleWatcher_, SIGNAL(finished()), this, SLOT(setupAnimationsAndChangeImage()));
+    connect(scaleWatcher_, SIGNAL(finished()), this, SLOT(setPreviewImage()));
     connect(settingsMenu_, SIGNAL(aboutToHide()), this, SLOT(unhoverMenuButton()));
     connect(ui->days_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(ui->hours_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(ui->minutes_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(ui->seconds_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
+    connect(btn_group, SIGNAL(buttonClicked(int)), this, SLOT(page_button_clicked(int)));
 }
 
 void MainWindow::retrieveSettings()
@@ -343,18 +329,6 @@ void MainWindow::setupKeyboardShortcuts(){
     (void) new QShortcut(Qt::Key_Escape, this, SLOT(escapePressed()));
     (void) new QShortcut(Qt::Key_Delete, this, SLOT(deletePressed()));
     (void) new QShortcut(Qt::ALT + Qt::Key_Return, this, SLOT(showProperties()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_1, this, SLOT(on_page_0_wallpapers_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_2, this, SLOT(on_page_1_earth_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_3, this, SLOT(on_page_2_potd_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_4, this, SLOT(on_page_3_clock_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_5, this, SLOT(on_page_4_web_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_6, this, SLOT(on_page_5_other_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_1, this, SLOT(on_page_0_wallpapers_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_2, this, SLOT(on_page_1_earth_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_3, this, SLOT(on_page_2_potd_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_4, this, SLOT(on_page_3_clock_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_5, this, SLOT(on_page_4_web_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_6, this, SLOT(on_page_5_other_clicked()));
     (void) new QShortcut(Qt::CTRL + Qt::Key_F, this, SLOT(showHideSearchBox()));
     (void) new QShortcut(Qt::Key_Return, this, SLOT(enterPressed()));
     (void) new QShortcut(Qt::CTRL + Qt::Key_PageUp, this, SLOT(previousPage()));
@@ -394,6 +368,20 @@ void MainWindow::initializePrivateVariables(Global *globalParser, ImageFetcher *
     opacityEffect_ = new QGraphicsOpacityEffect(this);
     opacityEffect2_ = new QGraphicsOpacityEffect(this);
     scaleWatcher_ = new QFutureWatcher<QImage>(this);
+
+    increaseOpacityAnimation = new QPropertyAnimation();
+    increaseOpacityAnimation->setTargetObject(opacityEffect_);
+    increaseOpacityAnimation->setPropertyName("opacity");
+    increaseOpacityAnimation->setDuration(IMAGE_TRANSITION_SPEED);
+    increaseOpacityAnimation->setEndValue(1);
+    increaseOpacityAnimation->setEasingCurve(QEasingCurve::OutQuad);
+
+    decreaseOpacityAnimation = new QPropertyAnimation();
+    decreaseOpacityAnimation->setTargetObject(opacityEffect2_);
+    decreaseOpacityAnimation->setPropertyName("opacity");
+    decreaseOpacityAnimation->setDuration(IMAGE_TRANSITION_SPEED);
+    decreaseOpacityAnimation->setEndValue(0);
+    decreaseOpacityAnimation->setEasingCurve(QEasingCurve::OutQuad);
 }
 
 void MainWindow::setupMenu()
@@ -506,13 +494,6 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
     {
         loadWallpapersPage();
 
-        if(ui->wallpapersList->count() < LEAST_WALLPAPERS_FOR_START){
-            startButtonsSetEnabled(false);
-        }
-        else{
-            startButtonsSetEnabled(true);
-        }
-
         if(gv.processPaused){
             actAsStart_=true;
             ui->startButton->setText(tr("&Start"));
@@ -555,14 +536,14 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
         ui->activate_livearth->setEnabled(false);
         ui->deactivate_livearth->setEnabled(true);
         startUpdateSeconds();
-        on_page_1_earth_clicked();
+        page_button_clicked(1);
         animateProgressbarOpacity(1);
     }
     else if(gv.potdRunning)
     {
         ui->deactivate_potd->setEnabled(true);
         ui->activate_potd->setEnabled(false);
-        on_page_2_potd_clicked();
+        page_button_clicked(2);
         startPotd(false);
     }
     else if(gv.liveWebsiteRunning)
@@ -571,7 +552,7 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
         ui->deactivate_website->setEnabled(true);
         ui->activate_website->setEnabled(false);
         startUpdateSeconds();
-        on_page_4_web_clicked();
+        page_button_clicked(4);
         animateProgressbarOpacity(1);
     }
     else
@@ -581,28 +562,7 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
         previousAndNextButtonsSetEnabled(false);
 
         hideTimeForNext();
-
-        switch(settings->value("current_page", 0).toInt()){
-        default:
-        case 0:
-            on_page_0_wallpapers_clicked();
-            break;
-        case 1:
-            on_page_1_earth_clicked();
-            break;
-        case 2:
-            on_page_2_potd_clicked();
-            break;
-        case 3:
-            on_page_3_clock_clicked();
-            break;
-        case 4:
-            on_page_4_web_clicked();
-            break;
-        case 5:
-            on_page_5_other_clicked();
-            break;
-        }
+        page_button_clicked(settings->value("current_page", 0).toInt());
 
         //the app has opened normally, so there is no point in keeping a previous independent interval
         if(gv.independentIntervalEnabled){
@@ -727,46 +687,28 @@ QImage MainWindow::scaleWallpapersPreview(QString filename){
     return reader.read();
 }
 
-void MainWindow::setupAnimationsAndChangeImage(){
-    if(ui->screen_label->pixmap())
-    {
-        ui->screen_label_transition->setPixmap(*ui->screen_label->pixmap());
-    }
-    else
-    {
+void MainWindow::animateScreenLabel(bool onlyHide){
+    if(!gv.previewImagesOnScreen || !gv.mainwindowLoaded)
+        return;
+
+    if(ui->screen_label->pixmap(Qt::ReturnByValue).isNull())
         ui->screen_label_transition->clear();
+    else{
+        ui->screen_label_transition->setPixmap(ui->screen_label->pixmap(Qt::ReturnByValue));
+
+        opacityEffect2_->setOpacity(true);
+        ui->screen_label_transition->setGraphicsEffect(opacityEffect2_);
+        decreaseOpacityAnimation->setStartValue(opacityEffect2_->opacity());
+        decreaseOpacityAnimation->start();
     }
 
-    ui->screen_label_text->clear();
-
-    opacityEffect_->setOpacity(false);
-    ui->screen_label->setGraphicsEffect(opacityEffect_);
-    QPropertyAnimation* increaseOpacityAnimation = new QPropertyAnimation(this);
-    increaseOpacityAnimation->setTargetObject(opacityEffect_);
-    increaseOpacityAnimation->setPropertyName("opacity");
-    increaseOpacityAnimation->setDuration(IMAGE_TRANSITION_SPEED);
-    increaseOpacityAnimation->setStartValue(opacityEffect_->opacity());
-    increaseOpacityAnimation->setEndValue(1);
-    increaseOpacityAnimation->setEasingCurve(QEasingCurve::OutQuad);
-    increaseOpacityAnimation->start(QAbstractAnimation::DeleteWhenStopped);
-
-    if(ui->screen_label->isHidden()){
-        ui->screen_label->show();
-    }
-
-    opacityEffect2_->setOpacity(true);
-    ui->screen_label_transition->setGraphicsEffect(opacityEffect2_);
-    QPropertyAnimation* decreaseOpacityAnimation = new QPropertyAnimation(this);
-    decreaseOpacityAnimation->setTargetObject(opacityEffect2_);
-    decreaseOpacityAnimation->setPropertyName("opacity");
-    decreaseOpacityAnimation->setDuration(IMAGE_TRANSITION_SPEED);
-    decreaseOpacityAnimation->setStartValue(opacityEffect2_->opacity());
-    decreaseOpacityAnimation->setEndValue(0);
-    decreaseOpacityAnimation->setEasingCurve(QEasingCurve::OutQuad);
-    decreaseOpacityAnimation->start(QAbstractAnimation::DeleteWhenStopped);
-
-    if(!scaleWatcher_->isCanceled()){
-        setPreviewImage();
+    if(onlyHide)
+        ui->screen_label->clear();
+    else{
+        opacityEffect_->setOpacity(false);
+        ui->screen_label->setGraphicsEffect(opacityEffect_);
+        increaseOpacityAnimation->setStartValue(opacityEffect_->opacity());
+        increaseOpacityAnimation->start();
     }
 }
 
@@ -780,39 +722,11 @@ void MainWindow::unhoverMenuButton(){
     QApplication::sendEvent(ui->menubarMenu, event2);
 }
 
-void MainWindow::hideScreenLabel()
-{
-    if(!gv.previewImagesOnScreen){
-        return;
-    }
-
-    if(ui->screen_label->pixmap()){
-        ui->screen_label_transition->setPixmap(QPixmap::fromImage(ui->screen_label->pixmap()->toImage()));
-    }
-    else
-    {
-        ui->screen_label_transition->clear();
-        return;
-    }
-
-    ui->screen_label->clear();
-
-    opacityEffect2_->setOpacity(true);
-    ui->screen_label_transition->setGraphicsEffect(opacityEffect2_);
-    QPropertyAnimation* anim = new QPropertyAnimation(this);
-    anim->setTargetObject(opacityEffect2_);
-    anim->setPropertyName("opacity");
-    anim->setDuration(IMAGE_TRANSITION_SPEED);
-    anim->setStartValue(opacityEffect2_->opacity());
-    anim->setEndValue(false);
-    anim->setEasingCurve(QEasingCurve::OutQuad);
-    anim->start(QAbstractAnimation::DeleteWhenStopped);
-}
-
 void MainWindow::setPreviewImage(){
-    if(!gv.previewImagesOnScreen || scaleWatcher_->isCanceled()){
+    if(!gv.previewImagesOnScreen || scaleWatcher_->isCanceled())
         return;
-    }
+
+    animateScreenLabel(false);
 
     QImage image = scaleWatcher_->result();
 
@@ -1609,9 +1523,8 @@ void MainWindow::on_image_style_combo_currentIndexChanged(int index)
 
 #endif //#ifdef Q_OS_UNIX
 
-    if(ui->screen_label_text->text().isEmpty()){
+    if(ui->screen_label_text->text().isEmpty())
         updateScreenLabel();
-    }
 }
 
 void MainWindow::actionsOnWallpaperChange(){
@@ -1995,74 +1908,56 @@ QString MainWindow::fixBasenameSize(const QString &basename){
 
 void MainWindow::updateScreenLabel()
 {
+    if(!gv.previewImagesOnScreen || !gv.mainwindowLoaded)
+        return;
+
     ui->screen_label_info->clear();
     ui->screen_label_text->clear();
 
     switch(ui->stackedWidget->currentIndex()){
     case 0:
-
-        if(ui->wallpapersList->count()==0 || ui->wallpapersList->selectedItems().count()==0)
-        {
+    {
+        if(wallpaperManager_->wallpapersCount()==0 || ui->wallpapersList->selectedItems().count()==0)
             changeTextOfScreenLabelTo(tr("Select an image to preview"));
-        }
         else
-        {
             on_wallpapersList_itemSelectionChanged();
-        }
-
         break;
-
+    }
     case 1:
     {
-
         QString filename=globalParser_->getFilename(gv.wallchHomePath+"liveEarth*");
-        if(!filename.isEmpty()){
+        if(!filename.isEmpty())
             imageTransition(filename);
-        }
         else
-        {
             changeTextOfScreenLabelTo(tr("Preview not available"));
-        }
-
         break;
-
     }
     case 2:
     {
-
         QString filename=globalParser_->getFilename(gv.wallchHomePath+POTD_IMAGE+"*");
-        if(!filename.isEmpty()){
+        if(!filename.isEmpty())
             imageTransition(filename);
-        }
         else
-        {
             changeTextOfScreenLabelTo(tr("Preview not available"));
-        }
-
         break;
-
     }
     case 4:
-
-        if(QFile::exists(gv.wallchHomePath+LW_PREVIEW_IMAGE)){
+    {
+        if(QFile::exists(gv.wallchHomePath+LW_PREVIEW_IMAGE))
             imageTransition(gv.wallchHomePath+LW_PREVIEW_IMAGE);
-        }
         else
-        {
             changeTextOfScreenLabelTo(tr("Preview not available"));
-        }
-
         break;
+    }
     }
 }
 
 void MainWindow::changeTextOfScreenLabelTo(const QString &text)
 {
-    if(!gv.previewImagesOnScreen){
+    if(!gv.previewImagesOnScreen)
         return;
-    }
 
-    hideScreenLabel();
+    animateScreenLabel(true);
 
     opacityEffect_->setOpacity(false);
     ui->screen_label_text->setGraphicsEffect(opacityEffect_);
@@ -2097,31 +1992,13 @@ void MainWindow::updateColorButton(QImage image)
 //Wallpapers code
 
 void MainWindow::justChangeWallpaper(){
-    if(!loadedPages_[0]){
-        loadWallpapersPage();
-        if(ui->wallpapersList->count()<LEAST_WALLPAPERS_FOR_START){
-            startButtonsSetEnabled(false);
-        }
-        else
-        {
-            startButtonsSetEnabled(true);
-        }
-    }
+    loadWallpapersPage();
 
     wallpaperManager_->setRandomWallpaperAsBackground();
 }
 
 void MainWindow::on_startButton_clicked(){
-    if(!loadedPages_[0]){
-        loadWallpapersPage();
-        if(wallpaperManager_->wallpapersCount()<LEAST_WALLPAPERS_FOR_START){
-            startButtonsSetEnabled(false);
-        }
-        else
-        {
-            startButtonsSetEnabled(true);
-        }
-    }
+    loadWallpapersPage();
 
     if (!ui->startButton->isEnabled()){
         globalParser_->desktopNotify(tr("Not enough pictures to start chaning wallpapers."), false, "info");
@@ -2217,7 +2094,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
         }
 
         startUpdateSeconds();
-        on_page_0_wallpapers_clicked();
+        page_button_clicked(0);
     }
     else
     {
@@ -2235,7 +2112,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
         updateSecondsTimer_->stop();
         ui->timeForNext->setFormat(ui->timeForNext->format()+" - Paused.");
         previousAndNextButtonsSetEnabled(false);
-        if(ui->wallpapersList->count() != 0){
+        if(wallpaperManager_->wallpapersCount() != 0){
             ui->shuffle_images_checkbox->setEnabled(true);
         }
         if(gv.independentIntervalEnabled){
@@ -2245,12 +2122,12 @@ void MainWindow::startPauseWallpaperChangingProcess(){
 }
 
 void MainWindow::on_stopButton_clicked(){
-    if (!ui->stopButton->isEnabled()){
+    if (!ui->stopButton->isEnabled())
         return;
-    }
-    if(ui->wallpapersList->count()!=0){
+
+    if(wallpaperManager_->wallpapersCount()!=0)
         ui->shuffle_images_checkbox->setEnabled(true);
-    }
+
     stoppedBecauseOnBattery_=false;
     wallpaperManager_->startOver();
     actAsStart_=true;
@@ -2265,7 +2142,7 @@ void MainWindow::on_stopButton_clicked(){
     }
     previousAndNextButtonsSetEnabled(false);
 
-    startButtonsSetEnabled(ui->wallpapersList->count() >= LEAST_WALLPAPERS_FOR_START);
+    startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
 
     stopButtonsSetEnabled(false);
     gv.wallpapersRunning=false;
@@ -2418,9 +2295,8 @@ void MainWindow::on_wallpapersList_itemSelectionChanged()
 
 void MainWindow::on_wallpapersList_itemDoubleClicked()
 {
-    if(!ui->wallpapersList->count()){
+    if(!wallpaperManager_->wallpapersCount())
         return;
-    }
 
     int curRow = ui->wallpapersList->currentRow();
     if(curRow < 0){
@@ -2475,9 +2351,8 @@ void MainWindow::removeImageFromDisk(){
         cacheManager_->removeCacheOf(imageFilename);
     }
 
-    if(ui->wallpapersList->count() <= LEAST_WALLPAPERS_FOR_START){
+    if(wallpaperManager_->wallpapersCount() <= LEAST_WALLPAPERS_FOR_START)
         startButtonsSetEnabled(false);
-    }
 }
 
 void MainWindow::removeImagesFromDisk(){
@@ -2527,9 +2402,8 @@ void MainWindow::rotateRight(){
     if(gv.iconMode){
         forceUpdateIconOf(ui->wallpapersList->currentRow());
     }
-    else if(gv.previewImagesOnScreen){
+    else
         updateScreenLabel();
-    }
 
     if(path==wallpaperManager_->currentBackgroundWallpaper()){
         wallpaperManager_->setBackground(path, false, false, 1);
@@ -2549,9 +2423,8 @@ void MainWindow::rotateLeft(){
     if(gv.iconMode){
         forceUpdateIconOf(ui->wallpapersList->currentRow());
     }
-    else if(gv.previewImagesOnScreen){
+    else
         updateScreenLabel();
-    }
 
     if(path==WallpaperManager::currentBackgroundWallpaper()){
         WallpaperManager::setBackground(path, false, false, 1);
@@ -2609,9 +2482,8 @@ void MainWindow::on_wallpapersList_customContextMenuRequested()
         connect(enterAction, SIGNAL(triggered()), this, SLOT(on_wallpapersList_itemDoubleClicked()));
         listwidgetMenu_->addAction(enterAction);
 
-        if(ui->wallpapersList->count()>2){
+        if(wallpaperManager_->wallpapersCount()>2)
             listwidgetMenu_->addAction(tr("Start from this image"), this, SLOT(startWithThisImage()));
-        }
 
         QAction *deleteAction = new QAction(tr("Delete image from disk"), listwidgetMenu_);
         deleteAction->setShortcut(QKeySequence::Delete);
@@ -2699,7 +2571,7 @@ void MainWindow::changeImage(){
 void MainWindow::searchFor(const QString &term){
     ui->wallpapersList->clearSelection();
     searchList_.clear();
-    int listCount=ui->wallpapersList->count();
+    int listCount=wallpaperManager_->wallpapersCount();
     if(gv.iconMode){
         for(int i=0;i<listCount;i++){
             if(ui->wallpapersList->item(i)->statusTip().isEmpty()){
@@ -2733,7 +2605,7 @@ void MainWindow::searchFor(const QString &term){
 
 void MainWindow::continueToNextMatch(){
     ui->wallpapersList->clearSelection();
-    if(currentSearchItemIndex >= ui->wallpapersList->count()+1){
+    if(currentSearchItemIndex >= wallpaperManager_->wallpapersCount()+1){
         //restart the search...
         currentSearchItemIndex=searchList_.indexOf(*match_, 0);
         if(currentSearchItemIndex<0){
@@ -2847,9 +2719,10 @@ void MainWindow::updateTiming(){
     if(updateCheckTime_->isActive()){
         updateCheckTime_->stop();
     }
-    if(!loadedPages_[0]){
+
+    if(!loadedPages_[0])
         return;
-    }
+
     settings->setValue( "timeSlider", ui->timerSlider->value());
     settings->setValue( "delay", secondsInWallpapersSlider_ );
     settings->sync();
@@ -2947,13 +2820,7 @@ void MainWindow::monitor(const QStringList &finalListOfPaths){
         monitor(path, itemCount);
     }
 
-    if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START){
-        startButtonsSetEnabled(false);
-    }
-    else
-    {
-        startButtonsSetEnabled(true);
-    }
+    startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
 
     if(gv.iconMode){
         launchTimerToUpdateIcons();
@@ -3051,15 +2918,13 @@ void MainWindow::researchFolders()
         monitor(globalParser_->listFolders(currentFolder_, true, true));
     }
 
-    if(ui->wallpapersList->count() < LEAST_WALLPAPERS_FOR_START){
+    if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START){
         if(gv.wallpapersRunning){
             on_stopButton_clicked();
         }
     }
     else
-    {
         startButtonsSetEnabled(true);
-    }
 
     if(gv.wallpapersRunning){
         processRunningResetPictures();
@@ -3109,7 +2974,7 @@ void MainWindow::changePathsToIcons()
     ui->wallpapersList->setUniformItemSizes(true);
     ui->wallpapersList->setDragEnabled(false);
     gv.iconMode=true;
-    int listCount=ui->wallpapersList->count();
+    int listCount=wallpaperManager_->wallpapersCount();
 
     for(int i=0;i<listCount;i++){
         QString status=ui->wallpapersList->item(i)->statusTip();
@@ -3120,14 +2985,7 @@ void MainWindow::changePathsToIcons()
         ui->wallpapersList->item(i)->setIcon(imageLoading_);
     }
     launchTimerToUpdateIcons();
-    if(gv.previewImagesOnScreen && ui->stackedWidget->currentIndex()==0){
-        hideScreenLabel();
-        updateScreenLabel();
-    }
-    if(searchIsOn_){
-        on_search_close_clicked();
-    }
-    ui->search_box->clear();
+    iconsPathsChanged();
 }
 
 void MainWindow::changeIconsToPaths(){
@@ -3135,7 +2993,7 @@ void MainWindow::changeIconsToPaths(){
     ui->wallpapersList->setUniformItemSizes(false);
     ui->wallpapersList->setIconSize(QSize(-1, -1));
     gv.iconMode=false;
-    int file_count=ui->wallpapersList->count();
+    int file_count=wallpaperManager_->wallpapersCount();
 
     QFont font;
     font.defaultFamily();
@@ -3155,8 +3013,12 @@ void MainWindow::changeIconsToPaths(){
         ui->wallpapersList->item(i)->setIcon(QIcon(""));
         ui->wallpapersList->item(i)->setData(Qt::SizeHintRole, QVariant());
     }
-    if(gv.previewImagesOnScreen && ui->stackedWidget->currentIndex()==0){
-        hideScreenLabel();
+    iconsPathsChanged();
+}
+
+void MainWindow::iconsPathsChanged(){
+    if(ui->stackedWidget->currentIndex()==0){
+        animateScreenLabel(true);
         updateScreenLabel();
     }
     if(searchIsOn_){
@@ -3177,9 +3039,9 @@ void MainWindow::launchTimerToUpdateIcons(){
 }
 
 void MainWindow::updateVisibleIcons(){
-    if(!ui->wallpapersList->count()){
+    if(!wallpaperManager_->wallpapersCount())
         return;
-    }
+
     currentlyUpdatingIcons_=true;
     QListWidgetItem* minItem=ui->wallpapersList->itemAt(0, 0);
     QListWidgetItem* maxItem=ui->wallpapersList->itemAt(ui->wallpapersList->width()-30, ui->wallpapersList->height()-5);
@@ -3189,7 +3051,7 @@ void MainWindow::updateVisibleIcons(){
         diff+=5;
         maxItem=ui->wallpapersList->itemAt(ui->wallpapersList->width()-diff, ui->wallpapersList->height()-5);
         if(ui->wallpapersList->width()-diff<0){
-            maxItem=ui->wallpapersList->item(ui->wallpapersList->count()-1);
+            maxItem=ui->wallpapersList->item(wallpaperManager_->wallpapersCount()-1);
         }
     }
 
@@ -3219,7 +3081,7 @@ bool MainWindow::updateIconOf(int index){
     QImage image = cacheManager_->controlCache(originalImagePath);
 
     if(image.isNull()){
-        if(ui->wallpapersList->count() > 1){
+        if(wallpaperManager_->wallpapersCount() > 1){
             delete ui->wallpapersList->item(index);
             wallpaperManager_->getCurrentWallpapers().removeAt(index);
         }
@@ -3249,9 +3111,8 @@ void MainWindow::forceUpdateIconOf(int index){
 
     ui->wallpapersList->item(index)->setIcon(QIcon(QPixmap::fromImage(thumbnail)));
 
-    if(gv.previewImagesOnScreen && ui->wallpapersList->currentRow() == index && ui->stackedWidget->currentIndex() == 0){
+    if(ui->wallpapersList->currentRow() == index && ui->stackedWidget->currentIndex() == 0)
         updateScreenLabel();
-    }
 }
 
 QStringList MainWindow::getCurrentWallpaperFolders(){
@@ -3370,18 +3231,13 @@ void MainWindow::on_pictures_location_comboBox_currentIndexChanged(int index)
 
     if(selectionIsOk)
     {
-        if ( wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START ){
-            startButtonsSetEnabled(false);
-        }
-        else{
-            startButtonsSetEnabled(true);
-        }
+        startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
+
         settings->setValue("currentFolder_index", ui->pictures_location_comboBox->currentIndex());
         settings->sync();
 
-        if(ui->wallpapersList->count()){
+        if(wallpaperManager_->wallpapersCount())
             ui->wallpapersList->setCurrentRow(0);
-        }
 
         if(gv.wallpapersRunning){
             processRunningResetPictures();
@@ -3416,9 +3272,8 @@ void MainWindow::processRunningResetPictures(){
 
     //folder has changed/updated
     if(ui->shuffle_images_checkbox->isChecked()){
-        if(wallpaperManager_->wallpapersCount()<LEAST_WALLPAPERS_FOR_START){
-            on_stopButton_clicked();//not enough pictures to continue
-        }
+        if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START)
+            on_stopButton_clicked();
         else
         {
             //generate new random images
@@ -3426,15 +3281,13 @@ void MainWindow::processRunningResetPictures(){
             wallpaperManager_->startOver();
         }
     }
-    else if(wallpaperManager_->wallpapersCount()>=LEAST_WALLPAPERS_FOR_START)
+    else if(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START)
     {
         wallpaperManager_->startOver(); //start from the beginning of the new folder
         secondsLeft_=0;
     }
     else
-    {
-        on_stopButton_clicked();//not enough pictures to continue
-    }
+        on_stopButton_clicked();
 }
 
 void MainWindow::savePicturesLocations()
@@ -3558,7 +3411,7 @@ void MainWindow::on_activate_livearth_clicked()
         return;
     }
     stopEverythingThatsRunning(2);
-    on_page_1_earth_clicked();
+    page_button_clicked(1);
     ui->activate_livearth->setEnabled(false);
     ui->deactivate_livearth->setEnabled(true);
     gv.liveEarthRunning=true;
@@ -3637,7 +3490,7 @@ void MainWindow::on_activate_potd_clicked()
         return;
     }
     stopEverythingThatsRunning(3);
-    on_page_2_potd_clicked();
+    page_button_clicked(2);
     startPotd(true);
 }
 
@@ -3716,9 +3569,8 @@ void MainWindow::restartLeIfRunningAfterSettingChange()
 void MainWindow::on_activate_website_clicked()
 {   
     stopEverythingThatsRunning(5);
-    if(!loadedPages_[4]){
-        loadLiveWebsitePage();
-    }
+    loadLiveWebsitePage();
+
     if(websiteSnapshot_==NULL || !ui->activate_website->isEnabled() || !websiteConfiguredCorrectly()){
         return;
     }
@@ -3726,8 +3578,7 @@ void MainWindow::on_activate_website_clicked()
     gv.websiteWebpageToLoad=gv.onlineLinkForHistory=ui->website->text();
     gv.websiteInterval=ui->website_slider->value();
 
-    on_page_4_web_clicked();
-    ui->stackedWidget->setCurrentIndex(4);
+    page_button_clicked(4);
 
     ui->deactivate_website->setEnabled(true);
     ui->activate_website->setEnabled(false);
@@ -4022,6 +3873,8 @@ void MainWindow::picturesLocationsChanged()
 //Pages code
 
 void MainWindow::loadWallpapersPage(){
+    if(loadedPages_[0])
+        return;
 
     if(wallpaperManager_==NULL){
         wallpaperManager_=new WallpaperManager();
@@ -4148,11 +4001,12 @@ void MainWindow::loadWallpapersPage(){
     connect(openCloseSearch_, SIGNAL(finished()), this, SLOT(openCloseSearchAnimationFinished()));
     openCloseSearch_->setDuration(GENERAL_ANIMATION_SPEED);
 
-    loadedPages_[0]=true;
+    startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
 }
 
 void MainWindow::loadLePage(){
-    loadedPages_[1] = true;
+    if(loadedPages_[1])
+        return;
 
     gv.leEnableTag = settings->value("le_enable_tag", false).toBool();
 
@@ -4161,7 +4015,8 @@ void MainWindow::loadLePage(){
 }
 
 void MainWindow::loadPotdPage(){
-    loadedPages_[2] = true;
+    if(loadedPages_[2])
+        return;
 
     gv.potdIncludeDescription = settings->value("potd_include_description", true).toBool();
     gv.leEnableTag = settings->value("le_enable_tag", false).toBool();
@@ -4184,11 +4039,14 @@ void MainWindow::loadPotdPage(){
 
 void MainWindow::loadWallpaperClocksPage()
 {
-    loadedPages_[3]=true;
-
+    if(loadedPages_[3])
+        return;
 }
 
 void MainWindow::loadLiveWebsitePage(){
+    if(loadedPages_[4])
+        return;
+
     //add login details information
     openCloseAddLogin_ = new QPropertyAnimation(ui->live_website_login_widget, "maximumHeight");
     connect(openCloseAddLogin_, SIGNAL(finished()), this, SLOT(openCloseAddLoginAnimationFinished()));
@@ -4248,13 +4106,12 @@ void MainWindow::loadLiveWebsitePage(){
     if(websiteSnapshot_==NULL){
         websiteSnapshot_ = new WebsiteSnapshot();
     }
-
-    loadedPages_[4]=true;
 }
 
 void MainWindow::loadMelloriPage()
 {
-    loadedPages_[5]=true;
+    if(loadedPages_[5])
+        return;
 }
 
 void MainWindow::openCloseAddLoginAnimationFinished(){
@@ -4301,196 +4158,77 @@ void MainWindow::on_add_login_details_clicked(bool checked)
     openCloseAddLogin_->start();
 }
 
-void MainWindow::on_page_0_wallpapers_clicked()
-{
-    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==0){
+void MainWindow::page_button_clicked(int btn){
+    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==btn)
         return;
-    }
 
-    if(!loadedPages_[0]){
-
+    switch(btn){
+    case 0:
+    {
         loadWallpapersPage();
+        launchTimerToUpdateIcons();
+        on_timerSlider_valueChanged(ui->timerSlider->value());
 
-        if(wallpaperManager_->wallpapersCount()<=1){
-            startButtonsSetEnabled(false);
-        }
-        else
-        {
-            startButtonsSetEnabled(true);
-        }
+        ui->sep1->raise();
+        break;
     }
-    launchTimerToUpdateIcons();
-    on_timerSlider_valueChanged(ui->timerSlider->value());
-
-    ui->page_0_wallpapers->setChecked(true);//in case it is called via the shortcut
-    ui->stackedWidget->setCurrentIndex(0);
-    ui->page_0_wallpapers->raise();
-    ui->sep1->raise();
-    if(gv.previewImagesOnScreen){
-        updateScreenLabel();
-    }
-}
-
-void MainWindow::on_page_1_earth_clicked()
-{
-    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==1){
-        return;
-    }
-
-    if(!loadedPages_[1]){
+    case 1:
+    {
         loadLePage();
+        ui->sep1->raise();
+        ui->sep2->raise();
+        break;
     }
-
-    ui->page_1_earth->setChecked(true);
-    ui->stackedWidget->setCurrentIndex(1);
-    ui->page_1_earth->raise();
-    ui->sep1->raise();
-    ui->sep2->raise();
-
-    if(gv.previewImagesOnScreen){
-        QTimer::singleShot(10, this, SLOT(updateScreenLabel()));
-    }
-}
-
-void MainWindow::on_page_2_potd_clicked()
-{
-    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==2){
-        return;
-    }
-
-    if(!loadedPages_[2]){
+    case 2:
+    {
         loadPotdPage();
+        ui->sep2->raise();
+        ui->sep3->raise();
+        break;
     }
-
-    ui->page_2_potd->setChecked(true);
-    ui->stackedWidget->setCurrentIndex(2);
-    ui->page_2_potd->raise();
-    ui->sep2->raise();
-    ui->sep3->raise();
-
-    if(gv.previewImagesOnScreen){
-        QTimer::singleShot(10, this, SLOT(updateScreenLabel()));
-    }
-}
-
-void MainWindow::on_page_3_clock_clicked()
-{
-    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==3){
-        return;
-    }
-
-    if(!loadedPages_[3]){
+    case 3:
+    {
         loadWallpaperClocksPage();
+        ui->sep3->raise();
+        ui->sep4->raise();
+        break;
     }
-
-    ui->page_3_clock->setChecked(true);
-    ui->stackedWidget->setCurrentIndex(3);
-    ui->page_3_clock->raise();
-    ui->sep3->raise();
-    ui->sep4->raise();
-
-    if(gv.previewImagesOnScreen){
-        QTimer::singleShot(10, this, SLOT(updateScreenLabel()));
-    }
-}
-
-void MainWindow::on_page_4_web_clicked()
-{
-    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==4){
-        return;
-    }
-
-    if(!loadedPages_[4]){
+    case 4:
+    {
         loadLiveWebsitePage();
+        ui->sep4->raise();
+        ui->sep5->raise();
+        break;
     }
-
-    ui->page_4_web->setChecked(true);
-    ui->stackedWidget->setCurrentIndex(4);
-    ui->page_4_web->raise();
-    ui->sep4->raise();
-    ui->sep5->raise();
-
-    if(gv.previewImagesOnScreen){
-        QTimer::singleShot(10, this, SLOT(updateScreenLabel()));
-    }
-}
-
-void MainWindow::on_page_5_other_clicked()
-{
-    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==6){
-        return;
-    }
-
-    if(!loadedPages_[5]){
+    case 5:
+    {
         loadMelloriPage();
+        ui->sep5->raise();
+        ui->sep6->raise();
+        break;
+    }
     }
 
-    ui->page_5_other->setChecked(true);
-    ui->stackedWidget->setCurrentIndex(5);
-    ui->page_5_other->raise();
-    ui->sep5->raise();
-    ui->sep6->raise();
-    if(gv.previewImagesOnScreen){
-        updateScreenLabel();
-    }
+    btn_group->button(btn)->setChecked(true);
+    btn_group->button(btn)->raise();
+
+    ui->stackedWidget->setCurrentIndex(btn);
+    loadedPages_[btn]=true;
+    QTimer::singleShot(10, this, SLOT(updateScreenLabel()));
 }
 
 void MainWindow::previousPage(){
-    short currentPage = ui->stackedWidget->currentIndex()-1;
-    if(currentPage<0){
-        currentPage=6;
-    }
-    switch (currentPage){
-    case 0:
-        on_page_0_wallpapers_clicked();
-        break;
-    case 1:
-        on_page_1_earth_clicked();
-        break;
-    case 2:
-        on_page_2_potd_clicked();
-        break;
-    case 3:
-        on_page_3_clock_clicked();
-        break;
-    case 4:
-        on_page_4_web_clicked();
-        break;
-    case 5:
-        on_page_5_other_clicked();
-        break;
-    default:
-        on_page_0_wallpapers_clicked();
-    }
+    if(ui->stackedWidget->currentIndex()==0)
+        page_button_clicked(5);
+    else
+        page_button_clicked(ui->stackedWidget->currentIndex()-1);
 }
 
 void MainWindow::nextPage(){
-    short currentPage = ui->stackedWidget->currentIndex()+1;
-    if(currentPage>7){
-        currentPage=0;
-    }
-    switch (currentPage){
-    case 0:
-        on_page_0_wallpapers_clicked();
-        break;
-    case 1:
-        on_page_1_earth_clicked();
-        break;
-    case 2:
-        on_page_2_potd_clicked();
-        break;
-    case 3:
-        on_page_3_clock_clicked();
-        break;
-    case 4:
-        on_page_4_web_clicked();
-        break;
-    case 5:
-        on_page_5_other_clicked();
-        break;
-    default:
-        on_page_0_wallpapers_clicked();
-    }
+    if(ui->stackedWidget->currentIndex()==5)
+        page_button_clicked(0);
+    else
+        page_button_clicked(ui->stackedWidget->currentIndex()+1);
 }
 
 //Actions code
@@ -4758,29 +4496,23 @@ void MainWindow::propertiesDestroyed(){
 }
 
 void MainWindow::sendPropertiesNext(int current){
-    int listCount=ui->wallpapersList->count();
+    int listCount=wallpaperManager_->wallpapersCount();
     if(current>=(listCount-1)){
-        if(listCount){
+        if(listCount)
             Q_EMIT givePropertiesRequest(getPathOfListItem(0), 0);
-        }
     }
     else
-    {
         Q_EMIT givePropertiesRequest(getPathOfListItem(current+1), current+1);
-    }
 }
 
 void MainWindow::sendPropertiesPrevious(int current){
-    int listCount = ui->wallpapersList->count();
+    int listCount = wallpaperManager_->wallpapersCount();
     if(current == 0){
-        if(listCount){
+        if(listCount)
             Q_EMIT givePropertiesRequest(getPathOfListItem(listCount-1), listCount-1);
-        }
     }
     else
-    {
         Q_EMIT givePropertiesRequest(getPathOfListItem(current-1), current-1);
-    }
 }
 
 void MainWindow::on_include_description_checkBox_clicked(bool checked)

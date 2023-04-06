@@ -100,9 +100,6 @@
          <property name="flat">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup</string>
-         </attribute>
         </widget>
        </item>
        <item>
@@ -165,9 +162,6 @@
          <property name="flat">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup</string>
-         </attribute>
         </widget>
        </item>
        <item>
@@ -230,9 +224,6 @@
          <property name="flat">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup</string>
-         </attribute>
         </widget>
        </item>
        <item>
@@ -301,9 +292,6 @@
          <property name="flat">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup</string>
-         </attribute>
         </widget>
        </item>
        <item>
@@ -366,9 +354,6 @@
          <property name="flat">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup</string>
-         </attribute>
         </widget>
        </item>
        <item>
@@ -428,9 +413,6 @@
          <property name="flat">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup</string>
-         </attribute>
         </widget>
        </item>
        <item>
@@ -3216,7 +3198,4 @@ background-color:#ce0018;
    </hints>
   </connection>
  </connections>
- <buttongroups>
-  <buttongroup name="buttonGroup"/>
- </buttongroups>
 </ui>

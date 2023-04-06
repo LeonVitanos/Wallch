@@ -135,40 +135,44 @@ void Properties::resizeEvent(QResizeEvent *)
         //(large labels, like path, may resize the window, thus now is the correct time to center it)
         this->move(QGuiApplication::primaryScreen()->availableGeometry().center() - this->rect().center());
     }
-    if(!ui->propertiesImage->pixmap()){
+
+    if(ui->propertiesImage->pixmap(Qt::ReturnByValue).isNull())
         return;
-    }
+
     QSize scaledSize = currentImage_.size();
     scaledSize.scale(ui->propertiesImage->size(), Qt::KeepAspectRatio);
-    if (scaledSize != ui->propertiesImage->pixmap()->size()){
+    if (scaledSize != ui->propertiesImage->pixmap(Qt::ReturnByValue).size())
         updatePropertiesImageLabel();
-    }
 }
 
 void Properties::updatePropertiesImageLabel(){
 
-    ui->propertiesImage->setPixmap(Global::roundedCorners(currentImage_.scaled(ui->propertiesImage->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation), 6));
+    ui->propertiesImage->setPixmap(Global::roundedCorners(currentImage_.scaled(ui->propertiesImage->size(),
+                                                                               Qt::KeepAspectRatio, Qt::SmoothTransformation), 6));
 }
 
 void Properties::updatePropertiesImageLabel(QImage image)
 {
     currentImage_ = image;
-    ui->propertiesImage->setPixmap(Global::roundedCorners(image.scaled(ui->propertiesImage->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation), 6));
+    ui->propertiesImage->setPixmap(Global::roundedCorners(image.scaled(ui->propertiesImage->size(),
+                                                                       Qt::KeepAspectRatio, Qt::SmoothTransformation), 6));
 }
 
 void Properties::updateEntries(const QString &filename, int currentIndex){
-    ui->propertiesImage->clear();
-    ui->propertiesImage->setText(tr("Loading..."));
     currentFilename_ = filename;
     currentIndex_ = currentIndex;
-    QFileInfo imageInfo(currentFilename_);
 
-    ui->nameLineEdit->setText(Global::basenameOf(currentFilename_));
+    ui->propertiesImage->clear();
+    ui->propertiesImage->setText(tr("Loading..."));
+
+    QFileInfo imageInfo(currentFilename_);
     ui->type_label->setText(imageInfo.suffix().toUpper());
-    ui->size_label->setText(sizeToNiceString(QFile(currentFilename_).size()));
-    ui->location_label->setText(Global::dirnameOf(currentFilename_));
     ui->created_label->setText(imageInfo.created().toString("ddd, MMM d yyyy hh:mm:ss"));
     ui->modified_label->setText(imageInfo.lastModified().toString("ddd, MMM d yyyy hh:mm:ss"));
+
+    ui->nameLineEdit->setText(Global::basenameOf(currentFilename_));
+    ui->size_label->setText(sizeToNiceString(QFile(currentFilename_).size()));
+    ui->location_label->setText(Global::dirnameOf(currentFilename_));
     ui->dimensionsLabel->setText("-");
 
     propertiesReadyWatcher_->setFuture(QtConcurrent::run(this, &Properties::resizePreview));
