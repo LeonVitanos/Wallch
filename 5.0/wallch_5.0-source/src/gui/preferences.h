@@ -44,12 +44,11 @@ private:
     bool addNewIntervalIsShown_;
     bool picturesLocationsChanged_ = false;
     bool maxCacheChanged_ = false;
-    void setThemeToAmbiance();
-    void setThemeToRadiance();
     void setupShortcuts();
     bool createDesktopFile(const QString &path, const QString &command, const QString &comment);
     QString getCommandOfDesktopFile(const QString &file);
     QString dataToNiceString(qint64 data);
+    short oldTheme;
 
 private Q_SLOTS:
     void previousPage();
@@ -75,7 +74,7 @@ Q_SIGNALS:
     void intervalTypeChanged();
     void changePathsToIcons();
     void changeIconsToPaths();
-    void changeThemeTo(QString theme);
+    void changeTheme();
     void unityProgressbarChanged(bool show);
     void researchFolders();
     void previewChanged();

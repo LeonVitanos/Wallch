@@ -76,21 +76,13 @@ Preferences::Preferences(QWidget *parent) :
     ui->integrationgroupBox->hide();
 #endif
     QString curTheme = settings->value("theme", "autodetect").toString();
-    short oldThemeIndex = ui->theme_combo->currentIndex();
-    if(curTheme=="ambiance"){
+    if(curTheme=="ambiance")
         ui->theme_combo->setCurrentIndex(0);
-    }
-    else if(curTheme=="radiance"){
+    else if(curTheme=="radiance")
         ui->theme_combo->setCurrentIndex(1);
-    }
     else
-    {
         ui->theme_combo->setCurrentIndex(2);
-    }
-    if(ui->theme_combo->currentIndex()==oldThemeIndex){
-        //index not changed, but run the code nonetheless
-        on_theme_combo_currentIndexChanged(ui->theme_combo->currentIndex());
-    }
+    oldTheme = ui->theme_combo->currentIndex();
 
     //'Wallpapers' Page
     ui->rotate_checkBox->setChecked(settings->value("rotation", false).toBool());
@@ -143,6 +135,9 @@ Preferences::Preferences(QWidget *parent) :
 
 Preferences::~Preferences()
 {
+    if(oldTheme!=ui->theme_combo->currentIndex())
+        on_theme_combo_currentIndexChanged(oldTheme);
+
     delete ui;
 }
 
@@ -289,17 +284,7 @@ void Preferences::on_saveButton_clicked()
     settings->setValue("de", ui->de_combo->currentIndex());
 
 #endif
-    switch(ui->theme_combo->currentIndex()){
-    case 0:
-        settings->setValue("theme", "ambiance");
-        break;
-    case 1:
-        settings->setValue("theme", "radiance");
-        break;
-    case 3:
-        settings->setValue("theme", "autodetect");
-        break;
-    }
+    oldTheme = ui->theme_combo->currentIndex();
 
     //'Wallpapers' Page
     gv.showNotification = ui->desktop_notification_checkbox->isChecked();
@@ -435,45 +420,18 @@ void Preferences::on_page_3_advanced_clicked()
     ui->page_3_advanced->raise();
 }
 
-void Preferences::setThemeToAmbiance(){
-    gv.currentTheme="ambiance";
-    Q_EMIT changeThemeTo("ambiance");
-}
-
-void Preferences::setThemeToRadiance(){
-    gv.currentTheme="radiance";
-    Q_EMIT changeThemeTo("radiance");
-}
-
 void Preferences::on_theme_combo_currentIndexChanged(int index)
 {
-    switch(index){
-    case 0:
-        setThemeToAmbiance();
+    if(index == 0)
         settings->setValue("theme", "ambiance");
-        break;
-    case 1:
-        setThemeToRadiance();
+    else if (index == 1)
         settings->setValue("theme", "radiance");
-        break;
-    default:
-    {
-        switch(Global::autodetectTheme()){
-        default:
-        case 0:
-            setThemeToAmbiance();
-            break;
-        case 1:
-            setThemeToRadiance();
-            break;
-        }
-
+    else
         settings->setValue("theme", "autodetect");
-        break;
-    }
-    }
 
     settings->sync();
+
+    Q_EMIT changeTheme();
 }
 
 void Preferences::on_rotate_checkBox_clicked(bool checked)

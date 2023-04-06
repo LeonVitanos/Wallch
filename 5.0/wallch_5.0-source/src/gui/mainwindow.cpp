@@ -71,6 +71,11 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     btn_group->addButton(ui->page_4_web, 4);
     btn_group->addButton(ui->page_5_other, 5);
 
+    dconf = new QProcess(this);
+    connect(dconf, SIGNAL(readyReadStandardOutput()), this, SLOT(dconfChanges()));
+    connect(dconf , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(dconfChanges()));
+    dconf->start("dconf watch /");
+
     setupMenu();
     connectSignalSlots();
     retrieveSettings();
@@ -336,27 +341,50 @@ void MainWindow::setupKeyboardShortcuts(){
     (void) new QShortcut(Qt::ALT + Qt::Key_F4, this, SLOT(escapePressed()));
 }
 
-void MainWindow::changeCurrentThemeTo(const QString &theme)
+void MainWindow::dconfChanges(){
+    QByteArray output = dconf->readAllStandardOutput();
+    if(output.contains("theme"))
+        changeCurrentTheme();
+    else if(output.contains("picture-options"))
+    {
+        qDebug() << "pic_options_changed";
+    }
+    else if(output.contains("primary-color"))
+    {
+        qDebug() << "primary-color";
+    }
+    else if(output.contains("secondary-color"))
+    {
+        qDebug() << "econdary-color";
+    }
+    else if(output.contains("color-shading-type"))
+    {
+        qDebug() << "color-shading-type";
+    }
+}
+
+void MainWindow::changeCurrentTheme()
 {
-    gv.currentTheme=theme;
-    if(theme=="ambiance")
-    {
-        setThemeToAmbiance();
-    }
-    else if(theme=="radiance")
-    {
-        setThemeToRadiance();
-    }
+    gv.currentTheme = settings->value("theme", "autodetect").toString();
+
+    int theme;
+    if(gv.currentTheme == "autodetect")
+        theme = globalParser_->autodetectTheme();
     else
-    {
-        switch(globalParser_->autodetectTheme()){
-        default:
-        case 0:
-            setThemeToAmbiance();
-            break;
-        case 1:
-            setThemeToRadiance();
-            break;
+        theme = gv.currentTheme == "radiance";
+
+    if(theme == 0){
+        changeAppStyleSheetTo(":/themes/ambiance.qss");
+        Q_FOREACH(QLabel *separator, menuSeparators_){
+            separator->show();
+            separator->setPixmap(AMBIANCE_SEPARATOR);
+        }
+    }
+    else{
+        changeAppStyleSheetTo(":/themes/radiance.qss");
+        Q_FOREACH(QLabel *separator, menuSeparators_){
+            separator->show();
+            separator->setPixmap(RADIANCE_SEPARATOR);
         }
     }
 }
@@ -429,7 +457,7 @@ void MainWindow::setupMenu()
 
 void MainWindow::applySettings()
 {
-    changeCurrentThemeTo(settings->value("theme", "autodetect").toString());
+    changeCurrentTheme();
 
     int maxCacheIndex = settings->value("max_cache_size", 2).toInt();
     if(maxCacheIndex < 0 || maxCacheIndex >= cacheManager_->maxCacheIndexes.size()){
@@ -1749,24 +1777,6 @@ void MainWindow::changeAppStyleSheetTo(const QString &styleSheetFile){
 
     qApp->setStyleSheet(QString::fromLatin1(file.readAll()));
     file.close();
-}
-
-void MainWindow::setThemeToAmbiance(){
-    changeAppStyleSheetTo(":/themes/ambiance.qss");
-    Q_FOREACH(QLabel *separator, menuSeparators_){
-        separator->show();
-        separator->setPixmap(AMBIANCE_SEPARATOR);
-    }
-}
-
-void MainWindow::setThemeToRadiance(){
-
-    changeAppStyleSheetTo(":/themes/radiance.qss");
-    Q_FOREACH(QLabel *separator, menuSeparators_){
-        separator->show();
-        separator->setPixmap(RADIANCE_SEPARATOR);
-    }
-
 }
 
 void MainWindow::stopEverythingThatsRunning(short excludingFeature)
@@ -4403,7 +4413,7 @@ void MainWindow::on_action_Preferences_triggered()
     connect(preferences_, SIGNAL(researchFolders()), this, SLOT(researchFolders()));
     connect(preferences_, SIGNAL(previewChanged()), this, SLOT(wait_preview_changed()));
     connect(preferences_, SIGNAL(intervalTypeChanged()), this, SLOT(intervalTypeChanged()));
-    connect(preferences_, SIGNAL(changeThemeTo(QString)), this, SLOT(changeCurrentThemeTo(const QString&)));
+    connect(preferences_, SIGNAL(changeTheme()), this, SLOT(changeCurrentTheme()));
     connect(preferences_, SIGNAL(maxCacheChanged(qint64)), cacheManager_, SLOT(setMaxCache(qint64)));
 #ifdef Q_OS_UNIX
     connect(preferences_, SIGNAL(unityProgressbarChanged(bool)), this, SLOT(unityProgressbarSetEnabled(bool)));

@@ -1119,28 +1119,20 @@ QPixmap Global::roundedCorners(const QImage &image, const int radius){
 }
 
 short Global::autodetectTheme(){
-    QString themeString;
+    QString theme;
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome){
-        themeString=Global::gsettingsGet("org.gnome.desktop.interface", "gtk-theme");
-    }
+    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome)
+        theme=Global::gsettingsGet("org.gnome.desktop.interface", "gtk-theme");
     else
     {
-        if(gv.currentTheme=="radiance"){
-            themeString="Radiance";
-        }
+        if(gv.currentTheme=="radiance")
+            theme="Radiance";
         else
-        {
-            themeString="Ambiance";
-        }
+            theme="Ambiance";
     }
 #endif
-    if(themeString.contains("radiance", Qt::CaseInsensitive)){
-        return 1;
-    }
 
-    //ambiance
-    return 0;
+    return !(theme.contains("dark", Qt::CaseInsensitive) || theme.contains("ambiance", Qt::CaseInsensitive));
 }
 
 void Global::currentBackgroundExists()

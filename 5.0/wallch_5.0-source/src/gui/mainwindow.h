@@ -130,6 +130,7 @@ private:
     QList<QLabel*> menuSeparators_;
 
     QButtonGroup *btn_group;
+    QProcess *dconf;
 
     //building menubar's menu
     QMenu *settingsMenu_;
@@ -274,8 +275,6 @@ private:
     void processRequestStart();
     void processRequestStop();
     void changeAppStyleSheetTo(const QString &styleSheetFile);
-    void setThemeToAmbiance();
-    void setThemeToRadiance();
     void doesMatch();
     void doesntMatch();
     void setProgressbarsValue(short value);
@@ -339,7 +338,7 @@ private Q_SLOTS:
     void openCloseAddLoginAnimationFinished();
     void updateSeconds();
     void liveWebsiteImageCreated(QImage *image, short errorCode);
-    void changeCurrentThemeTo(const QString &theme);
+    void changeCurrentTheme();
     void showHideSearchBox();
     void showHideSearchBoxMenu();
     void escapePressed();
@@ -442,6 +441,7 @@ private Q_SLOTS:
     void on_random_time_from_combobox_currentIndexChanged(int index);
     void on_random_time_to_combobox_currentIndexChanged(int index);
     void on_edit_pushButton_clicked();
+    void dconfChanges();
 
 Q_SIGNALS:
      void fixLivewebsiteButtons();

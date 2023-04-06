@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <QtConcurrent/QtConcurrentRun>
 #include <QScreen>
+#include <QActionGroup>
 
 #include <iostream>
 #include <getopt.h>
@@ -1001,7 +1002,7 @@ void NonGuiManager::createTray()
     trayIconMenu_->addAction(liveEarthAction_);
     trayIconMenu_->addAction(pictureOfTheDayAction_);
     trayIconMenu_->addAction(liveWebsiteAction_);
-    QActionGroup* myGroup = new QActionGroup( this );
+    QActionGroup* myGroup = new QActionGroup(this);
     myGroup->addAction(wallpapersAction_);
     myGroup->addAction(liveEarthAction_);
     myGroup->addAction(pictureOfTheDayAction_);

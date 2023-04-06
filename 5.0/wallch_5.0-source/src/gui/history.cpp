@@ -84,7 +84,8 @@ void History::readHistoryFiles(){
             month.remove( QRegularExpression("^[0]*"));
             //add top level item, eg. December (2014)
             QTreeWidgetItem *month_year_item = new QTreeWidgetItem;
-            month_year_item->setText(0, QDate::longMonthName(month.toInt())+" ("+year+")");
+
+            month_year_item->setText(0, QDate::fromString(month,"M").toString("MMMM")+" ("+year+")");
             month_year_item->setData(0,12, year);
             month_year_item->setData(1,12, month);
             ui->daysTree->addTopLevelItem(month_year_item);
