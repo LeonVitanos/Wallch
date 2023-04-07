@@ -96,7 +96,7 @@ void NonGuiManager::researchDirs(){
 }
 
 void NonGuiManager::onlineBackgroundReady(QString image){
-    WallpaperManager::setBackground(image, true, gv.potdRunning, (gv.potdRunning ? 3 : 2));
+    wallpaperManager_->setBackground(image, true, gv.potdRunning, (gv.potdRunning ? 3 : 2));
 }
 
 void NonGuiManager::getFilesFromFolder(const QString &path){
@@ -118,7 +118,7 @@ void NonGuiManager::potdSetSameImage(){
         imageFetcher_->setFetchType(FetchType::POTD);
         imageFetcher_->fetch();
     }
-    WallpaperManager::setBackground(filename, true, true, 3);
+    wallpaperManager_->setBackground(filename, true, true, 3);
 }
 
 void NonGuiManager::readPictures(const QString &folder){
@@ -1866,7 +1866,7 @@ void NonGuiManager::liveWebsiteImageReady(QImage *image, short errorCode){
         image->save(filename);
         delete image;
 
-        WallpaperManager::setBackground(filename, true, true, 5);
+        wallpaperManager_->setBackground(filename, true, true, 5);
         QFile::remove(gv.wallchHomePath+LW_PREVIEW_IMAGE);
         QFile(filename).link(gv.wallchHomePath+LW_PREVIEW_IMAGE);
     }

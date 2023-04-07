@@ -276,7 +276,8 @@ void ColorsGradients::on_remove_background_clicked()
         empty.setPixel(0,0, qRgba(0, 0, 0, 0));
         empty.save(gv.wallchHomePath+NULL_IMAGE, "PNG", 1);
     }
-    WallpaperManager::setBackground(gv.wallchHomePath+NULL_IMAGE, false, false, 0);
+    //TODO: This button will probably be deleted
+    //WallpaperManager::setBackground(gv.wallchHomePath+NULL_IMAGE, false, false, 0);
 }
 
 void ColorsGradients::actionForSecondaryButtons(bool action)

@@ -36,9 +36,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QColor>
 #include <QPainter>
 
-WallpaperManager::WallpaperManager()
-{
-}
+WallpaperManager::WallpaperManager(QObject *parent):
+    QObject(parent)
+{}
 
 void WallpaperManager::addToPreviousWallpapers(const QString &wallpaper){
     previousWallpapers_ << wallpaper;
@@ -161,7 +161,7 @@ void WallpaperManager::startOver(){
 }
 
 void WallpaperManager::setRandomWallpaperAsBackground(){
-    WallpaperManager::setBackground(randomButNotCurrentWallpaper(), true, true, 1);
+    setBackground(randomButNotCurrentWallpaper(), true, true, 1);
 }
 
 QStringList WallpaperManager::getCurrentWallpapers(){
@@ -277,7 +277,7 @@ QString WallpaperManager::currentBackgroundWallpaper(){
     //returns the image currently set as desktop background
     QString currentImage;
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || DesktopEnvironment::Mate){
+    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
         currentImage=Global::gsettingsGet("org.gnome.desktop.background", "picture-uri");
         if(currentImage.startsWith("file://")){
             currentImage=currentImage.right(currentImage.count()-7);
@@ -383,6 +383,10 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
         case DesktopEnvironment::Mate:
         // From Ubuntu 22.04, there is a different setting for light and dark theme
         Global::gsettingsSet("org.gnome.desktop.background", Global::gsettingsGet("org.gnome.desktop.interface", "color-scheme") == "prefer-dark" ? "picture-uri-dark" : "picture-uri", "file://"+image);
+        if(Global::gsettingsGet("org.gnome.desktop.background", "picture-options") == "none"){
+            Global::gsettingsSet("org.gnome.desktop.background", "picture-options", "wallpaper");
+            Q_EMIT updateImageStyle();
+        }
         break;
     case DesktopEnvironment::LXDE:
         QProcess::startDetached("pcmanfm", QStringList() << "-w" << image);

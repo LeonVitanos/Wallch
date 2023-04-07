@@ -36,11 +36,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define BYTES_PER_KiB 1024.0
 #define BYTES_PER_MiB 1048576.0
 
-Properties::Properties(const QString &image, bool showNextPrevious, int currentIndex, QWidget *parent) :
+Properties::Properties(const QString &image, bool showNextPrevious, int currentIndex, WallpaperManager *wallpaperManager, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::properties)
 {
     ui->setupUi(this);
+
+    wallpaperManager_ = wallpaperManager;
 
     setWindowFlags(Qt::Dialog | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint);
 
@@ -224,7 +226,7 @@ void Properties::uncheckButtons(){
 
 void Properties::on_set_as_background_clicked()
 {
-    WallpaperManager::setBackground(currentFilename_, true, true, 1);
+    wallpaperManager_->setBackground(currentFilename_, true, true, 1);
     if(gv.setAverageColor){
         Q_EMIT averageColorChanged();
     }

@@ -93,7 +93,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QSharedMemory>
 
 typedef enum {
-    NoneStyle, Center, Tile, Stretch, Scale, Zoom
+    NoneStyle, Center, Tile, Stretch, Scale, Zoom, Span
 } DesktopStyle;
 
 namespace Ui {
@@ -103,7 +103,9 @@ namespace Ui {
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    MainWindow(QSharedMemory *attachedMemory, Global *globalParser, ImageFetcher *imageFetcher_, WebsiteSnapshot *websiteSnapshot, WallpaperManager *wallpaperManager, int timeoutCount, int lastRandomDelay, QWidget *parent = 0);
+    MainWindow(QSharedMemory *attachedMemory, Global *globalParser, ImageFetcher *imageFetcher_,
+               WebsiteSnapshot *websiteSnapshot, WallpaperManager *wallpaperManager,
+               int timeoutCount, int lastRandomDelay, QWidget *parent = 0);
     ~MainWindow();
     void click_shortcut_next();
     Ui::MainWindow *ui;
@@ -329,7 +331,7 @@ private Q_SLOTS:
     void copyImage();
     void copyImagePath();
     void readCoordinates(const QRect &cropArea);
-    void setStyle();
+    void findAvailableWallpaperStyles();
     void setWebsitePreviewImage(QImage *image);
     void setButtonColor();
     void setButtonColor(const QString &colorName);
@@ -437,6 +439,7 @@ private Q_SLOTS:
     void on_random_time_from_combobox_currentIndexChanged(int index);
     void on_random_time_to_combobox_currentIndexChanged(int index);
     void on_edit_pushButton_clicked();
+    void updateImageStyleCombo();
 
 Q_SIGNALS:
      void fixLivewebsiteButtons();

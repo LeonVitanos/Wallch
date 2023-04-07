@@ -36,11 +36,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QDesktopServices>
 #include <QImageReader>
 
-History::History(QWidget *parent) :
+History::History(WallpaperManager *wallpaperManager, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::history)
 {
     propertiesShown_=false;
+    wallpaperManager_ = wallpaperManager;
     ui->setupUi(this);
     ui->keepHistory->setChecked(settings->value("history", true).toBool());
     readHistoryFiles();
@@ -254,9 +255,8 @@ void History::copyPath(){
 }
 
 void History::setAsBackground(){
-    if(ui->historyInfo->currentItem()->isSelected()){
-        WallpaperManager::setBackground(ui->historyInfo->currentItem()->data(11).toString(), true, true, 1);
-    }
+    if(ui->historyInfo->currentItem()->isSelected())
+        wallpaperManager_->setBackground(ui->historyInfo->currentItem()->data(11).toString(), true, true, 1);
 }
 
 void History::showProperties(){
@@ -272,7 +272,7 @@ void History::showProperties(){
     }
 
     propertiesShown_=true;
-    historyProperties_ = new Properties(imageFile, false, 0, this);
+    historyProperties_ = new Properties(imageFile, false, 0, wallpaperManager_, this);
     historyProperties_->setModal(true);
     historyProperties_->setAttribute(Qt::WA_DeleteOnClose);
     connect(historyProperties_, SIGNAL(destroyed()), this, SLOT(historyPropertiesDestroyed()));

@@ -27,11 +27,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QStringList>
 #include <QColor>
 #include <QImage>
+#include <QObject>
 
-class WallpaperManager
+class WallpaperManager : public QObject
 {
+    Q_OBJECT
+
 public:
-    WallpaperManager();
+    explicit WallpaperManager(QObject *parent = 0);
 
 private:
     QStringList allWallpapers_;
@@ -69,9 +72,12 @@ public:
     static void openFolderOf(QString image = "");
     static QColor getAverageColorOf(const QString &image);
     static QColor getAverageColorOf(const QImage &image);
-    static void setBackground(const QString &image, bool changeAverageColor, bool showNotification, short feature);
+    void setBackground(const QString &image, bool changeAverageColor, bool showNotification, short feature);
     static bool imageIsNull(const QString &filename);
     static QImage indexed8ToARGB32(const QImage &image);
+
+Q_SIGNALS:
+    void updateImageStyle();
 };
 
 #endif // WALLPAPERMANAGER_H

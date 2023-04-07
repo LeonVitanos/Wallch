@@ -50,7 +50,7 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
 
     initializePrivateVariables(globalParser, imageFetcher);
 
-    wallpaperManager_ = wallpaperManager;
+    wallpaperManager_ = (wallpaperManager == NULL) ? new WallpaperManager() : wallpaperManager;
     websiteSnapshot_ = websiteSnapshot;
 
     availableGeometry_ = QGuiApplication::primaryScreen()->availableGeometry();
@@ -99,7 +99,7 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     match_->setPatternOptions(QRegularExpression::CaseInsensitiveOption);
 
     QTimer::singleShot(10, this, SLOT(setButtonColor()));
-    QTimer::singleShot(20, this, SLOT(setStyle()));
+    QTimer::singleShot(20, this, SLOT(findAvailableWallpaperStyles()));
 }
 
 MainWindow::~MainWindow()
@@ -257,6 +257,7 @@ void MainWindow::connectSignalSlots(){
     connect(ui->minutes_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(ui->seconds_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(btn_group, SIGNAL(buttonClicked(int)), this, SLOT(page_button_clicked(int)));
+    connect(wallpaperManager_, SIGNAL(updateImageStyle()), this, SLOT(updateImageStyleCombo()));
 }
 
 void MainWindow::retrieveSettings()
@@ -344,9 +345,7 @@ void MainWindow::dconfChanges(){
     if(output.contains("theme"))
         changeCurrentTheme();
     else if(output.contains("picture-options"))
-    {
-        qDebug() << "pic_options_changed";
-    }
+        updateImageStyleCombo();
     else if(output.contains("primary-color"))
     {
         qDebug() << "primary-color";
@@ -623,7 +622,7 @@ void MainWindow::onlineRequestFailed(){
 }
 
 void MainWindow::onlineImageRequestReady(QString image){
-    WallpaperManager::setBackground(image, true, gv.potdRunning||gv.liveEarthRunning, (gv.potdRunning ? 3 : 2));
+    wallpaperManager_->setBackground(image, true, gv.potdRunning||gv.liveEarthRunning, (gv.potdRunning ? 3 : 2));
     if(gv.setAverageColor){
         setButtonColor();
     }
@@ -771,7 +770,7 @@ void MainWindow::setPreviewImage(){
         //bring me some food right meow!
         bool previewColorsAndGradientsMeow=true;
 
-        if(desktopStyle == Tile || desktopStyle == Stretch){
+        if(desktopStyle == Tile || desktopStyle == Stretch || desktopStyle == Span){
             //the preview of the background color(s) is meaningless for the current styling
             previewColorsAndGradientsMeow = false;
         }
@@ -830,13 +829,14 @@ void MainWindow::setPreviewImage(){
                 }
             }
         }
+        QImage originalImage = image;
         int vScreenWidth= int((float)imagePreviewResizeFactorX_*gv.screenWidth);
         int vScreenHeight=int((float)imagePreviewResizeFactorY_*gv.screenHeight);
 
         //making the preview exactly like it will be shown at the desktop
         switch(desktopStyle){
         //Many thanks to http://askubuntu.com/questions/226816/background-setting-cropping-options
-        case Tile:
+        case Tile: //TODO: Wrong preview on small pictures. The image starts from the center of the screen.
         {
             //Tile (or "wallpaper" picture-option)
             /*
@@ -846,14 +846,12 @@ void MainWindow::setPreviewImage(){
              *  is greater or equal is centered
              */
             if(image.width() < vScreenWidth || image.height() < vScreenHeight){
-                QImage originalImage = image;
                 //find how many times (rounded UPWARDS)
                 short timesX = (vScreenWidth+originalImage.width()-1)/originalImage.width();
                 short timesY = (vScreenHeight+originalImage.height()-1)/originalImage.height();
 
                 image = QImage(image.copy(0, 0, vScreenWidth, vScreenHeight));
                 image.fill(Qt::black);
-
                 QPainter painter(&image);
 
                 if(timesX>1 && timesY>1){
@@ -886,13 +884,11 @@ void MainWindow::setPreviewImage(){
                 previewColorsAndGradientsMeow=false;
                 if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome){
                     //both dimensions are bigger than the screen's. Center both dimensions.
-                    QImage originalImage = image;
 
                     image = QImage(image.copy(0, 0, vScreenWidth, vScreenHeight));
-
                     image.fill(Qt::black);
-
                     QPainter painter(&image);
+
                     painter.drawPixmap((vScreenWidth-originalImage.width())/2, (vScreenHeight-originalImage.height())/2, QPixmap::fromImage(originalImage));
                     painter.end();
                 }
@@ -913,12 +909,8 @@ void MainWindow::setPreviewImage(){
              *  It stretches the corresponding dimension to fit the screen.
              *  The other dimension is centered.
              */
-            QImage originalImage = image;
-
             image = QImage(vScreenWidth, vScreenHeight, QImage::Format_ARGB32_Premultiplied);
-
             image.fill(Qt::transparent);
-
             QPainter painter(&image);
 
             float widthFactor = (float) vScreenWidth  / originalImage.width();
@@ -953,33 +945,25 @@ void MainWindow::setPreviewImage(){
              *  If one or more dimensions of the image are larger than the screen's just crop the image to the
              *  screen's dimension and center it.
              */
-            QImage originalImage = image;
-
             image = QImage(vScreenWidth, vScreenHeight, QImage::Format_ARGB32_Premultiplied);
-
             image.fill(Qt::transparent);
-
             QPainter painter(&image);
+
             painter.drawPixmap((vScreenWidth-originalImage.width())/2, (vScreenHeight-originalImage.height())/2, QPixmap::fromImage(originalImage));
             painter.end();
             break;
         }
         case Scale:
         {
-            //Scale - same as Span.
+            //Scale.
             /*
              *  How it works:
              *  It calculates the min of vScreenWidth/imageWidth and vScreenHeight/imageHeight.
              *  It stretches the corresponding dimension to fit the screen.
              *  The other dimension is centered.
              */
-            QImage originalImage = image;
-
             image = QImage(vScreenWidth, vScreenHeight, QImage::Format_ARGB32_Premultiplied);
-
-
             image.fill(Qt::transparent);
-
             QPainter painter(&image);
 
             float width_factor = (float) vScreenWidth  / originalImage.width();
@@ -1007,18 +991,17 @@ void MainWindow::setPreviewImage(){
         }
         case NoneStyle:
         case Stretch:
-            //Fill (or "stretched"). This is the default for the QLabel.
+        case Span:
+            //TODO: Stretch and Span seem to be the same. Confirm this
         default:
             break;
         }
         if(desktopStyle!=NoneStyle){
-            if(image.width() > 2*SCREEN_LABEL_SIZE_X || image.height() > 2*SCREEN_LABEL_SIZE_Y){
-                image = QImage(image.scaled(2*SCREEN_LABEL_SIZE_X, 2*SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::FastTransformation).scaled(SCREEN_LABEL_SIZE_X, SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
-            }
+            if(image.width() > 2*SCREEN_LABEL_SIZE_X || image.height() > 2*SCREEN_LABEL_SIZE_Y)
+                image = QImage(image.scaled(2*SCREEN_LABEL_SIZE_X, 2*SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::FastTransformation)
+                               .scaled(SCREEN_LABEL_SIZE_X, SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
             else
-            {
                 image = QImage(image.scaled(SCREEN_LABEL_SIZE_X, SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
-            }
         }
 
         if(previewColorsAndGradientsMeow || desktopStyle==NoneStyle){
@@ -1030,8 +1013,10 @@ void MainWindow::setPreviewImage(){
             image = QImage(colorsGradientsImage);
         }
 #else
-        image = QImage(image.scaled(2*SCREEN_LABEL_SIZE_X, 2*SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::FastTransformation).scaled(SCREEN_LABEL_SIZE_X, SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+        image = QImage(image.scaled(2*SCREEN_LABEL_SIZE_X, 2*SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::FastTransformation)
+                       .scaled(SCREEN_LABEL_SIZE_X, SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
 #endif //#ifdef Q_OS_UNIX
+
         ui->screen_label->setPixmap(QPixmap::fromImage(image));
     }
 }
@@ -1164,29 +1149,16 @@ void MainWindow::processRequestStop(){
     }
 }
 
-void MainWindow::setStyle(){
+void MainWindow::findAvailableWallpaperStyles(){
 #ifdef Q_OS_UNIX
     if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
+        ui->image_style_combo->addItem(tr("Color"));
         ui->image_style_combo->addItem(tr("Tile"));
         ui->image_style_combo->addItem(tr("Zoom"));
         ui->image_style_combo->addItem(tr("Center"));
         ui->image_style_combo->addItem(tr("Scale"));
         ui->image_style_combo->addItem(tr("Fill"));
         ui->image_style_combo->addItem(tr("Span"));
-
-        QString style=globalParser_->gsettingsGet("org.gnome.desktop.background", "picture-options");
-        short index=0;
-        if (style=="zoom")
-            index=1;
-        else if (style=="centered")
-            index=2;
-        else if (style=="scaled")
-            index=3;
-        else if (style=="stretched")
-            index=4;
-        else if (style=="spanned")
-            index=5;
-        ui->image_style_combo->setCurrentIndex(index);
     }
     else if(gv.currentDE == DesktopEnvironment::XFCE){
         ui->image_style_combo->addItem(tr("None"));
@@ -1195,15 +1167,6 @@ void MainWindow::setStyle(){
         ui->image_style_combo->addItem(tr("Stretched"));
         ui->image_style_combo->addItem(tr("Scaled"));
         ui->image_style_combo->addItem(tr("Zoomed"));
-        int index=0;
-        Q_FOREACH(QString entry, globalParser_->getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("image-style")){
-                QString imageStyle=globalParser_->getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry);
-                index=imageStyle.toInt();
-            }
-        }
-        if(index<ui->image_style_combo->count() && index>=0)
-            ui->image_style_combo->setCurrentIndex(index);
     }
     else if(gv.currentDE == DesktopEnvironment::LXDE){
         ui->image_style_combo->addItem(tr("Empty"));
@@ -1211,9 +1174,6 @@ void MainWindow::setStyle(){
         ui->image_style_combo->addItem(tr("Fit"));
         ui->image_style_combo->addItem(tr("Center"));
         ui->image_style_combo->addItem(tr("Tile"));
-        int value = globalParser_->getPcManFmValue("wallpaper_mode").toInt();
-        if(value<ui->image_style_combo->count() && value>=0)
-            ui->image_style_combo->setCurrentIndex(value);
     }
 #else
     ui->image_style_combo->addItem(tr("Tile"));
@@ -1225,6 +1185,43 @@ void MainWindow::setStyle(){
         ui->image_style_combo->addItem(tr("Fit"));
         ui->image_style_combo->addItem(tr("Fill"));
     }
+#endif
+
+    updateImageStyleCombo();
+    gv.mainwindowLoaded=true;
+    updateScreenLabel();
+}
+
+void MainWindow::updateImageStyleCombo(){
+    short index=0;
+
+#ifdef Q_OS_UNIX
+    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
+        QString style=globalParser_->gsettingsGet("org.gnome.desktop.background", "picture-options");
+        if (style=="wallpaper")
+            index=1;
+        else if (style=="zoom")
+            index=2;
+        else if (style=="centered")
+            index=3;
+        else if (style=="scaled")
+            index=4;
+        else if (style=="stretched")
+            index=5;
+        else if (style=="spanned")
+            index=6;
+    }
+    else if(gv.currentDE == DesktopEnvironment::XFCE){
+        Q_FOREACH(QString entry, globalParser_->getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
+            if(entry.contains("image-style")){
+                QString imageStyle=globalParser_->getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry);
+                index=imageStyle.toInt();
+            }
+        }
+    }
+    else if(gv.currentDE == DesktopEnvironment::LXDE)
+        index = globalParser_->getPcManFmValue("wallpaper_mode").toInt();
+#else
     QSettings desktop_settings("HKEY_CURRENT_USER\\Control Panel\\Desktop", QSettings::NativeFormat);
 
     switch(desktop_settings.value("WallpaperStyle").toInt())
@@ -1232,24 +1229,24 @@ void MainWindow::setStyle(){
     default:
     case 0:
         if(desktop_settings.value("TileWallpaper")!=0)
-            ui->image_style_combo->setCurrentIndex(0);
+            index = 0;
         else
-            ui->image_style_combo->setCurrentIndex(1);
+            index = 1;
         break;
     case 2:
-        ui->image_style_combo->setCurrentIndex(2);
+        index = 2;
         break;
     case 6:
-        ui->image_style_combo->setCurrentIndex(3);
+        index = 3;
         break;
     case 10:
-        ui->image_style_combo->setCurrentIndex(4);
+        index = 4;
         break;
     }
 #endif
 
-    gv.mainwindowLoaded=true;
-    updateScreenLabel();
+    if(index<ui->image_style_combo->count() && index>=0 && index!=ui->image_style_combo->currentIndex())
+        ui->image_style_combo->setCurrentIndex(index);
 }
 
 #ifdef Q_OS_UNIX
@@ -1259,20 +1256,25 @@ DesktopStyle MainWindow::getDesktopStyle(){
         switch(ui->image_style_combo->currentIndex()){
         default:
         case 0:
-            desktopStyle=Tile;
+            desktopStyle=NoneStyle;
             break;
         case 1:
-            desktopStyle=Zoom;
+            desktopStyle=Tile;
             break;
         case 2:
+            desktopStyle=Zoom;
+            break;
+        case 3:
             desktopStyle=Center;
             break;
-        case 5:
-        case 3:
+        case 4:
             desktopStyle=Scale;
             break;
-        case 4:
+        case 5:
             desktopStyle=Stretch;
+            break;
+        case 6:
+            desktopStyle=Span;
             break;
         }
     }
@@ -1395,24 +1397,28 @@ void MainWindow::on_image_style_combo_currentIndexChanged(int index)
         QString type;
         switch(index){
         case 0:
+            type="none";
+            break;
+        case 1:
             type="wallpaper";
             break;
-        default:
-        case 1:
+        case 2:
             type="zoom";
             break;
-        case 2:
+        case 3:
             type="centered";
             break;
-        case 3:
+        case 4:
             type="scaled";
             break;
-        case 4:
+        case 5:
             type="stretched";
             break;
-        case 5:
+        case 6:
             type="spanned";
             break;
+        default:
+            type="wallpaper";
         }
         globalParser_->gsettingsSet("org.gnome.desktop.background", "picture-options", type);
     }
@@ -2422,7 +2428,7 @@ void MainWindow::rotateLeft(){
         updateScreenLabel();
 
     if(path==WallpaperManager::currentBackgroundWallpaper()){
-        WallpaperManager::setBackground(path, false, false, 1);
+        wallpaperManager_->setBackground(path, false, false, 1);
     }
 }
 
@@ -2554,7 +2560,7 @@ void MainWindow::changeImage(){
 
     wallpaperManager_->addToPreviousWallpapers(image);
 
-    WallpaperManager::setBackground(image, true, true, 1);
+    wallpaperManager_->setBackground(image, true, true, 1);
     if(gv.setAverageColor){
         setButtonColor();
     }
@@ -3679,7 +3685,7 @@ void MainWindow::liveWebsiteImageCreated(QImage *image, short errorCode){
         image->save(filename);
         delete image;
 
-        WallpaperManager::setBackground(filename, true, true, 5);
+        wallpaperManager_->setBackground(filename, true, true, 5);
         if(gv.setAverageColor){
             setButtonColor();
         }
@@ -4350,7 +4356,7 @@ void MainWindow::on_actionHistory_triggered()
         return;
     }
     historyShown_=true;
-    history_ = new History (this);
+    history_ = new History (wallpaperManager_, this);
     history_->setModal(true);
     history_->setAttribute(Qt::WA_DeleteOnClose);
     connect(history_, SIGNAL(destroyed()), this, SLOT(historyDestroyed()));
@@ -4472,7 +4478,7 @@ void MainWindow::showProperties()
     else
     {
         propertiesShown_=true;
-        properties_ = new Properties(currentImage, true, ui->wallpapersList->currentRow(), this);
+        properties_ = new Properties(currentImage, true, ui->wallpapersList->currentRow(), wallpaperManager_, this);
 
         properties_->setModal(true);
         properties_->setAttribute(Qt::WA_DeleteOnClose);
