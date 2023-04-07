@@ -98,19 +98,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 extern QSettings *settings;
 
 #ifdef Q_OS_UNIX
-
 struct DesktopEnvironment {
   enum Value {
     UnityGnome, Gnome, XFCE, LXDE, Mate
   };
 };
-
-struct ColoringType {
-  enum Value {
-    NoneColor, SolidColor, HorizontalColor, VerticalColor
-  };
-};
-
 #endif
 
 struct GlobalVar {
@@ -248,15 +240,10 @@ public:
     static void addPreviousBackground(QStringList &previous_backgrounds, const QString &image);
     static void error(const QString &message);
     static void debug(const QString &message);
-    static QString getPrimaryColor();
 #ifdef Q_OS_UNIX
     static void setUnityProgressBarEnabled(bool state);
     static void setUnityProgressbarValue(float percent);
     static QString gsettingsGet(const QString &schema, const QString &key);
-    static QString getSecondaryColor();
-    static void setPrimaryColor(const QString &colorName);
-    static void setSecondaryColor(const QString &colorName);
-    static ColoringType::Value getColoringType();
     static QString getPcManFmValue(const QString &key);
     static void gsettingsSet(const QString &schema, const QString &key, const QString &value);
     static void changeIndicatorIcon(const QString &icon);
@@ -265,6 +252,7 @@ public:
 #endif //#ifdef Q_OS_UNIX
     static int getSecondsTillHour(const QString &hour);
     static QString getOutputOfCommand(QString command, QStringList parameters);
+    static void setPcManFmValue(const QString &key, const QString &value);
     static void openUrl(const QString &url);
     static QString monthInEnglish(short month);
     static void updateStartup();
@@ -273,14 +261,12 @@ public:
     static QPixmap roundedCorners(const QImage &image, const int radius);
     static short autodetectTheme();
     bool runsOnBattery();
-    static void currentBackgroundExists();
 
 private:
 #ifdef Q_OS_WIN
     Notification *notification_ = NULL;
 #endif
     static QString searchForFileInDir(QString folder, QString file);
-    static void setPcManFmValue(const QString &key, const QString &value);
 
     #ifdef Q_OS_WIN
 private Q_SLOTS:

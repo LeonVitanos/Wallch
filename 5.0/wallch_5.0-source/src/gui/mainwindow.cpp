@@ -33,12 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QColorDialog>
 #include <QShortcut>
 
-#ifdef Q_OS_WIN
-#include <QtGui/private/qzipreader_p.h>
-#endif
-
 #include "mainwindow.h"
-
 #include "math.h"
 
 MainWindow *mainWindowInstance;
@@ -71,10 +66,12 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     btn_group->addButton(ui->page_4_web, 4);
     btn_group->addButton(ui->page_5_other, 5);
 
+#ifdef Q_OS_UNIX
     dconf = new QProcess(this);
     connect(dconf, SIGNAL(readyReadStandardOutput()), this, SLOT(dconfChanges()));
     connect(dconf , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(dconfChanges()));
     dconf->start("dconf watch /");
+#endif
 
     setupMenu();
     connectSignalSlots();
@@ -341,6 +338,7 @@ void MainWindow::setupKeyboardShortcuts(){
     (void) new QShortcut(Qt::ALT + Qt::Key_F4, this, SLOT(escapePressed()));
 }
 
+#ifdef Q_OS_UNIX
 void MainWindow::dconfChanges(){
     QByteArray output = dconf->readAllStandardOutput();
     if(output.contains("theme"))
@@ -362,6 +360,7 @@ void MainWindow::dconfChanges(){
         qDebug() << "color-shading-type";
     }
 }
+#endif
 
 void MainWindow::changeCurrentTheme()
 {
@@ -390,7 +389,7 @@ void MainWindow::changeCurrentTheme()
 }
 
 void MainWindow::initializePrivateVariables(Global *globalParser, ImageFetcher *imageFetcher){
-    globalParser_ = (globalParser == NULL) ? new Global() : globalParser;
+    globalParser_ = (globalParser_ == NULL) ? new Global() : globalParser;
     imageFetcher_ = (imageFetcher == NULL) ? new ImageFetcher() : imageFetcher;
     cacheManager_ = new CacheManager();
     opacityEffect_ = new QGraphicsOpacityEffect(this);
@@ -776,7 +775,7 @@ void MainWindow::setPreviewImage(){
             //the preview of the background color(s) is meaningless for the current styling
             previewColorsAndGradientsMeow = false;
         }
-        ColoringType::Value coloringType = globalParser_->getColoringType();
+        ColoringType::Value coloringType = ColorManager::getColoringType();
         if(previewColorsAndGradientsMeow || desktopStyle == NoneStyle){
             if(desktopStyle == NoneStyle){
                 image = QImage();
@@ -788,7 +787,7 @@ void MainWindow::setPreviewImage(){
             }
             else
             {
-                primaryColor = globalParser_->getPrimaryColor();
+                primaryColor = ColorManager::getPrimaryColor();
             }
 
             colorsGradientsImage.fill(primaryColor);
@@ -1178,24 +1177,15 @@ void MainWindow::setStyle(){
         QString style=globalParser_->gsettingsGet("org.gnome.desktop.background", "picture-options");
         short index=0;
         if (style=="zoom")
-        {
             index=1;
-        }
-        else if (style=="centered"){
+        else if (style=="centered")
             index=2;
-        }
         else if (style=="scaled")
-        {
             index=3;
-        }
         else if (style=="stretched")
-        {
             index=4;
-        }
         else if (style=="spanned")
-        {
             index=5;
-        }
         ui->image_style_combo->setCurrentIndex(index);
     }
     else if(gv.currentDE == DesktopEnvironment::XFCE){
@@ -1212,9 +1202,8 @@ void MainWindow::setStyle(){
                 index=imageStyle.toInt();
             }
         }
-        if(index<ui->image_style_combo->count() && index>=0){
+        if(index<ui->image_style_combo->count() && index>=0)
             ui->image_style_combo->setCurrentIndex(index);
-        }
     }
     else if(gv.currentDE == DesktopEnvironment::LXDE){
         ui->image_style_combo->addItem(tr("Empty"));
@@ -1223,9 +1212,8 @@ void MainWindow::setStyle(){
         ui->image_style_combo->addItem(tr("Center"));
         ui->image_style_combo->addItem(tr("Tile"));
         int value = globalParser_->getPcManFmValue("wallpaper_mode").toInt();
-        if(value<ui->image_style_combo->count() && value>=0){
+        if(value<ui->image_style_combo->count() && value>=0)
             ui->image_style_combo->setCurrentIndex(value);
-        }
     }
 #else
     ui->image_style_combo->addItem(tr("Tile"));
@@ -1243,12 +1231,10 @@ void MainWindow::setStyle(){
     {
     default:
     case 0:
-        if(desktop_settings.value("TileWallpaper")!=0){
+        if(desktop_settings.value("TileWallpaper")!=0)
             ui->image_style_combo->setCurrentIndex(0);
-        }
-        else{
+        else
             ui->image_style_combo->setCurrentIndex(1);
-        }
         break;
     case 2:
         ui->image_style_combo->setCurrentIndex(2);
@@ -1260,8 +1246,7 @@ void MainWindow::setStyle(){
         ui->image_style_combo->setCurrentIndex(4);
         break;
     }
-
-#endif //#ifdef Q_OS_UNIX
+#endif
 
     gv.mainwindowLoaded=true;
     updateScreenLabel();
@@ -1340,7 +1325,7 @@ DesktopStyle MainWindow::getDesktopStyle(){
 
 void MainWindow::setButtonColor()
 {
-    QString colorName = globalParser_->getPrimaryColor();
+    QString colorName = ColorManager::getPrimaryColor();
     setButtonColor(colorName);
 }
 
@@ -1350,7 +1335,7 @@ void MainWindow::setButtonColor(const QString &colorName){
     image.fill(colorName);
     ui->set_desktop_color->setIcon(QIcon(QPixmap::fromImage(image)));
 #else
-    ColoringType::Value coloringType=globalParser_->getColoringType();
+    ColoringType::Value coloringType=ColorManager::getColoringType();
     if(coloringType == ColoringType::SolidColor){
         QImage image(40, 19, QImage::Format_ARGB32_Premultiplied);
         image.fill(colorName);

@@ -54,6 +54,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "potd_preview.h"
 #include "websitesnapshot.h"
 #include "wallpapermanager.h"
+#include "colormanager.h"
 #include "cachemanager.h"
 #include "imagefetcher.h"
 #include "pictures_locations.h"
@@ -113,24 +114,31 @@ protected:
     bool eventFilter(QObject *object, QEvent *event);
 
 private:
+#ifdef Q_OS_UNIX
+    QTimer *batteryStatusChecker_;
+    DesktopStyle getDesktopStyle();
+    QString getSecondaryColor();
+    QProcess *dconf;
+#else
+    Notification *notification_;
+    bool nativeEvent(const QByteArray& eventType, void* message, long* result);
+#endif
+
     QSharedMemory *attachedMemory_;
     WallpaperManager *wallpaperManager_;
+    ColorManager *colorManager_;
     CacheManager *cacheManager_;
     QTimer *updateSecondsTimer_;
     QTimer *updateCheckTime_;
     QTimer *iconUpdater_;
     QTimer *researchFoldersTimer_;
     QTimer *hideProgress_;
-#ifdef Q_OS_UNIX
-    QTimer *batteryStatusChecker_;
-#endif //#ifdef Q_OS_UNIX
 
     QMenu *listwidgetMenu_;
 
     QList<QLabel*> menuSeparators_;
 
     QButtonGroup *btn_group;
-    QProcess *dconf;
 
     //building menubar's menu
     QMenu *settingsMenu_;
@@ -168,11 +176,6 @@ private:
     QGraphicsOpacityEffect* opacityEffect2_;
     QPropertyAnimation *increaseOpacityAnimation;
     QPropertyAnimation *decreaseOpacityAnimation;
-#ifdef Q_OS_UNIX
-    QProcess *unzipArchive_;
-#else
-    Notification *notification_;
-#endif
     WebsiteSnapshot *websiteSnapshot_;
     QIcon imageLoading_;
     bool appAboutToClose_ = false;
@@ -228,14 +231,6 @@ private:
     QShortcut *contentsShortcut_ = NULL;
     QShortcut *historyShortcut_ = NULL;
 
-#ifdef Q_OS_WIN
-    bool nativeEvent(const QByteArray& eventType, void* message, long* result);
-#else
-    DesktopStyle getDesktopStyle();
-    ColoringType::Value getColoringType();
-    QString getPrimaryColor();
-    QString getSecondaryColor();
-#endif
     QString getPathOfListItem(int index = -1);
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
@@ -306,6 +301,10 @@ private:
     void iconsPathsChanged();
 
 private Q_SLOTS:
+#ifdef Q_OS_UNIX
+    void unityProgressbarSetEnabled(bool enabled);
+    void dconfChanges();
+#endif
     void timeSpinboxChanged();
     void intervalTypeChanged();
     void closeWhatsRunning();
@@ -357,9 +356,6 @@ private Q_SLOTS:
     void strongShowApp();
     void hideOrShow();
     void picturesLocationsChanged();
-#ifdef Q_OS_UNIX
-    void unityProgressbarSetEnabled(bool enabled);
-#endif //#ifdef Q_OS_UNIX
     void preferencesDestroyed();
     void statisticsDestroyed();
     void lePointDestroyed();
@@ -441,7 +437,6 @@ private Q_SLOTS:
     void on_random_time_from_combobox_currentIndexChanged(int index);
     void on_random_time_to_combobox_currentIndexChanged(int index);
     void on_edit_pushButton_clicked();
-    void dconfChanges();
 
 Q_SIGNALS:
      void fixLivewebsiteButtons();

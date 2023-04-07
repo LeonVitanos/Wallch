@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QFile>
 #include <QIcon>
 #include "glob.h"
+#include "colormanager.h"
 
 namespace Ui {
 class colors_gradients;
@@ -60,10 +61,6 @@ private:
     QString primaryColor_;
     QImage createVerticalHorizontalImage(const QString &type);
     void actionForSecondaryButtons(bool action);
-#ifdef Q_OS_UNIX
-    void setDesktopSecondaryColor(const QString &colorName);
-#endif
-    void setDesktopColor(const QString &colorName);
     void updateGradientsOnlyColors(bool updateLeftRightSolid);
 
 Q_SIGNALS:

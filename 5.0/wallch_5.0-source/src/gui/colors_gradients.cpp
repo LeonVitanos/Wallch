@@ -41,7 +41,7 @@ ColorsGradients::ColorsGradients(QWidget *parent) :
 
 #ifdef Q_OS_UNIX
     ColoringType::Value coloringType;
-    coloringType = Global::getColoringType();
+    coloringType = ColorManager::getColoringType();
     if(coloringType == ColoringType::SolidColor){
         ui->solid_radioButton->setChecked(true);
         actionForSecondaryButtons(false);
@@ -69,17 +69,10 @@ ColorsGradients::ColorsGradients(QWidget *parent) :
         ui->horizontal_radioButton->setChecked(true);
         actionForSecondaryButtons(true);
     }
-#endif //#ifdef Q_OS_UNIX
-    //determining current primary color
-    QString res1;
-#ifdef Q_OS_UNIX
-    res1=Global::getPrimaryColor();
-#else
-    int Elements[1] = {COLOR_BACKGROUND};
-    DWORD currentColors[1];
-    currentColors[0] = GetSysColor(Elements[0]);
-    res1=QColor(GetRValue(currentColors[0]), GetGValue(currentColors[0]), GetBValue(currentColors[0])).name();
 #endif
+
+    //determining current primary color
+    QString res1 = ColorManager::getPrimaryColor();
     QImage image(60, 60, QImage::Format_ARGB32_Premultiplied);
     primaryColor_ = res1;
     image.fill(primaryColor_);
@@ -88,7 +81,7 @@ ColorsGradients::ColorsGradients(QWidget *parent) :
     //determining secondary color
     QString res2;
 #ifdef Q_OS_UNIX
-    res2=Global::getSecondaryColor();
+    res2=ColorManager::getSecondaryColor();
 #endif
     secondaryColor_=res2;
     QImage image2(60, 60, QImage::Format_ARGB32_Premultiplied);
@@ -120,7 +113,7 @@ void ColorsGradients::on_average_color_checkbox_clicked(bool checked)
         QColor currentBgAverageColor = WallpaperManager::getAverageColorOf(WallpaperManager::currentBackgroundWallpaper());
         if(!currentBgAverageColor.isValid()){
             primaryColor_ = currentBgAverageColor.name();
-            setDesktopColor(primaryColor_);
+            ColorManager::setPrimaryColor(primaryColor_);
             updateGradientsOnlyColors(true);
         }
     }
@@ -222,26 +215,12 @@ void ColorsGradients::on_primary_color_button_clicked()
     }
 
     primaryColor_=color.name();
-    setDesktopColor(primaryColor_);
+    ColorManager::setPrimaryColor(primaryColor_);
     Q_EMIT updateDesktopColor(primaryColor_);
     updateGradientsOnlyColors(true);
     if(gv.previewImagesOnScreen){
         Q_EMIT updateTv();
     }
-}
-
-void ColorsGradients::setDesktopColor(const QString &colorName){
-#ifdef Q_OS_UNIX
-    Global::setPrimaryColor(colorName);
-#else
-    QColor color = colorName;
-    QSettings color_setting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
-    color_setting.setValue("Background", QString::number(color.red())+' '+QString::number(color.green())+' '+QString::number(color.blue()));
-    int Elements[1] = {COLOR_BACKGROUND};
-    DWORD NewColors[1];
-    NewColors[0] = RGB(color.red(), color.green(), color.blue());
-    SetSysColors(1, Elements, NewColors);
-#endif
 }
 
 void ColorsGradients::on_secondary_color_button_clicked()
@@ -256,7 +235,7 @@ void ColorsGradients::on_secondary_color_button_clicked()
 
 #ifdef Q_OS_UNIX
     secondaryColor_=color.name();
-    setDesktopSecondaryColor(secondaryColor_);
+    ColorManager::setSecondaryColor(secondaryColor_)
 #endif
 
     updateGradientsOnlyColors(true);
@@ -264,12 +243,6 @@ void ColorsGradients::on_secondary_color_button_clicked()
         Q_EMIT updateTv();
     }
 }
-
-#ifdef Q_OS_UNIX
-void ColorsGradients::setDesktopSecondaryColor(const QString &colorName){
-    Global::setSecondaryColor(colorName);
-}
-#endif
 
 void ColorsGradients::on_change_order_clicked()
 {
@@ -279,9 +252,9 @@ void ColorsGradients::on_change_order_clicked()
     primaryColor_=secondaryColor_;
     secondaryColor_=temp;
 
-    setDesktopColor(primaryColor_);
+    ColorManager::setPrimaryColor(primaryColor_);
 #ifdef Q_OS_UNIX
-    setDesktopSecondaryColor(secondaryColor_);
+    ColorManager::setSecondaryColor(secondaryColor_)
 #endif
 
     updateGradientsOnlyColors(true);
@@ -430,4 +403,3 @@ QImage ColorsGradients::createVerticalHorizontalImage(const QString &type)
 
     return image;
 }
-
