@@ -32,7 +32,7 @@ QString ColorManager::getPrimaryColor(){
         }
     }
     else if(gv.currentDE == DesktopEnvironment::LXDE)
-        primaryColor = getPcManFmValue("desktop_bg");
+        primaryColor = Global::getPcManFmValue("desktop_bg");
 #else
     QSettings collorSetting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
     if(collorSetting.value("Background").isValid()){

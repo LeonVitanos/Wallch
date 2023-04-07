@@ -2,7 +2,6 @@
 #ifndef COLORMANAGER_H
 #define COLORMANAGER_H
 
-#include <QSettings>
 #include <QColor>
 #include "glob.h"
 

@@ -794,7 +794,7 @@ void MainWindow::setPreviewImage(){
 
             if(coloringType != ColoringType::SolidColor && coloringType != ColoringType::NoneColor)
             {
-                QString secondaryColor=globalParser_->getSecondaryColor();
+                QString secondaryColor=ColorManager::getSecondaryColor();
 
                 short alpha=255;
                 short softness=0;
@@ -1343,7 +1343,7 @@ void MainWindow::setButtonColor(const QString &colorName){
     }
     else
     {
-        QString secondaryColor=globalParser_->getSecondaryColor();
+        QString secondaryColor=ColorManager::getSecondaryColor();
 
         QImage image(75, 75, QImage::Format_RGB32);
         image.fill(Qt::white);

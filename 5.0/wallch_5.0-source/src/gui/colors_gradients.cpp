@@ -235,7 +235,7 @@ void ColorsGradients::on_secondary_color_button_clicked()
 
 #ifdef Q_OS_UNIX
     secondaryColor_=color.name();
-    ColorManager::setSecondaryColor(secondaryColor_)
+    ColorManager::setSecondaryColor(secondaryColor_);
 #endif
 
     updateGradientsOnlyColors(true);
@@ -254,7 +254,7 @@ void ColorsGradients::on_change_order_clicked()
 
     ColorManager::setPrimaryColor(primaryColor_);
 #ifdef Q_OS_UNIX
-    ColorManager::setSecondaryColor(secondaryColor_)
+    ColorManager::setSecondaryColor(secondaryColor_);
 #endif
 
     updateGradientsOnlyColors(true);
