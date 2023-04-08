@@ -76,6 +76,7 @@ public:
     static bool imageIsNull(const QString &filename);
     static QImage indexed8ToARGB32(const QImage &image);
     short getCurrentFit();
+    void setCurrentFit(short index);
 
 Q_SIGNALS:
     void updateImageStyle();

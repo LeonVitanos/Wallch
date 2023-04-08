@@ -118,7 +118,6 @@ protected:
 private:
 #ifdef Q_OS_UNIX
     QTimer *batteryStatusChecker_;
-    DesktopStyle getDesktopStyle();
     QString getSecondaryColor();
     QProcess *dconf;
 #else

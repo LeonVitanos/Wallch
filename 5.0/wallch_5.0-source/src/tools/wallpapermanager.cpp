@@ -533,3 +533,167 @@ short WallpaperManager::getCurrentFit(){
 
     return 1;
 }
+
+void WallpaperManager::setCurrentFit(short index){
+#ifdef Q_OS_UNIX
+    if(index == getCurrentFit())
+        return;
+
+    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
+        QString type;
+        switch(index){
+        case 0:
+            type="none";
+            break;
+        case 1:
+            type="wallpaper";
+            break;
+        case 2:
+            type="zoom";
+            break;
+        case 3:
+            type="centered";
+            break;
+        case 4:
+            type="scaled";
+            break;
+        case 5:
+            type="stretched";
+            break;
+        case 6:
+            type="spanned";
+            break;
+        default:
+            type="wallpaper";
+        }
+        Global::gsettingsSet("org.gnome.desktop.background", "picture-options", type);
+    }
+    else if(gv.currentDE == DesktopEnvironment::XFCE){
+        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
+            if(entry.contains("image-style")){
+                QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry << "-s" << QString::number(index));
+            }
+        }
+    }
+    else if(gv.currentDE == DesktopEnvironment::LXDE){
+        QString style;
+        switch(index){
+        default:
+        case 0:
+            style="color";
+            break;
+        case 1:
+            style="stretch";
+            break;
+        case 2:
+            style="fit";
+            break;
+        case 3:
+            style="center";
+            break;
+        case 4:
+            style="tile";
+            break;
+        }
+
+        QProcess::startDetached("pcmanfm", QStringList() << "--wallpaper-mode="+style);
+    }
+#else
+    if(index == 0){
+        settings->setValue("last_wallpaper", currentBackgroundWallpaper());
+        setBackground("", false, false, 0);
+        return;
+    }
+    else if(index == getCurrentFit())
+        return;
+
+    /*
+     * ---------- Reference: https://learn.microsoft.com/en-us/windows/win32/controls/themesfileformat-overview#control-paneldesktop-section ------------
+     * Two registry values are set in the Control Panel\Desktop key.
+     * TileWallpaper
+     * 0: The wallpaper picture should not be tiled
+     * 1: The wallpaper picture should be tiled
+     * WallpaperStyle
+     * 0:  The image is centered if TileWallpaper=0 or tiled if TileWallpaper=1
+     * 2:  The image is stretched to fill the screen
+     * 6:  The image is resized to fit the screen while maintaining the aspect
+     *     ratio. (Windows 7 and later)
+     * 10: The image is resized and cropped to fill the screen while
+     *     maintaining the aspect ratio. (Windows 7 and later)
+     * 22: (Not in the documentation) Span style
+     * -----------------------------------------------------------------------------------------------------
+     */
+
+    /*
+     * Unfortunately QSettings can't manage to change a registry DWORD,
+     * so we have to go with the Windows' way.
+     */
+
+    HRESULT hr = S_OK;
+
+    HKEY hKey = NULL;
+    hr = HRESULT_FROM_WIN32(RegOpenKeyEx(HKEY_CURRENT_USER,
+                                         L"Control Panel\\Desktop", 0, KEY_READ | KEY_WRITE, &hKey));
+    if (SUCCEEDED(hr))
+    {
+        PWSTR pszWallpaperStyle;
+        PWSTR pszTileWallpaper;
+
+        wchar_t zero[10] = L"0";
+        wchar_t one[10] = L"1";
+        wchar_t two[10] = L"2";
+        wchar_t six[10] = L"6";
+        wchar_t ten[10] = L"10";
+        wchar_t twentytwo[10] = L"22";
+
+        switch (index)
+        {
+        case 1: //tile
+            pszWallpaperStyle = zero;
+            pszTileWallpaper = one;
+            break;
+        case 2: //center
+            pszWallpaperStyle = zero;
+            pszTileWallpaper = zero;
+            break;
+        case 3: //stretch
+            pszWallpaperStyle = two;
+            pszTileWallpaper = zero;
+            break;
+        case 4: //fit (Windows 7 and later)
+            pszWallpaperStyle = six;
+            pszTileWallpaper = zero;
+            break;
+        case 5: //fill (Windows 7 and later)
+            pszWallpaperStyle = ten;
+            pszTileWallpaper = zero;
+            break;
+        case 6: //span (Windows 8 and later)
+            pszWallpaperStyle = twentytwo;
+            pszTileWallpaper = zero;
+            break;
+        }
+
+        //set the WallpaperStyle and TileWallpaper registry values.
+        DWORD cbData = lstrlen(pszWallpaperStyle) * sizeof(*pszWallpaperStyle);
+        hr = HRESULT_FROM_WIN32(RegSetValueEx(hKey, L"WallpaperStyle", 0, REG_SZ,
+                                              reinterpret_cast<const BYTE *>(pszWallpaperStyle), cbData));
+        if (SUCCEEDED(hr))
+        {
+            cbData = lstrlen(pszTileWallpaper) * sizeof(*pszTileWallpaper);
+            hr = HRESULT_FROM_WIN32(RegSetValueEx(hKey, L"TileWallpaper", 0, REG_SZ,
+                                                  reinterpret_cast<const BYTE *>(pszTileWallpaper), cbData));
+        }
+
+        RegCloseKey(hKey);
+    }
+
+    // Update desktop background with the style changed
+    if(currentBackgroundWallpaper()==""){
+        QString last_wallpaper = settings->value("last_wallpaper", getPreviousWallpaper()).toString();
+        setBackground(last_wallpaper, false, false, 0);
+    }
+    else
+       setBackground(currentBackgroundWallpaper(), false, false, 0);
+#endif
+}
