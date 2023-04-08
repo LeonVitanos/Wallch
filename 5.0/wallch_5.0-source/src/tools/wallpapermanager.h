@@ -75,6 +75,7 @@ public:
     void setBackground(const QString &image, bool changeAverageColor, bool showNotification, short feature);
     static bool imageIsNull(const QString &filename);
     static QImage indexed8ToARGB32(const QImage &image);
+    short getCurrentFit();
 
 Q_SIGNALS:
     void updateImageStyle();

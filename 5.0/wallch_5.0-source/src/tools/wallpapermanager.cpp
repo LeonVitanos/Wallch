@@ -314,7 +314,7 @@ QString WallpaperManager::currentBackgroundWallpaper(){
 
 bool WallpaperManager::currentBackgroundExists()
 {
-    if(WallpaperManager::imageIsNull(WallpaperManager::currentBackgroundWallpaper()))
+    if(imageIsNull(currentBackgroundWallpaper()))
     {
         QMessageBox::warning(0, QObject::tr("Error"), QObject::tr("This file maybe doesn't exist or it's not an image. Please perform a check for the file and try again."));
         return false;
@@ -365,14 +365,14 @@ void WallpaperManager::openFolderOf(QString image /* = "" */){
 }
 
 void WallpaperManager::setBackground(const QString &image, bool changeAverageColor, bool showNotification, short feature){
+    bool result=true;
+
+#ifdef Q_OS_UNIX
     if(!QFile::exists(image)){
         Global::error("Image doesn't exist, background cannot be changed!");
         return;
     }
 
-    bool result=true;
-
-#ifdef Q_OS_UNIX
     if(gv.rotateImages){
         Global::rotateImageBasedOnExif(image);
     }
@@ -405,30 +405,38 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
     }
 
 #else
+    if(image!="" && !QFile::exists(image)){
+        Global::error("Image doesn't exist, background cannot be changed!");
+        return;
+    }
+
+    bool update_image_style = currentBackgroundWallpaper() == "";
 
 #ifdef UNICODE
     result = (bool) SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, (PVOID) image.toLocal8Bit().data(), SPIF_UPDATEINIFILE);
 #else
     result = (bool) SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, (PVOID) image.toLocal8Bit().data(), SPIF_UPDATEINIFILE);
-#endif //#ifdef UNICODE
-    if(!result){
-        QMessageBox::warning(0, QObject::tr("Error"), QObject::tr("Failed to change wallpaper. Maybe your Windows version is not supported? Usually Windows XP fails to change JPEG images."));
-    }
+#endif //UNICODE
 
-#endif //#ifdef Q_OS_UNIX
+    if(!result)
+        QMessageBox::warning(0, QObject::tr("Error"),
+                             QObject::tr("Failed to change wallpaper. Maybe your Windows version is not supported? "
+                                         "Usually Windows XP fails to change JPEG images."));
+    else if (update_image_style)
+        Q_EMIT updateImageStyle();
+
+#endif //Q_OS_UNIX
 
     if(result && feature!=0){
-        if(gv.setAverageColor && changeAverageColor){
+        if(gv.setAverageColor && changeAverageColor)
             Global::setAverageColor(image);
-        }
 
-        if(gv.showNotification && showNotification){
+        if(gv.showNotification && showNotification)
             Global().desktopNotify(QObject::tr("Current wallpaper has been changed!"), true, image);
-        }
 
-        if(gv.saveHistory){
+        if(gv.saveHistory)
             Global::saveHistory(image, feature);
-        }
+
         settings->setValue("images_changed", settings->value("images_changed", 0).toUInt()+1);
         settings->sync();
         gv.wallpapersChangedCurrentSession++;
@@ -470,4 +478,58 @@ QImage WallpaperManager::indexed8ToARGB32(const QImage &image){
     painter.drawImage(QPoint(0, 0), image);
     painter.end();
     return newImage;
+}
+
+short WallpaperManager::getCurrentFit(){
+#ifdef Q_OS_UNIX
+    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
+        QString style=Global::gsettingsGet("org.gnome.desktop.background", "picture-options");
+        if (style=="wallpaper")
+            return 1;
+        else if (style=="zoom")
+            return 2;
+        else if (style=="centered")
+            return 3;
+        else if (style=="scaled")
+            return 4;
+        else if (style=="stretched")
+            return 5;
+        else if (style=="spanned")
+            return 6;
+    }
+    else if(gv.currentDE == DesktopEnvironment::XFCE){
+        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
+            if(entry.contains("image-style")){
+                QString imageStyle=Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry);
+                return imageStyle.toInt();
+            }
+        }
+    }
+    else if(gv.currentDE == DesktopEnvironment::LXDE)
+        return Global::getPcManFmValue("wallpaper_mode").toInt();
+#else
+    QSettings desktop_settings("HKEY_CURRENT_USER\\Control Panel\\Desktop", QSettings::NativeFormat);
+
+    if(currentBackgroundWallpaper()=="")
+        return 0;
+
+    switch(desktop_settings.value("WallpaperStyle").toInt())
+    {
+    case 0:
+        if(desktop_settings.value("TileWallpaper")!=0)
+            return 1;
+        else
+            return 2;
+    case 2:
+        return 3;
+    case 6:
+        return 4;
+    case 10:
+        return 5;
+    case 22:
+        return 6;
+    }
+#endif
+
+    return 1;
 }

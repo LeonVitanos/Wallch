@@ -32,6 +32,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QStandardItem>
 #include <QColorDialog>
 #include <QShortcut>
+#include <QSysInfo>
 
 #include "mainwindow.h"
 #include "math.h"
@@ -1176,15 +1177,21 @@ void MainWindow::findAvailableWallpaperStyles(){
         ui->image_style_combo->addItem(tr("Tile"));
     }
 #else
+    ui->image_style_combo->addItem(tr("Color"));
     ui->image_style_combo->addItem(tr("Tile"));
     ui->image_style_combo->addItem(tr("Center"));
     ui->image_style_combo->addItem(tr("Stretch"));
 
-    if(settings->value("windows_major_version").toInt()==6 && settings->value("windows_minor_version").toInt()>= 1)
+    // Windows 7 and above
+    if(QSysInfo::productVersion().toInt()>=6.1)
     {
         ui->image_style_combo->addItem(tr("Fit"));
         ui->image_style_combo->addItem(tr("Fill"));
+        // Windows 8 and above
+        if(QSysInfo::productVersion().toInt()>=6.2)
+            ui->image_style_combo->addItem(tr("Span"));
     }
+
 #endif
 
     updateImageStyleCombo();
@@ -1193,57 +1200,7 @@ void MainWindow::findAvailableWallpaperStyles(){
 }
 
 void MainWindow::updateImageStyleCombo(){
-    short index=0;
-
-#ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
-        QString style=globalParser_->gsettingsGet("org.gnome.desktop.background", "picture-options");
-        if (style=="wallpaper")
-            index=1;
-        else if (style=="zoom")
-            index=2;
-        else if (style=="centered")
-            index=3;
-        else if (style=="scaled")
-            index=4;
-        else if (style=="stretched")
-            index=5;
-        else if (style=="spanned")
-            index=6;
-    }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, globalParser_->getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("image-style")){
-                QString imageStyle=globalParser_->getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry);
-                index=imageStyle.toInt();
-            }
-        }
-    }
-    else if(gv.currentDE == DesktopEnvironment::LXDE)
-        index = globalParser_->getPcManFmValue("wallpaper_mode").toInt();
-#else
-    QSettings desktop_settings("HKEY_CURRENT_USER\\Control Panel\\Desktop", QSettings::NativeFormat);
-
-    switch(desktop_settings.value("WallpaperStyle").toInt())
-    {
-    default:
-    case 0:
-        if(desktop_settings.value("TileWallpaper")!=0)
-            index = 0;
-        else
-            index = 1;
-        break;
-    case 2:
-        index = 2;
-        break;
-    case 6:
-        index = 3;
-        break;
-    case 10:
-        index = 4;
-        break;
-    }
-#endif
+    short index = wallpaperManager_->getCurrentFit();
 
     if(index<ui->image_style_combo->count() && index>=0 && index!=ui->image_style_combo->currentIndex())
         ui->image_style_combo->setCurrentIndex(index);
@@ -1388,11 +1345,13 @@ void MainWindow::setButtonColor(const QString &colorName){
 
 void MainWindow::on_image_style_combo_currentIndexChanged(int index)
 {
-    if(!gv.mainwindowLoaded){
+    if(!gv.mainwindowLoaded)
         return;
-    }
 
 #ifdef Q_OS_UNIX
+    if(index == wallpaperManager_->getCurrentFit())
+        return;
+
     if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
         QString type;
         switch(index){
@@ -1454,8 +1413,16 @@ void MainWindow::on_image_style_combo_currentIndexChanged(int index)
     }
 
 #else
+    if(index == 0){
+        settings->setValue("last_wallpaper", wallpaperManager_->currentBackgroundWallpaper());
+        wallpaperManager_->setBackground("", false, false, 0);
+        return;
+    }
+    else if(index == wallpaperManager_->getCurrentFit())
+        return;
+
     /*
-     * ----------Reference: http://msdn.microsoft.com/en-us/library/bb773190(VS.85).aspx#desktop------------
+     * ---------- Reference: https://learn.microsoft.com/en-us/windows/win32/controls/themesfileformat-overview#control-paneldesktop-section ------------
      * Two registry values are set in the Control Panel\Desktop key.
      * TileWallpaper
      * 0: The wallpaper picture should not be tiled
@@ -1467,6 +1434,7 @@ void MainWindow::on_image_style_combo_currentIndexChanged(int index)
      *     ratio. (Windows 7 and later)
      * 10: The image is resized and cropped to fill the screen while
      *     maintaining the aspect ratio. (Windows 7 and later)
+     * 22: (Not in the documentation) Span style
      * -----------------------------------------------------------------------------------------------------
      */
 
@@ -1490,31 +1458,32 @@ void MainWindow::on_image_style_combo_currentIndexChanged(int index)
         wchar_t two[10] = L"2";
         wchar_t six[10] = L"6";
         wchar_t ten[10] = L"10";
+        wchar_t twentytwo[10] = L"22";
 
         switch (index)
         {
-        case 0: //tile
+        case 1: //tile
             pszWallpaperStyle = zero;
             pszTileWallpaper = one;
             break;
-
-        case 1: //center
+        case 2: //center
             pszWallpaperStyle = zero;
             pszTileWallpaper = zero;
             break;
-
-        case 2: //stretch
+        case 3: //stretch
             pszWallpaperStyle = two;
             pszTileWallpaper = zero;
             break;
-
-        case 3: //fit (Windows 7 and later)
+        case 4: //fit (Windows 7 and later)
             pszWallpaperStyle = six;
             pszTileWallpaper = zero;
             break;
-
-        case 4: //fill (Windows 7 and later)
+        case 5: //fill (Windows 7 and later)
             pszWallpaperStyle = ten;
+            pszTileWallpaper = zero;
+            break;  
+        case 6: //span (Windows 8 and later)
+            pszWallpaperStyle = twentytwo;
             pszTileWallpaper = zero;
             break;
         }
@@ -1533,14 +1502,14 @@ void MainWindow::on_image_style_combo_currentIndexChanged(int index)
         RegCloseKey(hKey);
     }
 
-    //set the desktop background to the already current background image now with the style changed!
-#ifdef UNICODE
-    SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, (PVOID) WallpaperManager::currentBackgroundWallpaper().toLocal8Bit().data(), SPIF_UPDATEINIFILE);
-#else
-    SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, (PVOID) WallpaperManager::currentBackgroundWallpaper().toLocal8Bit().data(), SPIF_UPDATEINIFILE);
+    // Update desktop background with the style changed
+    if(wallpaperManager_->currentBackgroundWallpaper()==""){
+        QString last_wallpaper = settings->value("last_wallpaper", wallpaperManager_->getPreviousWallpaper()).toString();
+        wallpaperManager_->setBackground(last_wallpaper, false, false, 0);
+    }
+    else
+        wallpaperManager_->setBackground(wallpaperManager_->currentBackgroundWallpaper(), false, false, 0);
 #endif
-
-#endif //#ifdef Q_OS_UNIX
 
     if(ui->screen_label_text->text().isEmpty())
         updateScreenLabel();
