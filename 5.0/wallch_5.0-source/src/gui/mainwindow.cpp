@@ -50,12 +50,10 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     attachedMemory_ = attachedMemory;
 
     initializePrivateVariables(globalParser, imageFetcher);
-
     wallpaperManager_ = (wallpaperManager == NULL) ? new WallpaperManager() : wallpaperManager;
     websiteSnapshot_ = websiteSnapshot;
 
-    availableGeometry_ = QGuiApplication::primaryScreen()->availableGeometry();
-
+    getScreenResolution(QGuiApplication::primaryScreen()->availableGeometry());
     imagePreviewResizeFactorX_ = SCREEN_LABEL_SIZE_X*2.0/(gv.screenWidth*1.0);
     imagePreviewResizeFactorY_ = SCREEN_LABEL_SIZE_Y*2.0/(gv.screenHeight*1.0);
 
@@ -67,13 +65,6 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     btn_group->addButton(ui->page_4_web, 4);
     btn_group->addButton(ui->page_5_other, 5);
 
-#ifdef Q_OS_UNIX
-    dconf = new QProcess(this);
-    connect(dconf, SIGNAL(readyReadStandardOutput()), this, SLOT(dconfChanges()));
-    connect(dconf , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(dconfChanges()));
-    dconf->start("dconf watch /");
-#endif
-
     setupMenu();
     connectSignalSlots();
     retrieveSettings();
@@ -84,12 +75,16 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     continueAlreadyRunningFeature(timeoutCount, lastRandomDelay);
     setAcceptDrops(true);
 
-    //Moving the window to the center of screen!
-    this->move(availableGeometry_.center() - this->rect().center());
-
-    processingOnlineRequest_ = false;
+    // Restore window's position and size
+    if(settings->value("x").isValid()){
+        this->move(QPoint(settings->value("x").toInt(), settings->value("y").toInt()));
+        this->resize(QSize(settings->value("width").toInt(), settings->value("height").toInt()));
+    }
+    else
+        this->move(QPoint(gv.screenWidth/2, gv.screenHeight/2) - this->rect().center());
 
     //processing request (loading gif)
+    processingOnlineRequest_ = false;
     ui->process_request_label->hide();
     processingRequestGif_ = new QMovie(this);
     processingRequestGif_->setFileName(":/images/process_request.gif");
@@ -117,6 +112,12 @@ void MainWindow::closeEvent(QCloseEvent * event)
 
 void MainWindow::actionsOnClose()
 {
+    settings->setValue("x", this->x());
+    settings->setValue("y", this->y());
+    settings->setValue("width", this->width());
+    settings->setValue("height", this->height());
+    settings->sync();
+
     if(loadedPages_[0])
         savePicturesLocations();
 
@@ -152,62 +153,34 @@ QPoint MainWindow::calculateSettingsMenuPos(){
     int menuHeight = settingsMenu_->height();
     int buttonWidth = ui->menubarMenu->width();
     int buttonHeight = ui->menubarMenu->height();
+
     QPoint globalCoords = ui->menubarMenu->mapToGlobal(QPoint(0, buttonHeight));
-
-    //default value, the menu fits just fine
     QPoint showPoint = globalCoords - QPoint((menuWidth-buttonWidth), 0);
-
     QRect settingsMenuRect(showPoint.x(), showPoint.y(), menuWidth, menuHeight);
 
-    if(availableGeometry_.contains(settingsMenuRect, true)){
-        //menu fits
+    if(availableGeometry_.contains(settingsMenuRect, true))
         return showPoint;
-    }
     else
     {
-        //menu doesn't fit
         QRect intersection = availableGeometry_.intersected(settingsMenuRect);
 
-        if(intersection.width() < menuWidth){
-            //width doesn't fit
-            if(intersection.x() == 0){
-                //it doesn't fit to the left, move to the right
+        if(intersection.width() < menuWidth){ // Width doesn't fit
+            if(intersection.x() == 0) //it doesn't fit to the left, move to the right
                 showPoint.setX(0);
-            }
-            else
-            {
-                //it doesn't fit to the right, move to the left
+            else //it doesn't fit to the right, move to the left
                 showPoint.setX(availableGeometry_.width()-menuWidth);
-            }
         }
 
-        if(intersection.height() < menuHeight){
-            //height doesn't fit
-
-            if((intersection.y()-buttonHeight-availableGeometry_.y()) > menuHeight){
-                //it fits to the top just fine
+        if(intersection.height() < menuHeight){ //height doesn't fit
+            if((intersection.y()-buttonHeight-availableGeometry_.y()) > menuHeight) //it fits to the top just fine
                 showPoint.setY(globalCoords.y()-buttonHeight-menuHeight);
-            }
-            else
+            else //it doesn't fit all above, fit it to the left/right
             {
-                //it doesn't fit all above, fit it to the left/right
                 showPoint.setY(availableGeometry_.y()+availableGeometry_.height()-menuHeight);
-
-                bool fitsLeft = true; //does it fit to move to the left?
-
-                if(intersection.x()-buttonWidth < 0){
-                    fitsLeft = false;
-                }
-
-                if(fitsLeft){
-                    //fit to left
+                if(intersection.x() - buttonWidth >= 0) //fit to left
                     showPoint.setX(intersection.x()-buttonWidth);
-                }
-                else
-                {
-                    //fit to right
+                else //fit to right
                     showPoint.setX(globalCoords.x()+buttonWidth);
-                }
             }
         }
     }
@@ -259,6 +232,14 @@ void MainWindow::connectSignalSlots(){
     connect(ui->seconds_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(btn_group, SIGNAL(buttonClicked(int)), this, SLOT(page_button_clicked(int)));
     connect(wallpaperManager_, SIGNAL(updateImageStyle()), this, SLOT(updateImageStyleCombo()));
+    connect(QGuiApplication::primaryScreen(), SIGNAL(availableGeometryChanged(QRect)), this, SLOT(getScreenResolution(QRect)));
+
+#ifdef Q_OS_UNIX
+    dconf = new QProcess(this);
+    connect(dconf, SIGNAL(readyReadStandardOutput()), this, SLOT(dconfChanges()));
+    connect(dconf , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(dconfChanges()));
+    dconf->start("dconf watch /");
+#endif
 }
 
 void MainWindow::retrieveSettings()
@@ -4056,13 +4037,21 @@ void MainWindow::on_actionGet_Help_Online_triggered()
 
 void MainWindow::on_actionWhat_is_my_screen_resolution_triggered()
 {
+    QSize resolution = QGuiApplication::primaryScreen()->size();
+
     QMessageBox msgBox;msgBox.setWindowTitle(tr("What is my Screen Resolution"));
     msgBox.setText("<b>"+tr("Your screen resolution is")+" <span style=\" font-size:20pt;\">"+
-                   QString::number(gv.screenWidth)+"</span><span style=\" font-size:15pt;\">x</span><span style=\" font-size:20pt;\">"+
-                   QString::number(gv.screenHeight)+"</span>.</b><br>"+tr("The number above represents your screen/monitor resolution (In width and height)."));
+                   QString::number(resolution.width())+"</span><span style=\" font-size:15pt;\">x</span><span style=\" font-size:20pt;\">"+
+                   QString::number(resolution.height())+"</span>.</b><br>"+tr("The number above represents your screen/monitor resolution (In width and height)."));
     msgBox.setIconPixmap(QIcon(":/images/monitor.png").pixmap(QSize(100,100)));
     msgBox.setWindowIcon(QIcon(":/images/wallch.png"));
     msgBox.exec();
+}
+
+void MainWindow::getScreenResolution (QRect resolution){
+    availableGeometry_ = resolution;
+    gv.screenWidth = resolution.width();
+    gv.screenHeight = resolution.height();
 }
 
 //Dialogs Code

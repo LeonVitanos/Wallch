@@ -226,8 +226,9 @@ void LEPoint::cannotFetchLeImage()
     fetchFailed_ = true;
     ui->progressBar->hide();
     ui->infoLabel->setText(tr("The Live Earth image used for setting the mark points, failed to download. Please check your internet connection or try later."));
-    this->resize(this->minimumWidth(), this->minimumHeight());
-    this->move(QGuiApplication::primaryScreen()->availableGeometry().center() - this->rect().center());
+    //TODO: Check if needed
+    //this->resize(this->minimumWidth(), this->minimumHeight());
+    //this->move(QGuiApplication::primaryScreen()->availableGeometry().center() - this->rect().center());
 }
 
 void LEPoint::leImageFetchSuccess(const QByteArray &array)

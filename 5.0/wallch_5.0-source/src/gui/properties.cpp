@@ -28,7 +28,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <QDir>
 #include <QShortcut>
-#include <QScreen>
 #include <QImageReader>
 #include <QImage>
 #include <QtConcurrent/QtConcurrentRun>
@@ -131,13 +130,6 @@ void Properties::on_close_clicked()
 
 void Properties::resizeEvent(QResizeEvent *)
 {
-    if(justOpened_){
-        justOpened_ = false;
-        //Moving the window to the center of screen, now that the labels have been set
-        //(large labels, like path, may resize the window, thus now is the correct time to center it)
-        this->move(QGuiApplication::primaryScreen()->availableGeometry().center() - this->rect().center());
-    }
-
     if(ui->propertiesImage->pixmap(Qt::ReturnByValue).isNull())
         return;
 

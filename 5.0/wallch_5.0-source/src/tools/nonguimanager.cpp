@@ -504,6 +504,7 @@ void NonGuiManager::continueWithWebsite(){
     this->connectToServer();
     //getting the required values from the settings...
 
+    /*
     gv.websiteWebpageToLoad=settings->value("website", "http://google.com").toString();
     gv.websiteInterval=settings->value("website_interval", 6).toInt();
     gv.websiteCropEnabled=settings->value("website_crop", false).toBool();
@@ -525,7 +526,7 @@ void NonGuiManager::continueWithWebsite(){
     gv.websiteExtraUsernames=settings->value("website_extra_usernames", QStringList()).toStringList();
     gv.websiteExtraPasswords=settings->value("website_extra_passwords", QStringList()).toStringList();
 
-    /*
+
     disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageReady(QImage*,short)));
     connect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageReady(QImage*,short)));
 
@@ -1925,10 +1926,6 @@ void NonGuiManager::viralSettingsOperations(){
 
         QApplication::installTranslator(translator);
     }
-
-    QGuiApplication::primaryScreen()->availableGeometry().width();
-    gv.screenWidth = QGuiApplication::primaryScreen()->availableGeometry().width();
-    gv.screenHeight = QGuiApplication::primaryScreen()->availableGeometry().height();
 
     if(settings->value("first-run", true).toBool()){
         settings->setValue("first-run", false);

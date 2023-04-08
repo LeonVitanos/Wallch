@@ -439,6 +439,7 @@ private Q_SLOTS:
     void on_random_time_to_combobox_currentIndexChanged(int index);
     void on_edit_pushButton_clicked();
     void updateImageStyleCombo();
+    void getScreenResolution(QRect resolution);
 
 Q_SIGNALS:
      void fixLivewebsiteButtons();

@@ -64,7 +64,6 @@ private:
     int currentImageHeight_;
     float resizeFactorX_;
     float resizeFactorY_;
-    bool justOpened_=true;
     void updatePropertiesImageLabel(QImage image);
     void updatePropertiesImageLabel();
     QString sizeToNiceString(qint64 fsize);
