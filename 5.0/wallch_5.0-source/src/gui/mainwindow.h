@@ -95,6 +95,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 typedef enum {
     NoneStyle, Center, Tile, Stretch, Scale, Zoom, Span
 } DesktopStyle;
+Q_DECLARE_METATYPE(DesktopStyle);
 
 namespace Ui {
     class MainWindow;

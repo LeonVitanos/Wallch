@@ -741,7 +741,7 @@ void MainWindow::setPreviewImage(){
     if(!image.isNull()){
 #ifdef Q_OS_UNIX
 
-        DesktopStyle desktopStyle = ui->image_style_combo->currentData();
+        DesktopStyle desktopStyle = qvariant_cast<DesktopStyle>(ui->image_style_combo->currentData());
 
         if(image.format() == QImage::Format_Indexed8){
             //painting on QImage::Format_Indexed8 is not supported
@@ -2036,7 +2036,7 @@ void MainWindow::on_wallpapersList_itemDoubleClicked()
     }
 #ifdef Q_OS_UNIX
     if(gv.currentDE == DesktopEnvironment::LXDE){
-        DesktopStyle desktopStyle = ui->image_style_combo->currentData();
+        DesktopStyle desktopStyle = qvariant_cast<DesktopStyle>(ui->image_style_combo->currentData());
         if(desktopStyle == NoneStyle){
             ui->image_style_combo->setCurrentIndex(2);
         }
