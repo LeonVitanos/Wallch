@@ -609,7 +609,7 @@ void WallpaperManager::setCurrentFit(short index){
         if(currentBg != gv.wallchHomePath+COLOR_IMAGE && !currentBg.isEmpty())
             settings->setValue("last_wallpaper", currentBg);
 
-        if (currentShading == ColoringType::SolidColor)
+        if (settings->value("ShadingType", "solid") == "solid")
             setBackground("", false, false, 0);
         else
             setBackground(gv.wallchHomePath+COLOR_IMAGE, false, false, 0);

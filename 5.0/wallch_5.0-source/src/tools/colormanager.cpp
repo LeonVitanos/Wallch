@@ -2,7 +2,7 @@
 #include "colormanager.h"
 #include <QPainter>
 
-ColoringType::Value currentShading = ColorManager::getColoringType();
+ColoringType::Value currentShading = ColoringType::Solid;
 
 ColorManager::ColorManager(){}
 
@@ -187,41 +187,39 @@ ColoringType::Value ColorManager::getColoringType(){
     if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
         QString colorStyle=Global::gsettingsGet("org.gnome.desktop.background", "color-shading-type");
         if(colorStyle.contains("solid"))
-            return ColoringType::SolidColor;
+            return ColoringType::Solid;
         else if(colorStyle.contains("vertical"))
-            return ColoringType::VerticalColor;
+            return ColoringType::Vertical;
         else if(colorStyle.contains("horizontal"))
-            return ColoringType::HorizontalColor;
+            return ColoringType::Horizontal;
     }
     else if(gv.currentDE == DesktopEnvironment::XFCE){
         Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
             if(entry.contains("color-style")){
                 QString colorStyle=Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry).replace("\n", "");
-                if(colorStyle=="0")
-                    return ColoringType::SolidColor;
+                if(colorStyle=="0" || colorStyle=="3")
+                    return ColoringType::Solid;
                 else if(colorStyle=="1")
-                    return ColoringType::HorizontalColor;
+                    return ColoringType::Horizontal;
                 else if(colorStyle=="2")
-                    return ColoringType::VerticalColor;
-                else if(colorStyle=="3")
-                    return ColoringType::NoneColor;
+                    return ColoringType::Vertical;
             }
         }
     }
     else if(gv.currentDE == DesktopEnvironment::LXDE)
-        return ColoringType::SolidColor;
+        return ColoringType::Solid;
 #else
     QString res = settings->value("ShadingType", "solid").toString();
 
     if(res == "solid")
-        return ColoringType::SolidColor;
+        return ColoringType::Solid;
     else if(res == "vertical")
-        return ColoringType::VerticalColor;
+        return ColoringType::Vertical;
     else if(res == "horizontal")
-        return return ColoringType::HorizontalColor;
+        return ColoringType::Horizontal;
 #endif
 
-    return ColoringType::SolidColor;
+    return ColoringType::Solid;
 }
 
 
@@ -235,7 +233,7 @@ QImage ColorManager::createVerticalHorizontalImage(int width, int height)
     QImage image(width, height, QImage::Format_RGB32);
 
     QLinearGradient gradient;
-    if(currentShading == ColoringType::HorizontalColor){
+    if(currentShading == ColoringType::Horizontal){
         gradient.setStart(0, height / 2);
         gradient.setFinalStop(width, height / 2);
     }

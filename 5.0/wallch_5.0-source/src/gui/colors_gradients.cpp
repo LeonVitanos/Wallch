@@ -40,11 +40,11 @@ ColorsGradients::ColorsGradients(WallpaperManager *wallpaperManager, QWidget *pa
     ui->setupUi(this);
     wallpaperManager_ = wallpaperManager;
 
-    if(currentShading == ColoringType::SolidColor)
+    if(currentShading == ColoringType::Solid)
         ui->solid_radioButton->setChecked(true);
-    else if(currentShading == ColoringType::VerticalColor)
+    else if(currentShading == ColoringType::Vertical)
         ui->vertical_radioButton->setChecked(true);
-    else if(currentShading == ColoringType::HorizontalColor)
+    else if(currentShading == ColoringType::Horizontal)
         ui->horizontal_radioButton->setChecked(true);
 
     if (wallpaperManager_->getCurrentFit() == 0)
@@ -179,7 +179,7 @@ void ColorsGradients::on_change_order_clicked()
 
 void ColorsGradients::actionForSecondaryButtons()
 {
-    bool action = currentShading != ColoringType::SolidColor && wallpaperManager_->getCurrentFit() == 0;
+    bool action = currentShading != ColoringType::Solid && wallpaperManager_->getCurrentFit() == 0;
 
     if(action){
         ui->change_order->show();
@@ -199,7 +199,7 @@ void ColorsGradients::actionForSecondaryButtons()
 
 void ColorsGradients::on_solid_radioButton_clicked()
 {
-    if(currentShading == ColoringType::SolidColor)
+    if(currentShading == ColoringType::Solid)
         return;
 
 #ifdef Q_OS_UNIX
@@ -218,7 +218,7 @@ void ColorsGradients::on_solid_radioButton_clicked()
     wallpaperManager_->setBackground("", false, false, 0);
 #endif
 
-    currentShading = ColoringType::SolidColor;
+    currentShading = ColoringType::Solid;
     actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
     Q_EMIT updateTv();
@@ -226,7 +226,7 @@ void ColorsGradients::on_solid_radioButton_clicked()
 
 void ColorsGradients::on_horizontal_radioButton_clicked()
 {
-    if(currentShading == ColoringType::HorizontalColor)
+    if(currentShading == ColoringType::Horizontal)
         return;
 
 #ifdef Q_OS_UNIX
@@ -246,7 +246,7 @@ void ColorsGradients::on_horizontal_radioButton_clicked()
     settings->setValue("ShadingType", "horizontal");
 #endif
 
-    currentShading = ColoringType::HorizontalColor;
+    currentShading = ColoringType::Horizontal;
     actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
     Q_EMIT updateTv();
@@ -254,7 +254,7 @@ void ColorsGradients::on_horizontal_radioButton_clicked()
 
 void ColorsGradients::on_vertical_radioButton_clicked()
 {
-    if(currentShading == ColoringType::VerticalColor)
+    if(currentShading == ColoringType::Vertical)
         return;
 
 #ifdef Q_OS_UNIX
@@ -273,7 +273,7 @@ void ColorsGradients::on_vertical_radioButton_clicked()
     settings->setValue("ShadingType", "vertical");
 #endif
 
-    currentShading = ColoringType::VerticalColor;
+    currentShading = ColoringType::Vertical;
     actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
     Q_EMIT updateTv();

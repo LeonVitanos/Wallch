@@ -14,7 +14,7 @@
 
 struct ColoringType {
     enum Value {
-        NoneColor, SolidColor, HorizontalColor, VerticalColor
+        Solid, Horizontal, Vertical
     };
 };
 
@@ -28,9 +28,7 @@ public:
     static void setPrimaryColor(const QString &colorName);
     static QString getSecondaryColor();
     static void setSecondaryColor(const QString &colorName);
-#ifdef Q_OS_UNIX
     static ColoringType::Value getColoringType();
-#endif
     static void changeCurrentShading();
     static QImage createVerticalHorizontalImage(int width, int height);
 };

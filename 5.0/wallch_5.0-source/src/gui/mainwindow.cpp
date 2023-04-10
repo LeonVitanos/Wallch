@@ -268,6 +268,7 @@ void MainWindow::retrieveSettings()
     gv.iconMode = settings->value("icon_style", true).toBool();
     gv.randomImagesEnabled = settings->value("random_images_enabled", true).toBool();
     gv.previewImagesOnScreen = settings->value("preview_images_on_screen", true).toBool();
+    currentShading = ColorManager::getColoringType();
 }
 
 void MainWindow::resetWatchFolders(){
@@ -768,7 +769,7 @@ void MainWindow::setPreviewImage(){
 
             colorsGradientsImage.fill(primaryColor);
 
-            if(currentShading != ColoringType::SolidColor && currentShading != ColoringType::NoneColor) // TODO: NoneColor?
+            if(currentShading != ColoringType::Solid)
                 colorsGradientsImage = colorManager_->createVerticalHorizontalImage(75, 75);
         }
         QImage originalImage = image;
@@ -1153,7 +1154,7 @@ void MainWindow::updateImageStyleCombo(){
 void MainWindow::setButtonColor(){
     QImage image(40, 19, QImage::Format_RGB32);
 
-    if(currentShading == ColoringType::SolidColor)
+    if(currentShading == ColoringType::Solid)
         image.fill(ColorManager::getPrimaryColor());
     else
         image = colorManager_->createVerticalHorizontalImage(40, 19);
