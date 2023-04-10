@@ -3,7 +3,6 @@
 #define COLORMANAGER_H
 
 #include <QColor>
-#include <QPainter>
 
 #include "glob.h"
 
@@ -19,6 +18,8 @@ struct ColoringType {
     };
 };
 
+extern ColoringType::Value currentShading;
+
 class ColorManager
 {
 public:
@@ -30,7 +31,8 @@ public:
 #ifdef Q_OS_UNIX
     static ColoringType::Value getColoringType();
 #endif
-    static QImage createVerticalHorizontalImage(const QString &type, int width, int height);
+    static void changeCurrentShading();
+    static QImage createVerticalHorizontalImage(int width, int height);
 };
 
 #endif // COLORMANAGER_H

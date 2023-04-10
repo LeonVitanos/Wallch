@@ -1,5 +1,8 @@
 
 #include "colormanager.h"
+#include <QPainter>
+
+ColoringType::Value currentShading = ColorManager::getColoringType();
 
 ColorManager::ColorManager(){}
 
@@ -178,54 +181,61 @@ void ColorManager::setSecondaryColor(const QString &colorName){
 #endif
 }
 
-#ifdef Q_OS_UNIX
+
 ColoringType::Value ColorManager::getColoringType(){
-    ColoringType::Value coloringType = ColoringType::SolidColor;
+#ifdef Q_OS_UNIX
     if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
         QString colorStyle=Global::gsettingsGet("org.gnome.desktop.background", "color-shading-type");
-        if(colorStyle.contains("solid")){
-            coloringType = ColoringType::SolidColor;
-        }
-        else if(colorStyle.contains("vertical")){
-            coloringType = ColoringType::VerticalColor;
-        }
-        else if(colorStyle.contains("horizontal")){
-            coloringType = ColoringType::HorizontalColor;
-        }
+        if(colorStyle.contains("solid"))
+            return ColoringType::SolidColor;
+        else if(colorStyle.contains("vertical"))
+            return ColoringType::VerticalColor;
+        else if(colorStyle.contains("horizontal"))
+            return ColoringType::HorizontalColor;
     }
     else if(gv.currentDE == DesktopEnvironment::XFCE){
         Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
             if(entry.contains("color-style")){
                 QString colorStyle=Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry).replace("\n", "");
-                if(colorStyle=="0"){
-                    coloringType = ColoringType::SolidColor;
-                }
-                else if(colorStyle=="1"){
-                    coloringType = ColoringType::HorizontalColor;
-                }
-                else if(colorStyle=="2"){
-                    coloringType = ColoringType::VerticalColor;
-                }
-                else if(colorStyle=="3"){
-                    coloringType = ColoringType::NoneColor;
-                }
+                if(colorStyle=="0")
+                    return ColoringType::SolidColor;
+                else if(colorStyle=="1")
+                    return ColoringType::HorizontalColor;
+                else if(colorStyle=="2")
+                    return ColoringType::VerticalColor;
+                else if(colorStyle=="3")
+                    return ColoringType::NoneColor;
             }
         }
     }
-    else if(gv.currentDE == DesktopEnvironment::LXDE){
-        coloringType = ColoringType::SolidColor;
-    }
+    else if(gv.currentDE == DesktopEnvironment::LXDE)
+        return ColoringType::SolidColor;
+#else
+    QString res = settings->value("ShadingType", "solid").toString();
 
-    return coloringType;
-}
+    if(res == "solid")
+        return ColoringType::SolidColor;
+    else if(res == "vertical")
+        return ColoringType::VerticalColor;
+    else if(res == "horizontal")
+        return return ColoringType::HorizontalColor;
 #endif
 
-QImage ColorManager::createVerticalHorizontalImage(const QString &type, int width, int height)
+    return ColoringType::SolidColor;
+}
+
+
+void ColorManager::changeCurrentShading(){
+    currentShading = getColoringType();
+}
+
+
+QImage ColorManager::createVerticalHorizontalImage(int width, int height)
 {
     QImage image(width, height, QImage::Format_RGB32);
 
     QLinearGradient gradient;
-    if(type == "horizontal"){
+    if(currentShading == ColoringType::HorizontalColor){
         gradient.setStart(0, height / 2);
         gradient.setFinalStop(width, height / 2);
     }
@@ -238,8 +248,6 @@ QImage ColorManager::createVerticalHorizontalImage(const QString &type, int widt
 
     QPainter painter;
     painter.begin(&image);
-    //painter.setCompositionMode(QPainter::CompositionMode_Source);
-    //painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setBrush(gradient);
     painter.setPen(Qt::NoPen);
     painter.drawRect(0, 0, width, height);

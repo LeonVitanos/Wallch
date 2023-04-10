@@ -384,7 +384,7 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
         // From Ubuntu 22.04, there is a different setting for light and dark theme
         Global::gsettingsSet("org.gnome.desktop.background", Global::gsettingsGet("org.gnome.desktop.interface", "color-scheme") == "prefer-dark" ? "picture-uri-dark" : "picture-uri", "file://"+image);
         if(Global::gsettingsGet("org.gnome.desktop.background", "picture-options") == "none"){
-            Global::gsettingsSet("org.gnome.desktop.background", "picture-options", "wallpaper");
+            Global::gsettingsSet("org.gnome.desktop.background", "picture-options", "zoom");
             Q_EMIT updateImageStyle();
         }
         break;
@@ -485,7 +485,9 @@ short WallpaperManager::getCurrentFit(){
 #ifdef Q_OS_UNIX
     if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
         QString style=Global::gsettingsGet("org.gnome.desktop.background", "picture-options");
-        if (style=="wallpaper")
+        if(style=="none")
+            return 0;
+        else if (style=="wallpaper")
             return 1;
         else if (style=="zoom")
             return 2;
@@ -604,18 +606,16 @@ void WallpaperManager::setCurrentFit(short index){
     QString currentBg = currentBackgroundWallpaper();
 
     if(index == 0){
-        settings->setValue("ColorMode", true);
         if(currentBg != gv.wallchHomePath+COLOR_IMAGE && !currentBg.isEmpty())
             settings->setValue("last_wallpaper", currentBg);
 
-        if (settings->value("ShadingType", "solid") == "solid")
+        if (currentShading == ColoringType::SolidColor)
             setBackground("", false, false, 0);
         else
             setBackground(gv.wallchHomePath+COLOR_IMAGE, false, false, 0);
         return;
     }
     else{
-        settings->setValue("ColorMode", false);
         if(index == getCurrentFit())
             return;
     }

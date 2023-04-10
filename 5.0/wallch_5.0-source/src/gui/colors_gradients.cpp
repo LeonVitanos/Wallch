@@ -40,33 +40,20 @@ ColorsGradients::ColorsGradients(WallpaperManager *wallpaperManager, QWidget *pa
     ui->setupUi(this);
     wallpaperManager_ = wallpaperManager;
 
-#ifdef Q_OS_UNIX
-    ColoringType::Value coloringType;
-    coloringType = ColorManager::getColoringType();
-    if(coloringType == ColoringType::SolidColor)
+    if(currentShading == ColoringType::SolidColor)
         ui->solid_radioButton->setChecked(true);
-    else if(coloringType == ColoringType::VerticalColor)
+    else if(currentShading == ColoringType::VerticalColor)
         ui->vertical_radioButton->setChecked(true);
-    else if(coloringType == ColoringType::HorizontalColor)
+    else if(currentShading == ColoringType::HorizontalColor)
         ui->horizontal_radioButton->setChecked(true);
-#else
-    QString res = settings->value("ShadingType", "solid").toString();
 
-    if (settings->value("ColorMode", false).toBool())
+    if (wallpaperManager_->getCurrentFit() == 0)
         ui->colorModeButton->setChecked(true);
     else{
         ui->solid_radioButton->setEnabled(false);
         ui->vertical_radioButton->setEnabled(false);
         ui->horizontal_radioButton->setEnabled(false);
     }
-
-    if(res == "solid")
-        ui->solid_radioButton->setChecked(true);
-    else if(res == "vertical")
-        ui->vertical_radioButton->setChecked(true);
-    else if(res == "horizontal")
-        ui->horizontal_radioButton->setChecked(true);
-#endif
 
     actionForSecondaryButtons();
 
@@ -128,11 +115,11 @@ void ColorsGradients::updateGradientsOnlyColors(bool updateLeftRightSolid){
         }
 
         if(ui->horizontal_radioButton->isChecked()){
-            image = ColorManager::createVerticalHorizontalImage("horizontal", dim, dim);
+            image = ColorManager::createVerticalHorizontalImage(dim, dim);
             ui->result->setPixmap(QPixmap::fromImage(image));
         }
         else if(ui->vertical_radioButton->isChecked()){
-            image = ColorManager::createVerticalHorizontalImage("vertical", dim, dim);
+            image = ColorManager::createVerticalHorizontalImage(dim, dim);
             ui->result->setPixmap(QPixmap::fromImage(image));
         }
     }
@@ -192,8 +179,7 @@ void ColorsGradients::on_change_order_clicked()
 
 void ColorsGradients::actionForSecondaryButtons()
 {
-    bool action = settings->value("ShadingType" , "solid") != "solid" &&
-                  settings->value("ColorMode" , false).toBool();
+    bool action = currentShading != ColoringType::SolidColor && wallpaperManager_->getCurrentFit() == 0;
 
     if(action){
         ui->change_order->show();
@@ -213,10 +199,8 @@ void ColorsGradients::actionForSecondaryButtons()
 
 void ColorsGradients::on_solid_radioButton_clicked()
 {
-    if(settings->value("ShadingType", "solid") == "solid")
+    if(currentShading == ColoringType::SolidColor)
         return;
-
-    settings->setValue("ShadingType" , "solid");
 
 #ifdef Q_OS_UNIX
     if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
@@ -230,9 +214,11 @@ void ColorsGradients::on_solid_radioButton_clicked()
         }
     }
 #else
+    settings->setValue("ShadingType", "solid");
     wallpaperManager_->setBackground("", false, false, 0);
 #endif
 
+    currentShading = ColoringType::SolidColor;
     actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
     Q_EMIT updateTv();
@@ -240,10 +226,8 @@ void ColorsGradients::on_solid_radioButton_clicked()
 
 void ColorsGradients::on_horizontal_radioButton_clicked()
 {
-    if(settings->value("ShadingType", "solid") == "horizontal")
+    if(currentShading == ColoringType::HorizontalColor)
         return;
-
-    settings->setValue("ShadingType" , "horizontal");
 
 #ifdef Q_OS_UNIX
     if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
@@ -257,10 +241,12 @@ void ColorsGradients::on_horizontal_radioButton_clicked()
         }
     }
 #else
-    ColorManager::createVerticalHorizontalImage("horizontal", gv.screenWidth, gv.screenHeight).save(gv.wallchHomePath+COLOR_IMAGE, 0, 80);
+    ColorManager::createVerticalHorizontalImage(gv.screenWidth, gv.screenHeight).save(gv.wallchHomePath+COLOR_IMAGE, 0, 80);
     wallpaperManager_->setBackground(gv.wallchHomePath+COLOR_IMAGE, false, false, 0);
+    settings->setValue("ShadingType", "horizontal");
 #endif
 
+    currentShading = ColoringType::HorizontalColor;
     actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
     Q_EMIT updateTv();
@@ -268,10 +254,8 @@ void ColorsGradients::on_horizontal_radioButton_clicked()
 
 void ColorsGradients::on_vertical_radioButton_clicked()
 {
-    if(settings->value("ShadingType", "solid") == "vertical")
+    if(currentShading == ColoringType::VerticalColor)
         return;
-
-    settings->setValue("ShadingType" , "vertical");
 
 #ifdef Q_OS_UNIX
     if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate)
@@ -284,10 +268,12 @@ void ColorsGradients::on_vertical_radioButton_clicked()
         }
     }
 #else
-    ColorManager::createVerticalHorizontalImage("vertical", gv.screenWidth, gv.screenHeight).save(gv.wallchHomePath+COLOR_IMAGE, 0, 80);
+    ColorManager::createVerticalHorizontalImage(gv.screenWidth, gv.screenHeight).save(gv.wallchHomePath+COLOR_IMAGE, 0, 80);
     wallpaperManager_->setBackground(gv.wallchHomePath+COLOR_IMAGE, false, false, 0);
+    settings->setValue("ShadingType", "vertical");
 #endif
 
+    currentShading = ColoringType::VerticalColor;
     actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
     Q_EMIT updateTv();
@@ -295,32 +281,36 @@ void ColorsGradients::on_vertical_radioButton_clicked()
 
 void ColorsGradients::on_colorModeButton_clicked()
 {
-    if(settings->value("ColorMode", false).toBool())
+    if(wallpaperManager_->getCurrentFit() == 0)
         return;
 
-    settings->setValue("ColorMode", true);
     ui->solid_radioButton->setEnabled(true);
     ui->vertical_radioButton->setEnabled(true);
     ui->horizontal_radioButton->setEnabled(true);
 
+    wallpaperManager_->setCurrentFit(0);
+
     actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
 
-    wallpaperManager_->setCurrentFit(0);
     Q_EMIT updateImageStyle();
     Q_EMIT updateTv();
 }
 
 void ColorsGradients::on_wallpaperModeButton_clicked()
 {
-    if(!settings->value("ColorMode", false).toBool())
+    if(wallpaperManager_->getCurrentFit() != 0)
         return;
 
-    settings->setValue("ColorMode", false);
     ui->solid_radioButton->setEnabled(false);
     ui->vertical_radioButton->setEnabled(false);
     ui->horizontal_radioButton->setEnabled(false);
+
+#ifdef Q_OS_UNIX
+    wallpaperManager_->setCurrentFit(2);
+#else
     wallpaperManager_->setBackground(settings->value("last_wallpaper", wallpaperManager_->getPreviousWallpaper()).toString(), false, false, 0);
+#endif
 
     actionForSecondaryButtons();
     updateGradientsOnlyColors(false);

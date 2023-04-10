@@ -339,9 +339,7 @@ void MainWindow::dconfChanges(){
         qDebug() << "econdary-color";
     }
     else if(output.contains("color-shading-type"))
-    {
-        qDebug() << "color-shading-type";
-    }
+        colorManager_->changeCurrentShading();
 }
 #endif
 
@@ -758,7 +756,6 @@ void MainWindow::setPreviewImage(){
             //the preview of the background color(s) is meaningless for the current styling
             previewColorsAndGradientsMeow = false;
         }
-        ColoringType::Value coloringType = ColorManager::getColoringType();
         if(previewColorsAndGradientsMeow || desktopStyle == NoneStyle){
             if(desktopStyle == NoneStyle)
                 image = QImage();
@@ -771,9 +768,8 @@ void MainWindow::setPreviewImage(){
 
             colorsGradientsImage.fill(primaryColor);
 
-            if(coloringType != ColoringType::SolidColor && coloringType != ColoringType::NoneColor) // TODO: NoneColor?
-                colorsGradientsImage = colorManager_->createVerticalHorizontalImage(ColoringType::VerticalColor ? "vertical" : "horizontal", 75, 75);
-            //TODO: createVerticalHorizontalImage should get horizontal/vertical from settings
+            if(currentShading != ColoringType::SolidColor && currentShading != ColoringType::NoneColor) // TODO: NoneColor?
+                colorsGradientsImage = colorManager_->createVerticalHorizontalImage(75, 75);
         }
         QImage originalImage = image;
         int vScreenWidth= int((float)imagePreviewResizeFactorX_*gv.screenAvailableWidth);
@@ -1157,11 +1153,10 @@ void MainWindow::updateImageStyleCombo(){
 void MainWindow::setButtonColor(){
     QImage image(40, 19, QImage::Format_RGB32);
 
-    if(settings->value("ShadingType" , "solid") == "solid")
+    if(currentShading == ColoringType::SolidColor)
         image.fill(ColorManager::getPrimaryColor());
     else
-        image = colorManager_->createVerticalHorizontalImage(settings->value("ShadingType" , "solid") == "vertical"
-                                                                 ? "vertical" : "horizontal", 40, 19);
+        image = colorManager_->createVerticalHorizontalImage(40, 19);
 
     ui->set_desktop_color->setIcon(QIcon(QPixmap::fromImage(image)));
 }
