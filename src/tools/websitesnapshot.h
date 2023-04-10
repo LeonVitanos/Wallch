@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <QObject>
 #include <QtPlugin>
-#include <QWebFrame>
+//#include <QWebFrame>
 #include <QTimer>
 #include <QAuthenticator>
 
@@ -334,7 +334,7 @@ public:
      */
     QObject *asQObject();
 
-
+/*
 private:
     enum AuthenticationLevel
     {
@@ -371,7 +371,7 @@ private:
     QString lastError_;
     void parseUrl(QUrl &url);
     void disconnectWebPage();
-    bool searchAndSet(const QWebElement &document, const QString &searchFor, const QString &attribute, const QString &value, const QStringList &searchFields);
+    //bool searchAndSet(const QWebElement &document, const QString &searchFor, const QString &attribute, const QString &value, const QStringList &searchFields);
     void sendResultActions(QImage *image);
     void initializeWebPage();
     void decideFinalPage();
@@ -385,7 +385,7 @@ private Q_SLOTS:
     void webPageDestroyed();
     void timeoutReached();
     void afterFinishTimedOut();
-    void proceedToComplexAuth();
+    void proceedToComplexAuth();*/
 
 Q_SIGNALS:
     /*!

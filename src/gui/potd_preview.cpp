@@ -31,7 +31,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QFontMetrics>
 #include <QPainter>
 #include <QtConcurrent/QtConcurrent>
-#include <QDesktopWidget>
 
 PotdPreview::PotdPreview(QWidget *parent) :
     QDialog(parent),
@@ -39,9 +38,9 @@ PotdPreview::PotdPreview(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    ui->left_margin_spinbox->setMaximum(gv.screenWidth-100);
-    ui->right_margin_spinbox->setMaximum(gv.screenWidth-100);
-    ui->bottom_top_margin_spinbox->setMaximum(gv.screenHeight-100);
+    ui->left_margin_spinbox->setMaximum(gv.screenAvailableWidth-100);
+    ui->right_margin_spinbox->setMaximum(gv.screenAvailableWidth-100);
+    ui->bottom_top_margin_spinbox->setMaximum(gv.screenAvailableHeight-100);
 
     ui->potdFontComboBox->setCurrentFont(QFont(gv.potdDescriptionFont));
     ui->potd_description_bottom_radioButton->setChecked(gv.potdDescriptionBottom);
@@ -66,9 +65,6 @@ PotdPreview::PotdPreview(QWidget *parent) :
     originalLeftMargin_=gv.potdDescriptionLeftMargin;
     originalRightMargin_=gv.potdDescriptionRightMargin;
     originalBottomTopMargin_=gv.potdDescriptionBottomTopMargin;
-
-    //Moving the window to the center of screen!
-    this->move(QApplication::desktop()->availableGeometry().center() - this->rect().center());
 
     if(QFile::exists(gv.wallchHomePath+POTD_PREVIEW_IMAGE)){
         fetchFinished(QImage(gv.wallchHomePath+POTD_PREVIEW_IMAGE));
@@ -110,14 +106,13 @@ PotdPreview::~PotdPreview()
 
 void PotdPreview::resizeEvent(QResizeEvent *)
 {
-    if(loadingWindow || currentPixmap_.isNull())
+    if(loadingWindow || currentPixmap_.isNull() || ui->potdLabel->pixmap(Qt::ReturnByValue).isNull())
         return;
 
     QSize scaledSize = currentPixmap_.size();
     scaledSize.scale(ui->potdLabel->size(), Qt::KeepAspectRatio);
-    if (!ui->potdLabel->pixmap() || scaledSize != ui->potdLabel->pixmap()->size()){
+    if (scaledSize != ui->potdLabel->pixmap(Qt::ReturnByValue).size())
         updateLabel();
-    }
 }
 
 void PotdPreview::updateLabel()
@@ -132,8 +127,9 @@ void PotdPreview::imageFetchfailed(){
     ui->ok->show();
     ui->progressBar->hide();
     ui->line->hide();
-    this->resize(this->minimumWidth(), this->minimumHeight());
-    this->move(QDesktopWidget().availableGeometry().center() - this->rect().center());
+    //TODO:Check if needed
+    //this->resize(this->minimumWidth(), this->minimumHeight());
+    //this->move(QGuiApplication::primaryScreen()->availableGeometry().center() - this->rect().center());
 }
 
 void PotdPreview::downloadedImage(QByteArray array){
@@ -189,8 +185,8 @@ void PotdPreview::writeDescription(){
 
     painter.setFont(font);
 
-    float divImageWidth=(float)image.width()/(float)gv.screenWidth;
-    float divImageHeight=(float)image.height()/(float)gv.screenHeight;
+    float divImageWidth=(float)image.width()/(float)gv.screenAvailableWidth;
+    float divImageHeight=(float)image.height()/(float)gv.screenAvailableHeight;
 
     QRect drawRect = painter.fontMetrics().boundingRect(QRect(0, 0, image.width()-(divImageWidth*ui->left_margin_spinbox->value()+divImageHeight*ui->right_margin_spinbox->value()), image.height()), (Qt::TextWordWrap | Qt::AlignCenter), potdDescription_);
     drawRect.setX(0);
@@ -301,7 +297,7 @@ void PotdPreview::on_cancel_clicked()
 void PotdPreview::on_left_margin_spinbox_valueChanged(int arg1)
 {
     Q_UNUSED(arg1);
-    ui->left_margin_spinbox->setMaximum(gv.screenWidth-300-ui->right_margin_spinbox->value());
+    ui->left_margin_spinbox->setMaximum(gv.screenAvailableWidth-300-ui->right_margin_spinbox->value());
     writeDescription();
 }
 
@@ -309,7 +305,7 @@ void PotdPreview::on_left_margin_spinbox_valueChanged(int arg1)
 void PotdPreview::on_right_margin_spinbox_valueChanged(int arg1)
 {
     Q_UNUSED(arg1);
-    ui->right_margin_spinbox->setMaximum(gv.screenWidth-300-ui->left_margin_spinbox->value());
+    ui->right_margin_spinbox->setMaximum(gv.screenAvailableWidth-300-ui->left_margin_spinbox->value());
     writeDescription();
 }
 

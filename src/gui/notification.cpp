@@ -26,7 +26,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "glob.h"
 
 #include <QTimer>
-#include <QDesktopWidget>
 
 Notification::Notification(QString message, QString image, QWidget *parent) :
     QDialog(parent),

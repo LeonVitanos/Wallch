@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QPainter>
 #include <QGraphicsScene>
 #include <QGraphicsItem>
+#include <QRegularExpression>
 
 ImageFetcher::ImageFetcher(QObject *parent) :
     QObject(parent)
@@ -306,11 +307,10 @@ void ImageFetcher::getPotdDescription(QNetworkReply *reply){
 
     if(potdDescription.contains("/wiki/File:"))
     {
-        QRegExp filter("<a href=\"/wiki/File:(.+)</a></small>");
-        int result = filter.indexIn(potdDescription);
-        if(result != -1){
-            potdDescription=filter.cap(1);
-        }
+        QRegularExpression filter("<a href=\"/wiki/File:(.+)</a></small>");
+        QRegularExpressionMatch match = filter.match(potdDescription);
+        if(match.hasMatch())
+            potdDescription=match.captured(1);
     }
     else
     {
@@ -321,11 +321,10 @@ void ImageFetcher::getPotdDescription(QNetworkReply *reply){
 
     if(potdDescription.contains("<p>") && potdDescription.contains("</small>"))
     {
-        QRegExp filter2("<p>(.+)</small>");
-        int result2 = filter2.indexIn(potdDescription);
-        if(result2 != -1){
-            potdDescription=filter2.cap(1);
-        }
+        QRegularExpression filter("<p>(.+)</small>");
+        QRegularExpressionMatch match = filter.match(potdDescription);
+        if(match.hasMatch())
+            potdDescription=match.captured(1);
     }
     else
     {
@@ -333,7 +332,7 @@ void ImageFetcher::getPotdDescription(QNetworkReply *reply){
         Q_EMIT success(potdDescriptionFilename_);
         return;
     }
-    potdDescription.replace("/wiki", "https://en.wikipedia.org/wiki").remove(QRegExp("<[^>]*>")).replace("\n", " ");
+    potdDescription.replace("/wiki", "https://en.wikipedia.org/wiki").remove(QRegularExpression("<[^>]*>")).replace("\n", " ");
     QtConcurrent::run(this, &ImageFetcher::writePotdDescription, replaceSpecialHtml(potdDescription));
 }
 
@@ -346,8 +345,8 @@ void ImageFetcher::writePotdDescription(const QString &description){
 
     QPainter painter(&image);
 
-    float divImageWidth = (float)image.width()/(float)gv.screenWidth;
-    float divImageHeight = (float)image.height()/(float)gv.screenHeight;
+    float divImageWidth = (float)image.width()/(float)gv.screenAvailableWidth;
+    float divImageHeight = (float)image.height()/(float)gv.screenAvailableHeight;
 
     QFont font;
     font.setFamily(gv.potdDescriptionFont);
@@ -418,7 +417,7 @@ void ImageFetcher::readFileContainingImage(QNetworkReply *reply){
 
     if(fetchType_ == FetchType::POTD){
         //potd has multiple links in it
-        QStringList linksDates = onlineLink.split(QRegExp("[ \n]"),QString::SkipEmptyParts);
+        QStringList linksDates = onlineLink.split(QRegularExpression("[ \n]"),QString::SkipEmptyParts);
         if(linksDates.count() != 6){
             if(!alreadyTriedAlternativeLinkToDropbox_){
                 tryDownloadingImagesFromAlternativeLink();

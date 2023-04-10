@@ -44,7 +44,7 @@ WebsitePreview::WebsitePreview(WebsiteSnapshot *websiteSnapshotP, bool showCropD
 
     (void) new QShortcut(Qt::Key_Escape, this, SLOT(on_cancel_or_close_clicked()));
 
-    websiteSnapshot_=websiteSnapshotP;
+    /*websiteSnapshot_=websiteSnapshotP;
 
     websiteSnapshot_->setCrop(crop, curCropArea_);
 
@@ -61,12 +61,12 @@ WebsitePreview::WebsitePreview(WebsiteSnapshot *websiteSnapshotP, bool showCropD
     connect(countdownTimer_, SIGNAL(timeout()), this, SLOT(reduceTimeoutByOne()));
     countdownTimer_->start(1000);
 
-    websiteSnapshot_->start();
+    websiteSnapshot_->start();*/
 }
 
 WebsitePreview::~WebsitePreview()
 {
-    disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(imageReady(QImage*,short)));
+    //disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(imageReady(QImage*,short)));
     delete ui;
 }
 
@@ -137,9 +137,9 @@ void WebsitePreview::failWithMessage(const QString &further_info){
 
 void WebsitePreview::on_cancel_or_close_clicked()
 {
-    if(websiteSnapshot_->isLoading()){
+    /*if(websiteSnapshot_->isLoading()){
         websiteSnapshot_->stop();
-    }
+    }*/
     this->close();
 }
 

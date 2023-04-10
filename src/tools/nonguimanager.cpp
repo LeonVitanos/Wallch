@@ -22,7 +22,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "nonguimanager.h"
 
 #include <QtConcurrent/QtConcurrentRun>
-#include <QDesktopWidget>
+#include <QScreen>
+#include <QActionGroup>
 
 #include <iostream>
 #include <getopt.h>
@@ -95,7 +96,7 @@ void NonGuiManager::researchDirs(){
 }
 
 void NonGuiManager::onlineBackgroundReady(QString image){
-    WallpaperManager::setBackground(image, true, gv.potdRunning, (gv.potdRunning ? 3 : 2));
+    wallpaperManager_->setBackground(image, true, gv.potdRunning, (gv.potdRunning ? 3 : 2));
 }
 
 void NonGuiManager::getFilesFromFolder(const QString &path){
@@ -117,7 +118,7 @@ void NonGuiManager::potdSetSameImage(){
         imageFetcher_->setFetchType(FetchType::POTD);
         imageFetcher_->fetch();
     }
-    WallpaperManager::setBackground(filename, true, true, 3);
+    wallpaperManager_->setBackground(filename, true, true, 3);
 }
 
 void NonGuiManager::readPictures(const QString &folder){
@@ -252,7 +253,6 @@ void showUsage(short exitCode){
                   "--start                  Starts changing pictures from the last used list.\n"\
                   "--earth                  Starts live earth, updating every 30 minutes.\n"\
                   "--potd                   Starts picture of the day, updating once a day.\n"\
-                  "--clock                  Starts wallpaper clocks.\n"\
                   "--website                Starts live website.\n"\
                   "--stop                   Stops the current process, if it is active.\n"\
                   "--next                   Proceeds to the next image, if available.\n"\
@@ -369,20 +369,11 @@ void NonGuiManager::actionsOnWallpaperChange(){
     }
     else if(gv.liveWebsiteRunning)
     {
-        websiteSnapshot_->start();
+        //websiteSnapshot_->start();
         secondsLeft_ = totalSeconds_;
         if(gv.independentIntervalEnabled){
             Global::saveSecondsLeftNow(secondsLeft_, 2);
         }
-    }
-    else if(gv.wallpaperClocksRunning)
-    {
-        QString currentWallpaperClock = globalParser_->wallpaperClockNow(gv.defaultWallpaperClock, wallpaperClocksMinutesChecked_, wallpaperClocksHourChecked_, wallpaperClocksAmPmChecked_, wallpaperClocksDayOfWeekChecked_, wallpaperClocksDayOfMonthChecked_ , wallpaperClocksMonthChecked_ );
-        WallpaperManager::setBackground(currentWallpaperClock, true, false, 4);
-        if(gv.setAverageColor){
-            Global::setAverageColor(currentWallpaperClock);
-        }
-        secondsLeft_ = totalSeconds_ = wallpaperClocksTotalSeconds_;
     }
 }
 
@@ -409,7 +400,7 @@ void NonGuiManager::updateSeconds(){
 
                 gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsLeft_);
             }
-            else if (!(gv.wallpaperClocksRunning && (secondsLeft_-secondsToChangingTime < -1 || secondsLeft_-secondsToChangingTime > 1))){
+            else if (!(secondsLeft_-secondsToChangingTime < -1 || secondsLeft_-secondsToChangingTime > 1)){
                 secondsLeft_ = secondsToChangingTime;
             }
         }
@@ -513,10 +504,11 @@ void NonGuiManager::continueWithWebsite(){
     this->connectToServer();
     //getting the required values from the settings...
 
+    /*
     gv.websiteWebpageToLoad=settings->value("website", "http://google.com").toString();
     gv.websiteInterval=settings->value("website_interval", 6).toInt();
     gv.websiteCropEnabled=settings->value("website_crop", false).toBool();
-    gv.websiteCropArea=settings->value("website_crop_area", QRect(0, 0, gv.screenWidth, gv.screenHeight)).toRect();
+    gv.websiteCropArea=settings->value("website_crop_area", QRect(0, 0, gv.screenAvailableWidth, gv.screenAvailableHeight)).toRect();
     gv.websiteLoginEnabled=settings->value("website_login", false).toBool();
     gv.websiteLoginUsername=settings->value("website_username", "").toString();
     gv.websiteLoginPasswd=settings->value("website_password", "").toString();
@@ -534,10 +526,11 @@ void NonGuiManager::continueWithWebsite(){
     gv.websiteExtraUsernames=settings->value("website_extra_usernames", QStringList()).toStringList();
     gv.websiteExtraPasswords=settings->value("website_extra_passwords", QStringList()).toStringList();
 
+
     disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageReady(QImage*,short)));
     connect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageReady(QImage*,short)));
 
-    websiteSnapshot_->setParameters(QUrl(gv.websiteWebpageToLoad), gv.screenWidth, gv.screenHeight);
+    websiteSnapshot_->setParameters(QUrl(gv.websiteWebpageToLoad), gv.screenAvailableWidth, gv.screenAvailableHeight);
     websiteSnapshot_->setWaitAfterFinish(gv.websiteWaitAfterFinishSeconds);
     websiteSnapshot_->setJavascriptConfig(gv.websiteJavascriptEnabled, gv.websiteJavascriptCanReadClipboard);
     websiteSnapshot_->setJavaEnabled(gv.websiteJavaEnabled);
@@ -581,113 +574,7 @@ void NonGuiManager::continueWithWebsite(){
     if(gv.independentIntervalEnabled){
         Global::saveSecondsLeftNow(secondsLeft_, 2);
     }
-    generalTimer_->start(1000);
-}
-
-bool NonGuiManager::continueWithClock(){
-    gv.defaultWallpaperClock=settings->value("default_wallpaper_clock","").toString();
-    if(gv.defaultWallpaperClock.isEmpty() || gv.defaultWallpaperClock=="None" )
-    {
-        globalParser_->desktopNotify(tr("No wallpaper clocks have been installed"), false, "info");
-        Global::error("No wallpaper clocks have been installed.");
-        return false;
-    }
-    else if(!QFile::exists(gv.defaultWallpaperClock))
-    {
-        globalParser_->desktopNotify(tr("The wallpaper clock is not installed properly. Please open Wallch and reinstall."), false, "info");
-        Global::error("The wallpaper clock is not installed properly. Please open Wallch and reinstall.");
-        return false;
-    }
-    Global::readClockIni();
-    wallpaperClocksMonthChecked_=settings->value("month",true).toBool();
-    wallpaperClocksDayOfMonthChecked_=settings->value("day_of_month",true).toBool();
-    wallpaperClocksDayOfWeekChecked_=settings->value("day_of_week",true).toBool();
-    wallpaperClocksAmPmChecked_=settings->value("am_pm",true).toBool();
-    wallpaperClocksHourChecked_=settings->value("hour",true).toBool();
-    wallpaperClocksMinutesChecked_=settings->value("minute",true).toBool();
-
-    QString currentWallpaperClock = globalParser_->wallpaperClockNow(gv.defaultWallpaperClock, wallpaperClocksMinutesChecked_, wallpaperClocksHourChecked_, wallpaperClocksAmPmChecked_, wallpaperClocksDayOfWeekChecked_, wallpaperClocksDayOfMonthChecked_ , wallpaperClocksMonthChecked_ );
-    WallpaperManager::setBackground(currentWallpaperClock, true, false, 4);
-    if(gv.setAverageColor){
-        Global::setAverageColor(currentWallpaperClock);
-    }
-
-    QTime time = QTime::currentTime();
-    float secondsLeftForMinute=time.secsTo(QTime(time.hour(),time.minute()+1,1));
-
-    if(settings->value("minute",true).toBool()){
-        wallpaperClocksTotalSeconds_=60;
-    }
-    else if (settings->value("hour",true).toBool()){
-        wallpaperClocksTotalSeconds_=gv.refreshhourinterval;
-    }
-    else if(settings->value("am_pm",true).toBool() && gv.amPmEnabled){
-        wallpaperClocksTotalSeconds_=43200;
-    }
-    else if(settings->value("day_of_week",true).toBool() || settings->value("day_of_month",true).toBool() || settings->value("month",true).toBool()){
-        wallpaperClocksTotalSeconds_=86400;
-    }
-    this->connectToUpdateSecondsSlot();
-    this->connectToServer();
-
-    if(settings->value("minute",true).toBool())
-    {
-        secondsLeft_=secondsLeftForMinute;
-    }
-    else if(settings->value("hour",true).toBool())
-    {
-        secondsLeft_=(((QString::number(time.minute()/gv.refreshhourinterval).toInt()+1)*gv.refreshhourinterval-time.minute()-1)*60+secondsLeftForMinute);
-    }
-    else if(settings->value("am_pm",true).toBool() && gv.amPmEnabled)
-    {
-        float seconds_left_for_am_pm=0;
-        if (time.hour()>=12){
-            seconds_left_for_am_pm=time.secsTo(QTime(23,59,59))+2;
-        }
-        else{
-            seconds_left_for_am_pm=time.secsTo(QTime(12,0,1));
-        }
-        secondsLeft_=seconds_left_for_am_pm;
-    }
-    else if(settings->value("day_of_week",true).toBool() || settings->value("day_of_month",true).toBool())
-    {
-        float seconds_left_for_next_day=time.secsTo(QTime(23,59,59))+2;
-        secondsLeft_=seconds_left_for_next_day;
-    }
-    else if(settings->value("month",true).toBool())
-    {
-        float seconds_left_for_next_day=time.secsTo(QTime(23,59,59))+2;
-        secondsLeft_=seconds_left_for_next_day;
-    }
-    else
-    {
-
-        globalParser_->desktopNotify(tr("At least one option (month, hour etc) must be selected for wallpaper clock to start."), false, "info");
-        Global::error("At least one option (month, hour etc) must be selected for wallpaper clock to start.");
-        return false;
-    }
-    totalSeconds_=secondsLeft_;
-
-    gv.runningTimeOfProcess=QDateTime::currentDateTime();
-    gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsLeft_);
-
-    gv.potdRunning=gv.liveEarthRunning=gv.liveWebsiteRunning=gv.wallpapersRunning=false;
-    gv.wallpaperClocksRunning=true;
-    Global::updateStartup();
-    if(generalTimer_->isActive()){
-        generalTimer_->stop();
-    }
-    this->disconnectFromSlot();
-    this->connectToUpdateSecondsSlot();
-#ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome){
-        if(gv.unityProgressbarEnabled){
-            Global::setUnityProgressBarEnabled(true);
-        }
-    }
-#endif //#ifdef Q_OS_UNIX
-    generalTimer_->start(1000);
-    return true;
+    generalTimer_->start(1000);*/
 }
 
 void NonGuiManager::continueWithPotd(){
@@ -919,21 +806,6 @@ void deactivatephotoofday_main(guint, gpointer *){
     nongui->doAction("--stop");
 }
 
-void activatewallpaperclocks_callback(GtkCheckMenuItem *checkmenuitem, gpointer){
-    if(gtk_check_menu_item_get_active(checkmenuitem)){
-        if(gv.doNotToggleRadiobuttonFallback){
-            gv.doNotToggleRadiobuttonFallback=false;
-            return;
-        }
-        nongui->doAction("--clock");
-        return;
-    }
-}
-
-void deactivatewallpaperclocks_main(guint, gpointer *){
-    nongui->doAction("--stop");
-}
-
 void activatelivewebsite_callback(GtkCheckMenuItem *checkmenuitem, gpointer){
     if(gtk_check_menu_item_get_active(checkmenuitem)){
         if(gv.doNotToggleRadiobuttonFallback){
@@ -1003,9 +875,6 @@ void NonGuiManager::setupTray()
 
     pictureOfTheDayAction_ = new QAction(tr("Picture Of The Day"), this);
     connect(pictureOfTheDayAction_, SIGNAL(triggered()), this, SLOT(trayActionPictureOfTheDay()));
-
-    wallpaperClocksAction_ = new QAction(tr("Wallpaper Clocks"), this);
-    connect(wallpaperClocksAction_, SIGNAL(triggered()), this, SLOT(trayActionWallpaperClocks()));
 
     liveWebsiteAction_ = new QAction(tr("Live Website"), this);
     connect(liveWebsiteAction_, SIGNAL(triggered()), this, SLOT(trayActionLiveWebsite()));
@@ -1122,11 +991,6 @@ void NonGuiManager::createTray()
         pictureOfTheDayAction_->setCheckable(true);
         pictureOfTheDayAction_->setChecked(true);
     }
-    else if(gv.wallpaperClocksRunning)
-    {
-        wallpaperClocksAction_->setCheckable(true);
-        wallpaperClocksAction_->setChecked(true);
-    }
     else if(gv.liveWebsiteRunning)
     {
         liveWebsiteAction_->setCheckable(true);
@@ -1138,13 +1002,11 @@ void NonGuiManager::createTray()
     }
     trayIconMenu_->addAction(liveEarthAction_);
     trayIconMenu_->addAction(pictureOfTheDayAction_);
-    trayIconMenu_->addAction(wallpaperClocksAction_);
     trayIconMenu_->addAction(liveWebsiteAction_);
-    QActionGroup* myGroup = new QActionGroup( this );
+    QActionGroup* myGroup = new QActionGroup(this);
     myGroup->addAction(wallpapersAction_);
     myGroup->addAction(liveEarthAction_);
     myGroup->addAction(pictureOfTheDayAction_);
-    myGroup->addAction(wallpaperClocksAction_);
     myGroup->addAction(liveWebsiteAction_);
     trayIconMenu_->addSeparator();
     trayIconMenu_->addAction(preferencesAction_);
@@ -1239,12 +1101,6 @@ void NonGuiManager::trayActionPictureOfTheDay()
     createTray();
 }
 
-void NonGuiManager::trayActionWallpaperClocks()
-{
-    doAction("--clock");
-    createTray();
-}
-
 void NonGuiManager::trayActionLiveWebsite()
 {
     doAction("--website");
@@ -1271,7 +1127,6 @@ void NonGuiManager::uncheckRunningFeatureOnTray()
     wallpapersAction_->setCheckable(false);
     liveEarthAction_->setCheckable(false);
     pictureOfTheDayAction_->setCheckable(false);
-    wallpaperClocksAction_->setCheckable(false);
     liveWebsiteAction_->setCheckable(false);
 }
 //End of System tray icon code
@@ -1310,9 +1165,9 @@ void NonGuiManager::doAction(const QString &message){
 
         Global::debug("Focus was requested! Continuing the process to the Graphical Interface");
 
-        if(websiteSnapshot_){
-            disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageReady(QImage*,short)));
-        }
+        //if(websiteSnapshot_)
+            //disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageReady(QImage*,short)));
+
 
         mainWindowLaunched_=true;
 
@@ -1321,7 +1176,7 @@ void NonGuiManager::doAction(const QString &message){
         if(gv.wallpapersRunning){
             w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_, secondsLeft_, totalSeconds_);
         }
-        else if(gv.liveWebsiteRunning || gv.wallpaperClocksRunning || gv.liveEarthRunning){
+        else if(gv.liveWebsiteRunning || gv.liveEarthRunning){
             w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_, secondsLeft_, 0);
         }
         else
@@ -1354,15 +1209,15 @@ void NonGuiManager::doAction(const QString &message){
 
         Global::debug("Switching to Live Earth mode.");
         if(gv.liveWebsiteRunning){
-            if(websiteSnapshot_->isLoading()){
+            /*if(websiteSnapshot_->isLoading()){
                 websiteSnapshot_->stop();
-            }
+            }*/
         }
         if(gv.potdRunning){
             imageFetcher_->abort();
         }
 
-        gv.liveWebsiteRunning=gv.wallpaperClocksRunning=gv.potdRunning=gv.wallpapersRunning=false;
+        gv.liveWebsiteRunning=gv.potdRunning=gv.wallpapersRunning=false;
         gv.liveEarthRunning=true;
         Global::updateStartup();
         if(generalTimer_->isActive()){
@@ -1406,15 +1261,15 @@ void NonGuiManager::doAction(const QString &message){
 
         Global::debug("Switching to Picture Of The Day mode.");
         if(gv.liveWebsiteRunning){
-            if(websiteSnapshot_->isLoading()){
+            /*if(websiteSnapshot_->isLoading()){
                 websiteSnapshot_->stop();
-            }
+            }*/
         }
         if(gv.liveEarthRunning){
             imageFetcher_->abort();
         }
 
-        gv.liveEarthRunning=gv.liveWebsiteRunning=gv.wallpaperClocksRunning=gv.wallpapersRunning=false;
+        gv.liveEarthRunning=gv.liveWebsiteRunning=gv.wallpapersRunning=false;
         gv.potdRunning = true;
         Global::updateStartup();
         if(generalTimer_->isActive()){
@@ -1422,49 +1277,6 @@ void NonGuiManager::doAction(const QString &message){
         }
         this->disconnectFromSlot();
         this->continueWithPotd();
-#ifdef Q_OS_UNIX
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
-            setUnityShortcutsState(true, false, false, false);
-        }
-#endif //#ifdef Q_OS_UNIX
-    }
-    else if(message == "--clock")
-    {
-        if(mainWindowLaunched_){
-            if(gv.wallpaperClocksRunning){
-                Global::debug("Stopping the Wallpaper Clocks process.");
-                Q_EMIT closeWhatsRunning();
-            }
-            else
-            {
-                Global::debug("Activating the Wallpaper Clocks process.");
-                Q_EMIT signalActivateWallClocks();
-            }
-            return;
-        }
-
-        if(gv.wallpaperClocksRunning){
-            Global::debug("Stopping the Wallpaper Clocks process.");
-            doAction("--stop");
-            return;
-        }
-
-        if(!this->continueWithClock()){
-            Global::error("There was a problem with starting the process. Wallpaper Clocks is not enabled.");
-            doAction("--stop");
-            return;
-        }
-
-        gv.liveEarthRunning=gv.liveWebsiteRunning=gv.potdRunning=gv.wallpapersRunning=false;
-        gv.wallpaperClocksRunning=true;
-        Global::updateStartup();
-        Global::debug("Switching to Wallpaper Clocks mode.");
-        if(gv.liveWebsiteRunning){
-            if(websiteSnapshot_->isLoading()){
-                websiteSnapshot_->stop();
-            }
-        }
-
 #ifdef Q_OS_UNIX
         if(gv.currentDE == DesktopEnvironment::UnityGnome){
             setUnityShortcutsState(true, false, false, false);
@@ -1499,7 +1311,7 @@ void NonGuiManager::doAction(const QString &message){
             imageFetcher_->abort();
         }
 
-        gv.potdRunning=gv.liveEarthRunning=gv.wallpaperClocksRunning=gv.wallpapersRunning=false;
+        gv.potdRunning=gv.liveEarthRunning=gv.wallpapersRunning=false;
         gv.liveWebsiteRunning=true;
         Global::updateStartup();
         if(generalTimer_->isActive()){
@@ -1544,8 +1356,8 @@ void NonGuiManager::doAction(const QString &message){
         }
         else
         {
-            if(startedWithLiveEarth_ || startedWithWebsite_ || startedWithPotd_ || startedWithClock_ || startedWithNone_){
-                startedWithNone_=startedWithLiveEarth_=startedWithWebsite_=startedWithPotd_=startedWithClock_=false;
+            if(startedWithLiveEarth_ || startedWithWebsite_ || startedWithPotd_ || startedWithNone_){
+                startedWithNone_=startedWithLiveEarth_=startedWithWebsite_=startedWithPotd_=false;
                 checkSettings(true);
                 if(!getPicturesLocation(true)){
                     return;
@@ -1555,7 +1367,7 @@ void NonGuiManager::doAction(const QString &message){
                 }
             }
             Global::debug("Switching to Wallpapers mode.");
-            gv.wallpaperClocksRunning=gv.potdRunning=gv.liveEarthRunning=gv.liveWebsiteRunning=false;
+           gv.potdRunning=gv.liveEarthRunning=gv.liveWebsiteRunning=false;
             gv.wallpapersRunning=true;
             Global::updateStartup();
 
@@ -1677,15 +1489,12 @@ void NonGuiManager::doAction(const QString &message){
         else if(gv.liveEarthRunning || gv.liveWebsiteRunning){
             secondsLeft_=totalSeconds_;
         }
-        else if(gv.wallpaperClocksRunning){
-            secondsLeft_=totalSeconds_=wallpaperClocksTotalSeconds_;
-        }
 
         if(gv.liveEarthRunning || gv.potdRunning){
             imageFetcher_->abort();
         }
 
-        gv.wallpapersRunning=gv.liveEarthRunning=gv.potdRunning=gv.wallpaperClocksRunning=gv.liveWebsiteRunning=false;
+        gv.wallpapersRunning=gv.liveEarthRunning=gv.potdRunning=gv.liveWebsiteRunning=false;
         Global::updateStartup();
 #ifdef Q_OS_UNIX
         if(gv.currentDE == DesktopEnvironment::UnityGnome){
@@ -1806,14 +1615,6 @@ void NonGuiManager::doAction(const QString &message){
         // manually detach from the memory
         alreadyRunsMem_->detach();
         qApp->quit();
-    }
-    else if(message.startsWith("CLOCK:")){
-        if(mainWindowLaunched_){
-            Q_EMIT signalInstallWallClock(message.right(message.length()-6));
-        }
-        else{
-            Global::error("Wallpapper clock installations only on GUI mode!");
-        }
     }
     else if(message.startsWith("MONITOR:")){
         QString folder=message.right(message.length()-8);
@@ -1969,7 +1770,7 @@ void NonGuiManager::checkSettings(bool allSettings){
         gv.potdDescriptionBottomTopMargin = settings->value("potd_description_bottom_top_margin", 0).toInt();
 
         gv.typeOfInterval=settings->value("typeOfIntervals", 0).toInt();
-        if(startedWithLiveEarth_ || startedWithWebsite_ || (!startedWithClock_ && !startedWithPotd_ && gv.typeOfInterval!=2)){
+        if(startedWithLiveEarth_ || startedWithWebsite_ || (!startedWithPotd_ && gv.typeOfInterval!=2)){
             gv.independentIntervalEnabled = settings->value("independent_interval_enabled", true).toBool();
             if(gv.independentIntervalEnabled){
                 //check if there is an interval to follow
@@ -2026,7 +1827,6 @@ void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     QObject::connect(nongui, SIGNAL(signalStart()), w, SLOT(on_startButton_clicked()));
     QObject::connect(nongui, SIGNAL(signalActivateLivearth()), w, SLOT(on_activate_livearth_clicked()));
     QObject::connect(nongui, SIGNAL(signalActivatePotd()), w, SLOT(on_activate_potd_clicked()));
-    QObject::connect(nongui, SIGNAL(signalActivateWallClocks()), w, SLOT(on_activate_clock_clicked()));
     QObject::connect(nongui, SIGNAL(signalActivateLiveWebsite()), w, SLOT(on_activate_website_clicked()));
     QObject::connect(nongui, SIGNAL(closeWhatsRunning()), w, SLOT(closeWhatsRunning()));
     QObject::connect(nongui, SIGNAL(signalShowPreferences()), w, SLOT(on_action_Preferences_triggered()));
@@ -2034,7 +1834,6 @@ void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     QObject::connect(nongui, SIGNAL(signalQuit()), w, SLOT(doQuit()));
     QObject::connect(nongui, SIGNAL(signalDeleteCurrent()), w, SLOT(on_actionDelete_triggered()));
     QObject::connect(nongui, SIGNAL(signalAddFolderForMonitor(const QString&)), w, SLOT(addFolderForMonitor(const QString&)));
-    QObject::connect(nongui, SIGNAL(signalInstallWallClock(QString)), w, SLOT(installWallpaperClock(const QString&)));
     QObject::connect(nongui, SIGNAL(signalFocus()), w, SLOT(strongShowApp()));
     QObject::connect(nongui, SIGNAL(signalHideOrShow()), w, SLOT(hideOrShow()));
     QObject::connect(w, SIGNAL(signalUncheckRunningFeatureOnTray()), nongui , SLOT(uncheckRunningFeatureOnTray()));
@@ -2068,7 +1867,7 @@ void NonGuiManager::liveWebsiteImageReady(QImage *image, short errorCode){
         image->save(filename);
         delete image;
 
-        WallpaperManager::setBackground(filename, true, true, 5);
+        wallpaperManager_->setBackground(filename, true, true, 5);
         QFile::remove(gv.wallchHomePath+LW_PREVIEW_IMAGE);
         QFile(filename).link(gv.wallchHomePath+LW_PREVIEW_IMAGE);
     }
@@ -2127,10 +1926,6 @@ void NonGuiManager::viralSettingsOperations(){
 
         QApplication::installTranslator(translator);
     }
-
-    QDesktopWidget screen;
-    gv.screenWidth = screen.width();
-    gv.screenHeight = screen.height();
 
     if(settings->value("first-run", true).toBool()){
         settings->setValue("first-run", false);
@@ -2270,7 +2065,7 @@ void NonGuiManager::viralSettingsOperations(){
     gv.wallchHomePath=gv.homePath+"/.wallch/";
     gv.cachePath=gv.homePath+"/.cache/wallch/thumbs/";
 #else
-    gv.wallchHomePath=QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)+"/Mellori Studio/Wallch/";
+    gv.wallchHomePath=QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)+"/Wallch/";
     gv.cachePath=gv.wallchHomePath+"/.cache/thumbs/";
 #endif
     if(!QDir(gv.wallchHomePath).exists()){
@@ -2385,34 +2180,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
 #endif
         continueWithLiveEarth();
 
-        startStatisticsTimer();
-        return app == NULL ? 0 : app->exec();
-    }
-    else if(arguments.contains("--clock")){
-        if(argc > 2){
-            Global::error("Argument --clock doesn't take any other options!");
-            showUsage(1);
-        }
-
-        if(alreadyRuns()){
-            messageServer("--clock", true);
-            startStatisticsTimer();
-            return app == NULL ? 0 : app->exec();
-        }
-        gv.wallpaperClocksRunning=startedWithClock_=true;
-        checkSettings(true);
-
-        connectToServer();
-        setupTray();
-
-#ifdef Q_OS_UNIX
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
-            setupUnityShortcuts();
-            setUnityShortcutsState(true, false, false, false);
-        }
-#endif //#ifdef Q_OS_UNIX
-
-        continueWithClock();
         startStatisticsTimer();
         return app == NULL ? 0 : app->exec();
     }
@@ -2558,37 +2325,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
                 }
             }
         }
-        else
-        {
-            //wcz files to be sent to the already running instance of Wallch.
-            short returnResult=1;
-            bool runsAlready=alreadyRuns(), settingsChecked=false;
-            for(short i = 1; i < argc; i++){
-                if(arguments.at(i).endsWith(".wcz")){
-                    if(runsAlready){
-                        QString currentClock = QDir::cleanPath(QDir().absoluteFilePath(arguments.at(i)));
-                        Global::debug("The wallpaper clock '"+currentClock+"'' has been sent to the already running instance of Wallch for installation.");
-                        messageServer("CLOCK:"+currentClock, false);
-                        returnResult = 0;
-                    }
-                    else
-                    {
-                        Global::error("Installation of wallpaper clocks is only allowed on the GUI interface. Please open Wallch in GUI mode and try again.");
-                        break;
-                    }
-                }
-                else
-                {
-                    Global::debug("Attempting to set as background '"+QDir::cleanPath(QDir().absoluteFilePath(arguments.at(i)))+"'.");
-                    if(!settingsChecked){
-                        checkSettings(false);
-                        settingsChecked = true;
-                    }
-                    WallpaperManager::setBackground(QDir::cleanPath(QDir().absoluteFilePath(arguments.at(i))), true, true, 1);
-                }
-            }
-            return returnResult;
-        }
     }
     return 0;
 }
@@ -2630,10 +2366,6 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
                 break;
             case 'c':
             {
-                // QDesktopWidget wants QApplication
-                QApplication app(argc, argv);
-                Q_UNUSED(app);
-
                 viralSettingsOperations();
                 wallpaperManager_ = new WallpaperManager();
 

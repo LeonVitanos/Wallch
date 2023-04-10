@@ -44,7 +44,7 @@ public:
 private:
     bool alteringIndexesFromCode_ = false;
     short previousIconComboIndex = 0;
-    const QStringList lePointImages_ = QStringList() << "http://i.imgur.com/ZfayMkO.jpg" << "http://i.imgur.com/xEHuNbe.jpg" << "http://melloristudio.com/wallch/le_point.jpg";
+    const QStringList lePointImages_ = QStringList() << "http://i.imgur.com/ZfayMkO.jpg" << "http://i.imgur.com/xEHuNbe.jpg";
     TryHard *tryFetch_ = NULL;
     bool fetchFailed_ = false;
 

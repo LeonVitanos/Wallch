@@ -58,9 +58,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define POTD_ONLINE_URL_B "http://melloristudio.com/wallch/potd"
 #define LIVEARTH_ONLINE_URL_B "http://melloristudio.com/wallch/le"
 
+#define COLOR_IMAGE "color.png"
 #define LE_IMAGE "liveEarth"
 #define POTD_IMAGE "potd"
-#define WC_IMAGE "wallpaperClock"
 #define LW_IMAGE "liveWebsite"
 
 #define LW_PREVIEW_IMAGE "liveWebsitePreview.png"
@@ -99,19 +99,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 extern QSettings *settings;
 
 #ifdef Q_OS_UNIX
-
 struct DesktopEnvironment {
   enum Value {
     UnityGnome, Gnome, XFCE, LXDE, Mate
   };
 };
-
-struct ColoringType {
-  enum Value {
-    NoneColor, SolidColor, HorizontalColor, VerticalColor
-  };
-};
-
 #endif
 
 struct GlobalVar {
@@ -146,7 +138,6 @@ struct GlobalVar {
     int wallpapersChangedCurrentSession;
     QDateTime timeLaunched;
     bool showNotification;
-    bool wallpaperClocksRunning;
     bool liveWebsiteRunning;
     bool potdRunning;
     bool liveEarthRunning;
@@ -156,7 +147,6 @@ struct GlobalVar {
     bool potdIncludeDescription;
     bool leEnableTag;
     bool potdDescriptionBottom;
-    short wallpaperClocksHourImages;
     short refreshhourinterval;
     short websiteWaitAfterFinishSeconds;
     bool websiteLoadImages;
@@ -167,6 +157,8 @@ struct GlobalVar {
     int websiteInterval;
     int screenHeight;
     int screenWidth;
+    int screenAvailableHeight;
+    int screenAvailableWidth;
     int potdDescriptionLeftMargin;
     int potdDescriptionRightMargin;
     int potdDescriptionBottomTopMargin;
@@ -181,7 +173,6 @@ struct GlobalVar {
 
     QStringList websiteExtraUsernames;
     QStringList websiteExtraPasswords;
-    QString defaultWallpaperClock;
     QString nextShortcut;
     QString potdOnlineUrl;
     QString potdOnlineUrlB;
@@ -211,8 +202,8 @@ struct GlobalVar {
 #endif
         saveHistory(true), randomTimeFrom(300), randomTimeTo(1200), doNotToggleRadiobuttonFallback(false), previewImagesOnScreen(true), pauseOnBattery(false), amPmEnabled(false),
         mainwindowLoaded(false), setAverageColor(false), websiteLoginEnabled(false), websiteCropEnabled(false), wallpapersChangedCurrentSession(0), timeLaunched(QDateTime::currentDateTime()),
-        showNotification(false), wallpaperClocksRunning(false), liveWebsiteRunning(false), potdRunning(false), liveEarthRunning(false), wallpapersRunning(false),
-        iconMode(true), rotateImages(false), potdIncludeDescription(true), leEnableTag(false), potdDescriptionBottom(true), wallpaperClocksHourImages(0), refreshhourinterval(0), websiteWaitAfterFinishSeconds(3),
+        showNotification(false), liveWebsiteRunning(false), potdRunning(false), liveEarthRunning(false), wallpapersRunning(false),
+        iconMode(true), rotateImages(false), potdIncludeDescription(true), leEnableTag(false), potdDescriptionBottom(true), refreshhourinterval(0), websiteWaitAfterFinishSeconds(3),
         websiteLoadImages(true), websiteJavaEnabled(false), websiteJavascriptCanReadClipboard(false), websiteJavascriptEnabled(true), websiteSimpleAuthEnabled(false),
         websiteInterval(6), screenHeight(0), screenWidth(0), potdDescriptionLeftMargin(100), potdDescriptionRightMargin(0), potdDescriptionBottomTopMargin(0), appStartTime(QDateTime::currentDateTime()),
         websiteWebpageToLoad("http://google.com"), defaultPicturesLocation(homePath+"/"+QStandardPaths::displayName(QStandardPaths::PicturesLocation)), potdDescriptionFont("Ubuntu"),
@@ -231,9 +222,7 @@ public:
     ~Global();
     static void saveHistory(const QString &image, short feature);
     static void rotateImg(const QString &filename, short rotation_type, bool show_messagebox);
-    static void readClockIni();
     void desktopNotify(const QString text, bool checkImage, const QString &image);
-    QString wallpaperClockNow(const QString &path, bool minuteCheck, bool hourCheck, bool amPmCheck, bool dayWeekCheck, bool dayMonthCheck, bool monthCheck);
     static QString setAverageColor(const QString &image);
     static QStringList listFolders(const QString &parentFolder, bool recursively, bool includeParent);
     static void generateRandomImages(int imagesNumber, int firstOne);
@@ -254,15 +243,10 @@ public:
     static void addPreviousBackground(QStringList &previous_backgrounds, const QString &image);
     static void error(const QString &message);
     static void debug(const QString &message);
-    static QString getPrimaryColor();
 #ifdef Q_OS_UNIX
     static void setUnityProgressBarEnabled(bool state);
     static void setUnityProgressbarValue(float percent);
     static QString gsettingsGet(const QString &schema, const QString &key);
-    static QString getSecondaryColor();
-    static void setPrimaryColor(const QString &colorName);
-    static void setSecondaryColor(const QString &colorName);
-    static ColoringType::Value getColoringType();
     static QString getPcManFmValue(const QString &key);
     static void gsettingsSet(const QString &schema, const QString &key, const QString &value);
     static void changeIndicatorIcon(const QString &icon);
@@ -271,6 +255,7 @@ public:
 #endif //#ifdef Q_OS_UNIX
     static int getSecondsTillHour(const QString &hour);
     static QString getOutputOfCommand(QString command, QStringList parameters);
+    static void setPcManFmValue(const QString &key, const QString &value);
     static void openUrl(const QString &url);
     static QString monthInEnglish(short month);
     static void updateStartup();
@@ -279,14 +264,12 @@ public:
     static QPixmap roundedCorners(const QImage &image, const int radius);
     static short autodetectTheme();
     bool runsOnBattery();
-    static void currentBackgroundExists();
 
 private:
 #ifdef Q_OS_WIN
     Notification *notification_ = NULL;
 #endif
     static QString searchForFileInDir(QString folder, QString file);
-    static void setPcManFmValue(const QString &key, const QString &value);
 
     #ifdef Q_OS_WIN
 private Q_SLOTS:

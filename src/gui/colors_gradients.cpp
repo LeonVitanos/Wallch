@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QSettings>
 #include <QFileDialog>
 
-#include "wallpapermanager.h"
+#include "colormanager.h"
 
 #ifdef Q_OS_WIN
 #include <stdio.h>
@@ -33,71 +33,42 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <shlobj.h>
 #endif
 
-ColorsGradients::ColorsGradients(QWidget *parent) :
+ColorsGradients::ColorsGradients(WallpaperManager *wallpaperManager, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::colors_gradients)
 {
     ui->setupUi(this);
+    wallpaperManager_ = wallpaperManager;
 
-#ifdef Q_OS_UNIX
-    ColoringType::Value coloringType;
-    coloringType = Global::getColoringType();
-    if(coloringType == ColoringType::SolidColor){
+    if(currentShading == ColoringType::Solid)
         ui->solid_radioButton->setChecked(true);
-        actionForSecondaryButtons(false);
-    }
-    else if(coloringType == ColoringType::VerticalColor){
+    else if(currentShading == ColoringType::Vertical)
         ui->vertical_radioButton->setChecked(true);
-        actionForSecondaryButtons(true);
-    }
-    else if(coloringType == ColoringType::HorizontalColor){
+    else if(currentShading == ColoringType::Horizontal)
         ui->horizontal_radioButton->setChecked(true);
-        actionForSecondaryButtons(true);
-    }
-#else
-    QString res = settings->value("ShadingType", "solid").toString();
 
-    if(res == "solid"){
-        ui->solid_radioButton->setChecked(true);
-        actionForSecondaryButtons(false);
+    if (wallpaperManager_->getCurrentFit() == 0)
+        ui->colorModeButton->setChecked(true);
+    else{
+        ui->solid_radioButton->setEnabled(false);
+        ui->vertical_radioButton->setEnabled(false);
+        ui->horizontal_radioButton->setEnabled(false);
     }
-    else if(res == "vertical" || res=="vertical-gradient"){
-        ui->vertical_radioButton->setChecked(true);
-        actionForSecondaryButtons(true);
-    }
-    else if(res == "horizontal-gradient"){
-        ui->horizontal_radioButton->setChecked(true);
-        actionForSecondaryButtons(true);
-    }
-#endif //#ifdef Q_OS_UNIX
+
+    actionForSecondaryButtons();
+
     //determining current primary color
-    QString res1;
-#ifdef Q_OS_UNIX
-    res1=Global::getPrimaryColor();
-#else
-    int Elements[1] = {COLOR_BACKGROUND};
-    DWORD currentColors[1];
-    currentColors[0] = GetSysColor(Elements[0]);
-    res1=QColor(GetRValue(currentColors[0]), GetGValue(currentColors[0]), GetBValue(currentColors[0])).name();
-#endif
     QImage image(60, 60, QImage::Format_ARGB32_Premultiplied);
-    primaryColor_ = res1;
-    image.fill(primaryColor_);
+    image.fill(ColorManager::getPrimaryColor());
     ui->primary_color_button->setIcon(QIcon(QPixmap::fromImage(image)));
 
     //determining secondary color
-    QString res2;
-#ifdef Q_OS_UNIX
-    res2=Global::getSecondaryColor();
-#endif
-    secondaryColor_=res2;
     QImage image2(60, 60, QImage::Format_ARGB32_Premultiplied);
-    image2.fill(secondaryColor_);
+    image2.fill(ColorManager::getSecondaryColor());
     ui->secondary_color_button->setIcon(QIcon(QPixmap::fromImage(image2)));
 
     updateGradientsOnlyColors(false);
-    if(gv.setAverageColor)
-    {
+    if(gv.setAverageColor){
         ui->average_color_checkbox->setChecked(true);
         on_average_color_checkbox_clicked(true);
     }
@@ -115,95 +86,46 @@ void ColorsGradients::on_average_color_checkbox_clicked(bool checked)
     gv.setAverageColor=ui->average_color_checkbox->isChecked();
     settings->setValue("average_color", gv.setAverageColor);
     settings->sync();
-    if(gv.setAverageColor)
-    {
+    if(gv.setAverageColor){
         QColor currentBgAverageColor = WallpaperManager::getAverageColorOf(WallpaperManager::currentBackgroundWallpaper());
         if(!currentBgAverageColor.isValid()){
-            primaryColor_ = currentBgAverageColor.name();
-            setDesktopColor(primaryColor_);
+            ColorManager::setPrimaryColor(currentBgAverageColor.name());
             updateGradientsOnlyColors(true);
         }
     }
-    if(gv.previewImagesOnScreen){
+    if(gv.previewImagesOnScreen)
         Q_EMIT updateTv();
-    }
 }
 
 void ColorsGradients::updateGradientsOnlyColors(bool updateLeftRightSolid){
-    /*
-     * If updateLeftRightSolid is true then all the buttons are updated,
-     * if it is false, then only the top buttons are updated
-     */
-
-    QImage image(70, 70, QImage::Format_RGB32);
-    image.fill(Qt::white);
-
-    QColor color(primaryColor_);
-
-    image.fill(color);
-    if(updateLeftRightSolid)
-    {
-        QIcon pri_icon=QIcon(QPixmap::fromImage(image.scaled(60, 60, Qt::IgnoreAspectRatio, Qt::FastTransformation)));
-        ui->primary_color_button->setIcon(pri_icon);
-    }
-
-    if(ui->solid_radioButton->isChecked()){
-        Q_EMIT updateColorButtonSignal(image);
-    }
-
-    /*
-     * We drastically reduce the alpha  after the middle
-     * of the image such as the second color not to be
-     * so visible then.
-     */
-    color.setNamedColor(secondaryColor_);
-    short alpha=255;
-    short softness=0;
-
-    QPainter painter;
-
-    painter.begin(&image);
-    //every pixel will be drawn with a different color
-    for(short i=70;i>0;i--){
-        if(!softness){
-            alpha-=1;
-            if(alpha<=244){
-                softness=1;
-            }
-        }
-        else if(softness==1){
-            alpha-=3;
-            if(alpha<=205){
-                softness=2;
-            }
-        }
-        else if(softness==2){
-            alpha-=4;
-        }
-
-        color.setAlpha(alpha);
-        painter.fillRect(i-1, 0, 1, 70, QColor(color));
-    }
-    painter.end();
-
-    if(ui->horizontal_radioButton->isChecked())
-    {
-        Q_EMIT updateColorButtonSignal(image);
-        ui->result->setPixmap(QPixmap::fromImage(image));
-    }
-
-    if(ui->vertical_radioButton->isChecked())
-    {
-        QTransform rot;rot.rotate(+90);
-        image = image.transformed(rot, Qt::SmoothTransformation);
-        Q_EMIT updateColorButtonSignal(image);
-        ui->result->setPixmap(QPixmap::fromImage(image));
-    }
+    int dim = 70; //TODO: 70 or 60?
+    QImage image(dim, dim, QImage::Format_RGB32);
 
     if(updateLeftRightSolid){
-        image.fill(color);
-        ui->secondary_color_button->setIcon(QIcon(QPixmap::fromImage(image.scaled(60, 60, Qt::IgnoreAspectRatio, Qt::FastTransformation))));
+        image.fill(QColor(ColorManager::getPrimaryColor()));
+        ui->primary_color_button->setIcon(QIcon(QPixmap::fromImage(
+            image.scaled(60, 60, Qt::IgnoreAspectRatio, Qt::FastTransformation))));
     }
+
+    if(!ui->solid_radioButton->isChecked()){
+        if(updateLeftRightSolid){
+            image.fill(QColor(ColorManager::getSecondaryColor()));
+            ui->secondary_color_button->setIcon(QIcon(QPixmap::fromImage(
+                image.scaled(60, 60, Qt::IgnoreAspectRatio, Qt::FastTransformation))));
+        }
+
+        if(ui->horizontal_radioButton->isChecked()){
+            image = ColorManager::createVerticalHorizontalImage(dim, dim);
+            ui->result->setPixmap(QPixmap::fromImage(image));
+        }
+        else if(ui->vertical_radioButton->isChecked()){
+            image = ColorManager::createVerticalHorizontalImage(dim, dim);
+            ui->result->setPixmap(QPixmap::fromImage(image));
+        }
+    }
+
+    Q_EMIT updateDesktopColor();
+    Q_EMIT updateImageStyle();
 }
 
 void ColorsGradients::on_saveButton_clicked()
@@ -217,31 +139,14 @@ void ColorsGradients::on_primary_color_button_clicked()
     QColorDialog::ColorDialogOptions options = QFlag(0);
     QColor color = QColorDialog::getColor(initial, this, tr("Select Color"), options);
 
-    if(!color.isValid()){
+    if(!color.isValid())
         return;
-    }
 
-    primaryColor_=color.name();
-    setDesktopColor(primaryColor_);
-    Q_EMIT updateDesktopColor(primaryColor_);
+    ColorManager::setPrimaryColor(color.name());
+    Q_EMIT updateDesktopColor();
     updateGradientsOnlyColors(true);
-    if(gv.previewImagesOnScreen){
+    if(gv.previewImagesOnScreen)
         Q_EMIT updateTv();
-    }
-}
-
-void ColorsGradients::setDesktopColor(const QString &colorName){
-#ifdef Q_OS_UNIX
-    Global::setPrimaryColor(colorName);
-#else
-    QColor color = colorName;
-    QSettings color_setting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
-    color_setting.setValue("Background", QString::number(color.red())+' '+QString::number(color.green())+' '+QString::number(color.blue()));
-    int Elements[1] = {COLOR_BACKGROUND};
-    DWORD NewColors[1];
-    NewColors[0] = RGB(color.red(), color.green(), color.blue());
-    SetSysColors(1, Elements, NewColors);
-#endif
 }
 
 void ColorsGradients::on_secondary_color_button_clicked()
@@ -250,74 +155,40 @@ void ColorsGradients::on_secondary_color_button_clicked()
     QColorDialog::ColorDialogOptions options = QFlag(0);
     QColor color = QColorDialog::getColor(initial, this, "Select Color", options);
 
-    if(!color.isValid()){
+    if(!color.isValid())
         return;
-    }
 
-#ifdef Q_OS_UNIX
-    secondaryColor_=color.name();
-    setDesktopSecondaryColor(secondaryColor_);
-#endif
+    ColorManager::setSecondaryColor(color.name());
 
     updateGradientsOnlyColors(true);
-    if(gv.previewImagesOnScreen){
+    if(gv.previewImagesOnScreen)
         Q_EMIT updateTv();
-    }
 }
-
-#ifdef Q_OS_UNIX
-void ColorsGradients::setDesktopSecondaryColor(const QString &colorName){
-    Global::setSecondaryColor(colorName);
-}
-#endif
 
 void ColorsGradients::on_change_order_clicked()
 {
     //this turns the secondary color primary and vice versa...
-    QString temp;
-    temp=primaryColor_;
-    primaryColor_=secondaryColor_;
-    secondaryColor_=temp;
-
-    setDesktopColor(primaryColor_);
-#ifdef Q_OS_UNIX
-    setDesktopSecondaryColor(secondaryColor_);
-#endif
+    QString temp = ColorManager::getPrimaryColor();
+    ColorManager::setPrimaryColor(ColorManager::getSecondaryColor());
+    ColorManager::setSecondaryColor(temp);
 
     updateGradientsOnlyColors(true);
-    if(gv.previewImagesOnScreen){
+    if(gv.previewImagesOnScreen)
         Q_EMIT updateTv();
-    }
 }
 
-void ColorsGradients::on_remove_background_clicked()
+void ColorsGradients::actionForSecondaryButtons()
 {
-    /*
-     * Setting a 1x1 transparent image as desktop background. On Ubuntu 12.04 and back it would work to set an empty
-     * string as desktop background, but it doesn't anymore (it rolls back to the default desktop background). This
-     * solves any issue :)
-     */
+    bool action = currentShading != ColoringType::Solid && wallpaperManager_->getCurrentFit() == 0;
 
-    if(!QFile::exists(gv.wallchHomePath+NULL_IMAGE)){
-        QImage empty(1, 1, QImage::Format_ARGB32);
-        empty.setPixel(0,0, qRgba(0, 0, 0, 0));
-        empty.save(gv.wallchHomePath+NULL_IMAGE, "PNG", 1);
-    }
-    WallpaperManager::setBackground(gv.wallchHomePath+NULL_IMAGE, false, false, 0);
-}
-
-void ColorsGradients::actionForSecondaryButtons(bool action)
-{
-    if(action)
-    {
+    if(action){
         ui->change_order->show();
         ui->secondary_color_button->show();
         ui->secondary_label->show();
         ui->result_label->show();
         ui->result->show();
     }
-    else
-    {
+    else{
         ui->change_order->hide();
         ui->secondary_color_button->hide();
         ui->secondary_label->hide();
@@ -328,6 +199,9 @@ void ColorsGradients::actionForSecondaryButtons(bool action)
 
 void ColorsGradients::on_solid_radioButton_clicked()
 {
+    if(currentShading == ColoringType::Solid)
+        return;
+
 #ifdef Q_OS_UNIX
     if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
         Global::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "solid");
@@ -340,18 +214,21 @@ void ColorsGradients::on_solid_radioButton_clicked()
         }
     }
 #else
-    settings->setValue("ShadingType" , "solid");
-#endif //#ifdef Q_OS_UNIX
-    ui->solid_radioButton->setChecked(true);
-    actionForSecondaryButtons(false);
-    if(gv.previewImagesOnScreen){
-        Q_EMIT updateTv();
-    }
+    settings->setValue("ShadingType", "solid");
+    wallpaperManager_->setBackground("", false, false, 0);
+#endif
+
+    currentShading = ColoringType::Solid;
+    actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
+    Q_EMIT updateTv();
 }
 
 void ColorsGradients::on_horizontal_radioButton_clicked()
 {
+    if(currentShading == ColoringType::Horizontal)
+        return;
+
 #ifdef Q_OS_UNIX
     if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
         Global::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "horizontal");
@@ -364,23 +241,25 @@ void ColorsGradients::on_horizontal_radioButton_clicked()
         }
     }
 #else
-    settings->setValue("ShadingType" , "horizontal");
-#endif //#ifdef Q_OS_UNIX
-    ui->horizontal_radioButton->setChecked(true);
-    actionForSecondaryButtons(true);
-    if(gv.previewImagesOnScreen){
-        Q_EMIT updateTv();
-    }
+    ColorManager::createVerticalHorizontalImage(gv.screenWidth, gv.screenHeight).save(gv.wallchHomePath+COLOR_IMAGE, 0, 80);
+    wallpaperManager_->setBackground(gv.wallchHomePath+COLOR_IMAGE, false, false, 0);
+    settings->setValue("ShadingType", "horizontal");
+#endif
+
+    currentShading = ColoringType::Horizontal;
+    actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
-    createVerticalHorizontalImage("horizontal");
+    Q_EMIT updateTv();
 }
 
 void ColorsGradients::on_vertical_radioButton_clicked()
 {
+    if(currentShading == ColoringType::Vertical)
+        return;
+
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
+    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate)
         Global::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "vertical");
-    }
     else if(gv.currentDE == DesktopEnvironment::XFCE){
         Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
             if(entry.contains("color-style")){
@@ -389,45 +268,52 @@ void ColorsGradients::on_vertical_radioButton_clicked()
         }
     }
 #else
-    settings->setValue("ShadingType" , "vertical");
-#endif //#ifdef Q_OS_UNIX
-    ui->vertical_radioButton->setChecked(true);
-    actionForSecondaryButtons(true);
-    if(gv.previewImagesOnScreen){
-        Q_EMIT updateTv();
-    }
+    ColorManager::createVerticalHorizontalImage(gv.screenWidth, gv.screenHeight).save(gv.wallchHomePath+COLOR_IMAGE, 0, 80);
+    wallpaperManager_->setBackground(gv.wallchHomePath+COLOR_IMAGE, false, false, 0);
+    settings->setValue("ShadingType", "vertical");
+#endif
+
+    currentShading = ColoringType::Vertical;
+    actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
-    createVerticalHorizontalImage("vertical");
+    Q_EMIT updateTv();
 }
 
-QImage ColorsGradients::createVerticalHorizontalImage(const QString &type)
+void ColorsGradients::on_colorModeButton_clicked()
 {
-    QImage image(gv.screenWidth, gv.screenHeight, QImage::Format_RGB32);
-    image.fill(Qt::white);
-    QPainter painter;
-    painter.begin(&image);
+    if(wallpaperManager_->getCurrentFit() == 0)
+        return;
 
-    int rec_x1, rec_y1, rec_x2, rec_y2;
-    if(type == "horizontal"){
-        rec_x1 = gv.screenWidth/256+1 , rec_y1 = 0, rec_x2 = gv.screenWidth, rec_y2 = 0;
-    }
-    else
-    {
-        rec_x1=0, rec_y1 = gv.screenHeight/256+1, rec_x2 = 0, rec_y2 = gv.screenHeight;
-    }
+    ui->solid_radioButton->setEnabled(true);
+    ui->vertical_radioButton->setEnabled(true);
+    ui->horizontal_radioButton->setEnabled(true);
 
-    QLinearGradient rect_gradient(rec_x1, rec_y1, rec_x2, rec_y2);
-    rect_gradient.setColorAt(0, QColor(primaryColor_));
-    rect_gradient.setColorAt(1, QColor(secondaryColor_));
-    painter.setBrush(rect_gradient);
-    painter.drawRect(0, 0, gv.screenWidth, gv.screenHeight);
+    wallpaperManager_->setCurrentFit(0);
 
-    painter.setCompositionMode(QPainter::CompositionMode_DestinationOver);
+    actionForSecondaryButtons();
+    updateGradientsOnlyColors(false);
 
-    painter.setPen(Qt::NoPen);
-    painter.setRenderHint(QPainter::SmoothPixmapTransform);
-    painter.drawImage(QRect(0, 0, gv.screenWidth, gv.screenHeight), image);
-
-    return image;
+    Q_EMIT updateImageStyle();
+    Q_EMIT updateTv();
 }
 
+void ColorsGradients::on_wallpaperModeButton_clicked()
+{
+    if(wallpaperManager_->getCurrentFit() != 0)
+        return;
+
+    ui->solid_radioButton->setEnabled(false);
+    ui->vertical_radioButton->setEnabled(false);
+    ui->horizontal_radioButton->setEnabled(false);
+
+#ifdef Q_OS_UNIX
+    wallpaperManager_->setCurrentFit(2);
+#else
+    wallpaperManager_->setBackground(settings->value("last_wallpaper", wallpaperManager_->getPreviousWallpaper()).toString(), false, false, 0);
+#endif
+
+    actionForSecondaryButtons();
+    updateGradientsOnlyColors(false);
+
+    Q_EMIT updateTv();
+}

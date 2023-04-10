@@ -23,14 +23,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define CUSTOMWEBPAGE_H
 #define QT_NO_KEYWORDS
 
-#include <QWebPage>
+//#include <QWebPage>
 
-class CustomWebPage : public QWebPage {
+class CustomWebPage : public QObject {
 protected:
-    virtual QString chooseFile(QWebFrame *, const QString&) { return QString(); }
-    virtual void javaScriptAlert (QWebFrame*, const QString &) {}
-    virtual bool javaScriptConfirm(QWebFrame *, const QString &) { return false; }
-    virtual bool javaScriptPrompt(QWebFrame *, const QString &, const QString &, QString *) { return false; }
+    //virtual QString chooseFile(QWebFrame *, const QString&) { return QString(); }
+    //virtual void javaScriptAlert (QWebFrame*, const QString &) {}
+    //virtual bool javaScriptConfirm(QWebFrame *, const QString &) { return false; }
+    //virtual bool javaScriptPrompt(QWebFrame *, const QString &, const QString &, QString *) { return false; }
 };
 
 #endif // CUSTOMWEBPAGE_H

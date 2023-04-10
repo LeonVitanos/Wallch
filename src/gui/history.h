@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define HISTORY_H
 
 #include "properties.h"
+#include "wallpapermanager.h"
 
 #include <QTreeWidgetItem>
 #include <QMenu>
@@ -36,11 +37,12 @@ class History : public QDialog
     Q_OBJECT
 
 public:
-    explicit History(QWidget *parent = 0);
+    explicit History(WallpaperManager *wallpaperManager, QWidget *parent = 0);
     ~History();
 
 private:
     Ui::history *ui;
+    WallpaperManager *wallpaperManager_;
     QGroupBox *optionsGroupBox_;
     QGridLayout *optionsGroupBoxLayout_;
     QVBoxLayout *mainLayout_;

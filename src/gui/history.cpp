@@ -36,11 +36,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QDesktopServices>
 #include <QImageReader>
 
-History::History(QWidget *parent) :
+History::History(WallpaperManager *wallpaperManager, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::history)
 {
     propertiesShown_=false;
+    wallpaperManager_ = wallpaperManager;
     ui->setupUi(this);
     ui->keepHistory->setChecked(settings->value("history", true).toBool());
     readHistoryFiles();
@@ -81,10 +82,11 @@ void History::readHistoryFiles(){
         }
         months.sort();
         Q_FOREACH (QString month, months) {
-            month.remove( QRegExp("^[0]*"));
+            month.remove( QRegularExpression("^[0]*"));
             //add top level item, eg. December (2014)
             QTreeWidgetItem *month_year_item = new QTreeWidgetItem;
-            month_year_item->setText(0, QDate::longMonthName(month.toInt())+" ("+year+")");
+
+            month_year_item->setText(0, QDate::fromString(month,"M").toString("MMMM")+" ("+year+")");
             month_year_item->setData(0,12, year);
             month_year_item->setData(1,12, month);
             ui->daysTree->addTopLevelItem(month_year_item);
@@ -197,11 +199,6 @@ void History::addHistoryEntry(QString time, QString path, short type){
             item->setText(time+" "+tr("Picture Of The Day Image"));
             item->setData(12, "link");
         }
-        else if(type==4)
-        {
-            item->setText(time+" "+tr("Wallpaper Clock Image"));
-            item->setData(12, "clock");
-        }
         else if(type==5)
         {
             item->setText(time+" "+tr("Live Website Image"));
@@ -258,9 +255,8 @@ void History::copyPath(){
 }
 
 void History::setAsBackground(){
-    if(ui->historyInfo->currentItem()->isSelected()){
-        WallpaperManager::setBackground(ui->historyInfo->currentItem()->data(11).toString(), true, true, 1);
-    }
+    if(ui->historyInfo->currentItem()->isSelected())
+        wallpaperManager_->setBackground(ui->historyInfo->currentItem()->data(11).toString(), true, true, 1);
 }
 
 void History::showProperties(){
@@ -276,7 +272,7 @@ void History::showProperties(){
     }
 
     propertiesShown_=true;
-    historyProperties_ = new Properties(imageFile, false, 0, this);
+    historyProperties_ = new Properties(imageFile, false, 0, wallpaperManager_, this);
     historyProperties_->setModal(true);
     historyProperties_->setAttribute(Qt::WA_DeleteOnClose);
     connect(historyProperties_, SIGNAL(destroyed()), this, SLOT(historyPropertiesDestroyed()));

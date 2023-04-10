@@ -34,7 +34,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QShortcut>
 #include <QProcess>
 #include <QKeyEvent>
-#include <QDesktopWidget>
 
 Preferences::Preferences(QWidget *parent) :
     QDialog(parent),
@@ -44,8 +43,6 @@ Preferences::Preferences(QWidget *parent) :
 
     ui->stackedWidget->setCurrentIndex(0);
     setupShortcuts();
-    //move dialog to center of the screen
-    this->move(QApplication::desktop()->availableGeometry().center() - this->rect().center());
 
     /*
      * On the constructor all we need to do is to take the saved values from our .conf files (on Linux)
@@ -54,8 +51,6 @@ Preferences::Preferences(QWidget *parent) :
 
     //'General' Page
     ui->desktop_notification_checkbox->setChecked(settings->value("notification", false).toBool());
-    ui->clocksNotifyCheckbox->setChecked(settings->value("clocks_notification", true).toBool());
-    ui->clocksNotifyCheckbox->setEnabled(ui->desktop_notification_checkbox->isChecked());
     ui->independent_interval_checkbox->setChecked(settings->value("independent_interval_enabled", true).toBool());
     ui->pause_battery->setChecked(settings->value("pause_on_battery", false).toBool());
     ui->language_combo->setCurrentIndex(settings->value("language", 0).toInt());
@@ -78,21 +73,13 @@ Preferences::Preferences(QWidget *parent) :
     ui->integrationgroupBox->hide();
 #endif
     QString curTheme = settings->value("theme", "autodetect").toString();
-    short oldThemeIndex = ui->theme_combo->currentIndex();
-    if(curTheme=="ambiance"){
+    if(curTheme=="ambiance")
         ui->theme_combo->setCurrentIndex(0);
-    }
-    else if(curTheme=="radiance"){
+    else if(curTheme=="radiance")
         ui->theme_combo->setCurrentIndex(1);
-    }
     else
-    {
         ui->theme_combo->setCurrentIndex(2);
-    }
-    if(ui->theme_combo->currentIndex()==oldThemeIndex){
-        //index not changed, but run the code nonetheless
-        on_theme_combo_currentIndexChanged(ui->theme_combo->currentIndex());
-    }
+    oldTheme = ui->theme_combo->currentIndex();
 
     //'Wallpapers' Page
     ui->rotate_checkBox->setChecked(settings->value("rotation", false).toBool());
@@ -140,11 +127,13 @@ Preferences::Preferences(QWidget *parent) :
     }
 
     ui->thumbnails_size_label->setText(dataToNiceString(CacheManager::getCurrentCacheSize()));
-
 }
 
 Preferences::~Preferences()
 {
+    if(oldTheme!=ui->theme_combo->currentIndex())
+        on_theme_combo_currentIndexChanged(oldTheme);
+
     delete ui;
 }
 
@@ -291,17 +280,7 @@ void Preferences::on_saveButton_clicked()
     settings->setValue("de", ui->de_combo->currentIndex());
 
 #endif
-    switch(ui->theme_combo->currentIndex()){
-    case 0:
-        settings->setValue("theme", "ambiance");
-        break;
-    case 1:
-        settings->setValue("theme", "radiance");
-        break;
-    case 3:
-        settings->setValue("theme", "autodetect");
-        break;
-    }
+    oldTheme = ui->theme_combo->currentIndex();
 
     //'Wallpapers' Page
     gv.showNotification = ui->desktop_notification_checkbox->isChecked();
@@ -333,7 +312,6 @@ void Preferences::on_saveButton_clicked()
     }
 
     settings->setValue("notification", gv.showNotification);
-    settings->setValue("clocks_notification", ui->clocksNotifyCheckbox->isChecked());
     settings->setValue("rotation", gv.rotateImages);
     settings->setValue("first_timeout", gv.firstTimeout);
     settings->setValue("symlinks", gv.symlinks);
@@ -374,7 +352,6 @@ void Preferences::on_reset_clicked()
     {
         //General
         ui->desktop_notification_checkbox->setChecked(false);
-        ui->clocksNotifyCheckbox->setChecked(false);
         ui->independent_interval_checkbox->setChecked(true);
         ui->language_combo->setCurrentIndex(0);
         ui->startupCheckBox->setChecked(true);
@@ -439,45 +416,18 @@ void Preferences::on_page_3_advanced_clicked()
     ui->page_3_advanced->raise();
 }
 
-void Preferences::setThemeToAmbiance(){
-    gv.currentTheme="ambiance";
-    Q_EMIT changeThemeTo("ambiance");
-}
-
-void Preferences::setThemeToRadiance(){
-    gv.currentTheme="radiance";
-    Q_EMIT changeThemeTo("radiance");
-}
-
 void Preferences::on_theme_combo_currentIndexChanged(int index)
 {
-    switch(index){
-    case 0:
-        setThemeToAmbiance();
+    if(index == 0)
         settings->setValue("theme", "ambiance");
-        break;
-    case 1:
-        setThemeToRadiance();
+    else if (index == 1)
         settings->setValue("theme", "radiance");
-        break;
-    default:
-    {
-        switch(Global::autodetectTheme()){
-        default:
-        case 0:
-            setThemeToAmbiance();
-            break;
-        case 1:
-            setThemeToRadiance();
-            break;
-        }
-
+    else
         settings->setValue("theme", "autodetect");
-        break;
-    }
-    }
 
     settings->sync();
+
+    Q_EMIT changeTheme();
 }
 
 void Preferences::on_rotate_checkBox_clicked(bool checked)

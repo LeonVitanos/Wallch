@@ -2,6 +2,7 @@ INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
 HEADERS += $$PWD/glob.h \
+           $$PWD/colormanager.h \
            $$PWD/nonguimanager.h \
            $$PWD/websitesnapshot.h \
            $$PWD/customwebpage.h \
@@ -12,6 +13,7 @@ HEADERS += $$PWD/glob.h \
            $$PWD/tryhard.h
 
 SOURCES += $$PWD/glob.cpp \
+           $$PWD/colormanager.cpp \
            $$PWD/nonguimanager.cpp \
            $$PWD/websitesnapshot.cpp \
            $$PWD/wallpapermanager.cpp \

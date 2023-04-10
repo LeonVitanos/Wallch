@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>899</width>
+    <width>1024</width>
     <height>507</height>
    </rect>
   </property>
@@ -67,7 +67,6 @@
           <font>
            <family>Ubuntu</family>
            <pointsize>10</pointsize>
-           <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
            <underline>false</underline>
@@ -101,9 +100,6 @@
          <property name="flat">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup</string>
-         </attribute>
         </widget>
        </item>
        <item>
@@ -140,7 +136,6 @@
           <font>
            <family>Ubuntu</family>
            <pointsize>10</pointsize>
-           <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
           </font>
@@ -167,9 +162,6 @@
          <property name="flat">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup</string>
-         </attribute>
         </widget>
        </item>
        <item>
@@ -206,7 +198,6 @@
           <font>
            <family>Ubuntu</family>
            <pointsize>10</pointsize>
-           <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
           </font>
@@ -233,9 +224,6 @@
          <property name="flat">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup</string>
-         </attribute>
         </widget>
        </item>
        <item>
@@ -278,7 +266,6 @@
           <font>
            <family>Ubuntu</family>
            <pointsize>10</pointsize>
-           <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
           </font>
@@ -305,9 +292,6 @@
          <property name="flat">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup</string>
-         </attribute>
         </widget>
        </item>
        <item>
@@ -344,7 +328,6 @@
           <font>
            <family>Ubuntu</family>
            <pointsize>10</pointsize>
-           <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
           </font>
@@ -371,9 +354,6 @@
          <property name="flat">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup</string>
-         </attribute>
         </widget>
        </item>
        <item>
@@ -433,9 +413,6 @@
          <property name="flat">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup</string>
-         </attribute>
         </widget>
        </item>
        <item>
@@ -500,7 +477,6 @@
       <property name="font">
        <font>
         <pointsize>10</pointsize>
-        <weight>75</weight>
         <bold>true</bold>
        </font>
       </property>
@@ -538,7 +514,7 @@
          </sizepolicy>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>5</number>
         </property>
         <widget class="QWidget" name="wallpapers">
          <property name="enabled">
@@ -697,8 +673,7 @@
                  </property>
                  <property name="icon">
                   <iconset theme="go-up">
-                   <normaloff/>
-                  </iconset>
+                   <normaloff>.</normaloff>.</iconset>
                  </property>
                 </widget>
                </item>
@@ -712,8 +687,7 @@
                  </property>
                  <property name="icon">
                   <iconset theme="go-down">
-                   <normaloff/>
-                  </iconset>
+                   <normaloff>.</normaloff>.</iconset>
                  </property>
                 </widget>
                </item>
@@ -727,8 +701,7 @@
                  </property>
                  <property name="icon">
                   <iconset theme="window-close">
-                   <normaloff/>
-                  </iconset>
+                   <normaloff>.</normaloff>.</iconset>
                  </property>
                 </widget>
                </item>
@@ -1040,7 +1013,6 @@
                 </property>
                 <property name="font">
                  <font>
-                  <weight>50</weight>
                   <bold>false</bold>
                  </font>
                 </property>
@@ -1142,7 +1114,6 @@
                 </property>
                 <property name="font">
                  <font>
-                  <weight>50</weight>
                   <bold>false</bold>
                  </font>
                 </property>
@@ -1261,7 +1232,6 @@
               </property>
               <property name="font">
                <font>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -1305,7 +1275,6 @@
               </property>
               <property name="font">
                <font>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -1364,7 +1333,6 @@
               </property>
               <property name="font">
                <font>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -1423,7 +1391,6 @@ background-color:#ce0018;
               </property>
               <property name="font">
                <font>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -1513,7 +1480,6 @@ background-color:#ce0018;
                 </property>
                 <property name="font">
                  <font>
-                  <weight>75</weight>
                   <bold>true</bold>
                  </font>
                 </property>
@@ -1553,7 +1519,6 @@ background-color:#ce0018;
                 </property>
                 <property name="font">
                  <font>
-                  <weight>75</weight>
                   <bold>true</bold>
                  </font>
                 </property>
@@ -1740,7 +1705,6 @@ background-color:#ce0018;
                 </property>
                 <property name="font">
                  <font>
-                  <weight>75</weight>
                   <bold>true</bold>
                  </font>
                 </property>
@@ -1780,7 +1744,6 @@ background-color:#ce0018;
                 </property>
                 <property name="font">
                  <font>
-                  <weight>75</weight>
                   <bold>true</bold>
                  </font>
                 </property>
@@ -1958,7 +1921,6 @@ background-color:#ce0018;
            <widget class="QLabel" name="wallpaper_clocks_source">
             <property name="font">
              <font>
-              <weight>50</weight>
               <bold>false</bold>
              </font>
             </property>
@@ -1969,388 +1931,6 @@ background-color:#ce0018;
              <set>Qt::AlignCenter</set>
             </property>
            </widget>
-          </item>
-          <item>
-           <spacer name="verticalSpacer_11">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <spacer name="horizontalSpacer_5">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
-             <widget class="QPushButton" name="install_clock">
-              <property name="minimumSize">
-               <size>
-                <width>85</width>
-                <height>30</height>
-               </size>
-              </property>
-              <property name="focusPolicy">
-               <enum>Qt::NoFocus</enum>
-              </property>
-              <property name="toolTip">
-               <string>You can also drag&amp;drop a .wcz file to install a wallpaper clock</string>
-              </property>
-              <property name="statusTip">
-               <string>You can also drag&amp;drop a .wcz file to install a wallpaper clock</string>
-              </property>
-              <property name="text">
-               <string>Install</string>
-              </property>
-              <property name="icon">
-               <iconset theme="list-add" resource="../resources.qrc">
-                <normaloff>:/images/list-add.png</normaloff>:/images/list-add.png</iconset>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>20</width>
-                <height>20</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_6">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QTableWidget" name="clocksTableWidget">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>136</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>420</height>
-             </size>
-            </property>
-            <property name="contextMenuPolicy">
-             <enum>Qt::CustomContextMenu</enum>
-            </property>
-            <property name="selectionMode">
-             <enum>QAbstractItemView::SingleSelection</enum>
-            </property>
-            <property name="selectionBehavior">
-             <enum>QAbstractItemView::SelectRows</enum>
-            </property>
-            <property name="showGrid">
-             <bool>false</bool>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-            <property name="cornerButtonEnabled">
-             <bool>false</bool>
-            </property>
-            <attribute name="horizontalHeaderVisible">
-             <bool>false</bool>
-            </attribute>
-            <attribute name="horizontalHeaderCascadingSectionResizes">
-             <bool>true</bool>
-            </attribute>
-            <attribute name="horizontalHeaderDefaultSectionSize">
-             <number>88</number>
-            </attribute>
-            <attribute name="horizontalHeaderMinimumSectionSize">
-             <number>88</number>
-            </attribute>
-            <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
-             <bool>false</bool>
-            </attribute>
-            <attribute name="horizontalHeaderStretchLastSection">
-             <bool>true</bool>
-            </attribute>
-            <attribute name="verticalHeaderVisible">
-             <bool>false</bool>
-            </attribute>
-            <attribute name="verticalHeaderDefaultSectionSize">
-             <number>67</number>
-            </attribute>
-            <attribute name="verticalHeaderMinimumSectionSize">
-             <number>67</number>
-            </attribute>
-            <column>
-             <property name="text">
-              <string notr="true">Default</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string notr="true">Preview</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string notr="true">Name</string>
-             </property>
-            </column>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_8">
-            <item>
-             <spacer name="horizontalSpacer_3">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="verticalLayout">
-              <item>
-               <widget class="QCheckBox" name="month_checkBox">
-                <property name="focusPolicy">
-                 <enum>Qt::NoFocus</enum>
-                </property>
-                <property name="toolTip">
-                 <string>January,February...</string>
-                </property>
-                <property name="statusTip">
-                 <string>January,February...</string>
-                </property>
-                <property name="text">
-                 <string>Month</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="day_month_checkBox">
-                <property name="focusPolicy">
-                 <enum>Qt::NoFocus</enum>
-                </property>
-                <property name="toolTip">
-                 <string>1-31</string>
-                </property>
-                <property name="statusTip">
-                 <string notr="true">1-31</string>
-                </property>
-                <property name="text">
-                 <string>Day of month</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="day_week_checkBox">
-                <property name="focusPolicy">
-                 <enum>Qt::NoFocus</enum>
-                </property>
-                <property name="toolTip">
-                 <string>Monday,Tuesday...</string>
-                </property>
-                <property name="statusTip">
-                 <string>Monday,Tuesday...</string>
-                </property>
-                <property name="text">
-                 <string>Day of week</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="am_checkBox">
-                <property name="focusPolicy">
-                 <enum>Qt::NoFocus</enum>
-                </property>
-                <property name="toolTip">
-                 <string>Am/Pm (If available)</string>
-                </property>
-                <property name="statusTip">
-                 <string notr="true">Am/Pm (If available)</string>
-                </property>
-                <property name="text">
-                 <string>Am/Pm</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="hour_checkBox">
-                <property name="focusPolicy">
-                 <enum>Qt::NoFocus</enum>
-                </property>
-                <property name="toolTip">
-                 <string>1-24</string>
-                </property>
-                <property name="statusTip">
-                 <string notr="true">1-24</string>
-                </property>
-                <property name="text">
-                 <string>Hour</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="minutes_checkBox">
-                <property name="focusPolicy">
-                 <enum>Qt::NoFocus</enum>
-                </property>
-                <property name="toolTip">
-                 <string>1-60</string>
-                </property>
-                <property name="statusTip">
-                 <string notr="true">1-60</string>
-                </property>
-                <property name="text">
-                 <string>Minutes</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="verticalLayout_4">
-              <property name="topMargin">
-               <number>6</number>
-              </property>
-              <item>
-               <widget class="QPushButton" name="activate_clock">
-                <property name="minimumSize">
-                 <size>
-                  <width>200</width>
-                  <height>61</height>
-                 </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <weight>75</weight>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="focusPolicy">
-                 <enum>Qt::NoFocus</enum>
-                </property>
-                <property name="toolTip">
-                 <string/>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QPushButton:enabled {
- color: white;
- background-color:#228b22;
- border: 0px;
- }
-  
- QPushButton:enabled:hover {
- color: white;
- background-color:#27a227;
- border: 0px;}</string>
-                </property>
-                <property name="text">
-                 <string>Activate
-Wallpaper Clock</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="deactivate_clock">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>200</width>
-                  <height>61</height>
-                 </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <weight>75</weight>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="focusPolicy">
-                 <enum>Qt::NoFocus</enum>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QPushButton:enabled {
- color: white;
- background-color:#aa0114;
- border: 0px;
-} 
- QPushButton:enabled:hover {
- color: white;
-background-color:#ce0018;
- border: 0px;
- }</string>
-                </property>
-                <property name="text">
-                 <string>Deactivate
-Wallpaper Clock</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_4">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
           </item>
          </layout>
         </widget>
@@ -2402,7 +1982,6 @@ Wallpaper Clock</string>
                 </property>
                 <property name="font">
                  <font>
-                  <weight>75</weight>
                   <bold>true</bold>
                  </font>
                 </property>
@@ -2432,7 +2011,6 @@ Wallpaper Clock</string>
                 </property>
                 <property name="font">
                  <font>
-                  <weight>75</weight>
                   <bold>true</bold>
                  </font>
                 </property>
@@ -2493,7 +2071,6 @@ Wallpaper Clock</string>
                <widget class="QCheckBox" name="website_crop_checkbox">
                 <property name="font">
                  <font>
-                  <weight>75</weight>
                   <bold>true</bold>
                  </font>
                 </property>
@@ -2536,7 +2113,6 @@ Wallpaper Clock</string>
              <widget class="QCheckBox" name="add_login_details">
               <property name="font">
                <font>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -2571,7 +2147,6 @@ Wallpaper Clock</string>
                     <widget class="QLabel" name="label_7">
                      <property name="font">
                       <font>
-                       <weight>75</weight>
                        <bold>true</bold>
                       </font>
                      </property>
@@ -2595,7 +2170,6 @@ Wallpaper Clock</string>
                     <widget class="QLabel" name="label_12">
                      <property name="font">
                       <font>
-                       <weight>75</weight>
                        <bold>true</bold>
                       </font>
                      </property>
@@ -2632,7 +2206,6 @@ Wallpaper Clock</string>
                     <widget class="QLineEdit" name="final_webpage">
                      <property name="font">
                       <font>
-                       <weight>50</weight>
                        <bold>false</bold>
                       </font>
                      </property>
@@ -2678,7 +2251,6 @@ Wallpaper Clock</string>
                   </property>
                   <property name="font">
                    <font>
-                    <weight>50</weight>
                     <bold>false</bold>
                    </font>
                   </property>
@@ -2700,7 +2272,6 @@ Wallpaper Clock</string>
                   </property>
                   <property name="font">
                    <font>
-                    <weight>75</weight>
                     <bold>true</bold>
                    </font>
                   </property>
@@ -2740,7 +2311,6 @@ Wallpaper Clock</string>
                   </property>
                   <property name="font">
                    <font>
-                    <weight>75</weight>
                     <bold>true</bold>
                    </font>
                   </property>
@@ -2800,7 +2370,6 @@ background-color:#ce0018;
                <widget class="QLabel" name="timeout_text_label">
                 <property name="font">
                  <font>
-                  <weight>75</weight>
                   <bold>true</bold>
                  </font>
                 </property>
@@ -2844,19 +2413,6 @@ background-color:#ce0018;
         <widget class="QWidget" name="mellori_studio">
          <layout class="QVBoxLayout" name="verticalLayout_10">
           <item>
-           <spacer name="verticalSpacer_6">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
            <widget class="QLabel" name="melloristudio_label">
             <property name="font">
              <font>
@@ -2885,162 +2441,6 @@ background-color:#ce0018;
              <set>Qt::AlignCenter</set>
             </property>
            </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_12">
-            <item>
-             <spacer name="horizontalSpacer_14">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_4">
-              <property name="minimumSize">
-               <size>
-                <width>160</width>
-                <height>160</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>160</width>
-                <height>160</height>
-               </size>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="pixmap">
-               <pixmap resource="../resources.qrc">:/images/mellori-logo.png</pixmap>
-              </property>
-              <property name="scaledContents">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_15">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QLabel" name="donate_label">
-            <property name="font">
-             <font>
-              <pointsize>9</pointsize>
-             </font>
-            </property>
-            <property name="text">
-             <string>Wallch is a free application developed in our spare time.
-You can always ask for new features/bug fixes but we need
-a good motivation to deliver them fast.
-
-By making a donation you support the developers and the
-open source community in general.</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
-            <item>
-             <spacer name="horizontalSpacer_10">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
-             <widget class="QPushButton" name="donateButton">
-              <property name="minimumSize">
-               <size>
-                <width>112</width>
-                <height>34</height>
-               </size>
-              </property>
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
-              <property name="focusPolicy">
-               <enum>Qt::NoFocus</enum>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QPushButton:pressed {
- background-color: none;
- border: none;
-}</string>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset resource="../resources.qrc">
-                <normaloff>:/images/donate.png</normaloff>:/images/donate.png</iconset>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>92</width>
-                <height>26</height>
-               </size>
-              </property>
-              <property name="flat">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_9">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <spacer name="verticalSpacer_10">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
           </item>
          </layout>
         </widget>
@@ -3612,8 +3012,7 @@ open source community in general.</string>
   <action name="action_Preferences">
    <property name="icon">
     <iconset theme="preferences-desktop">
-     <normaloff/>
-    </iconset>
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Preferences</string>
@@ -3636,8 +3035,7 @@ open source community in general.</string>
   <action name="actionQuit_Ctrl_Q">
    <property name="icon">
     <iconset theme="application-exit">
-     <normaloff/>
-    </iconset>
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Quit</string>
@@ -3681,8 +3079,7 @@ open source community in general.</string>
   <action name="actionHistory">
    <property name="icon">
     <iconset theme="task-due">
-     <normaloff/>
-    </iconset>
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;History</string>
@@ -3700,14 +3097,6 @@ open source community in general.</string>
   <action name="actionDonate">
    <property name="text">
     <string>Donate</string>
-   </property>
-  </action>
-  <action name="actionDownload">
-   <property name="text">
-    <string>Download 1000 HD Wallpapers</string>
-   </property>
-   <property name="iconVisibleInMenu">
-    <bool>true</bool>
    </property>
   </action>
   <action name="actionWhat_is_my_screen_resolution">
@@ -3809,7 +3198,4 @@ open source community in general.</string>
    </hints>
   </connection>
  </connections>
- <buttongroups>
-  <buttongroup name="buttonGroup"/>
- </buttongroups>
 </ui>

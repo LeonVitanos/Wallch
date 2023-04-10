@@ -36,9 +36,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QColor>
 #include <QPainter>
 
-WallpaperManager::WallpaperManager()
-{
-}
+WallpaperManager::WallpaperManager(QObject *parent):
+    QObject(parent)
+{}
 
 void WallpaperManager::addToPreviousWallpapers(const QString &wallpaper){
     previousWallpapers_ << wallpaper;
@@ -161,7 +161,7 @@ void WallpaperManager::startOver(){
 }
 
 void WallpaperManager::setRandomWallpaperAsBackground(){
-    WallpaperManager::setBackground(randomButNotCurrentWallpaper(), true, true, 1);
+    setBackground(randomButNotCurrentWallpaper(), true, true, 1);
 }
 
 QStringList WallpaperManager::getCurrentWallpapers(){
@@ -277,7 +277,7 @@ QString WallpaperManager::currentBackgroundWallpaper(){
     //returns the image currently set as desktop background
     QString currentImage;
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || DesktopEnvironment::Mate){
+    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
         currentImage=Global::gsettingsGet("org.gnome.desktop.background", "picture-uri");
         if(currentImage.startsWith("file://")){
             currentImage=currentImage.right(currentImage.count()-7);
@@ -314,7 +314,7 @@ QString WallpaperManager::currentBackgroundWallpaper(){
 
 bool WallpaperManager::currentBackgroundExists()
 {
-    if(WallpaperManager::imageIsNull(WallpaperManager::currentBackgroundWallpaper()))
+    if(imageIsNull(currentBackgroundWallpaper()))
     {
         QMessageBox::warning(0, QObject::tr("Error"), QObject::tr("This file maybe doesn't exist or it's not an image. Please perform a check for the file and try again."));
         return false;
@@ -365,14 +365,14 @@ void WallpaperManager::openFolderOf(QString image /* = "" */){
 }
 
 void WallpaperManager::setBackground(const QString &image, bool changeAverageColor, bool showNotification, short feature){
+    bool result=true;
+
+#ifdef Q_OS_UNIX
     if(!QFile::exists(image)){
         Global::error("Image doesn't exist, background cannot be changed!");
         return;
     }
 
-    bool result=true;
-
-#ifdef Q_OS_UNIX
     if(gv.rotateImages){
         Global::rotateImageBasedOnExif(image);
     }
@@ -381,7 +381,12 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
     case DesktopEnvironment::Gnome:
     case DesktopEnvironment::UnityGnome:
         case DesktopEnvironment::Mate:
-        Global::gsettingsSet("org.gnome.desktop.background", "picture-uri", "file://"+image);
+        // From Ubuntu 22.04, there is a different setting for light and dark theme
+        Global::gsettingsSet("org.gnome.desktop.background", Global::gsettingsGet("org.gnome.desktop.interface", "color-scheme") == "prefer-dark" ? "picture-uri-dark" : "picture-uri", "file://"+image);
+        if(Global::gsettingsGet("org.gnome.desktop.background", "picture-options") == "none"){
+            Global::gsettingsSet("org.gnome.desktop.background", "picture-options", "zoom");
+            Q_EMIT updateImageStyle();
+        }
         break;
     case DesktopEnvironment::LXDE:
         QProcess::startDetached("pcmanfm", QStringList() << "-w" << image);
@@ -400,30 +405,39 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
     }
 
 #else
+    if(image!="" && !QFile::exists(image)){
+        Global::error("Image doesn't exist, background cannot be changed!");
+        return;
+    }
+
+    QString currentBackground = currentBackgroundWallpaper();
+    bool update_image_style = currentBackground == "" || currentBackground == gv.wallchHomePath+COLOR_IMAGE;
 
 #ifdef UNICODE
     result = (bool) SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, (PVOID) image.toLocal8Bit().data(), SPIF_UPDATEINIFILE);
 #else
     result = (bool) SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, (PVOID) image.toLocal8Bit().data(), SPIF_UPDATEINIFILE);
-#endif //#ifdef UNICODE
-    if(!result){
-        QMessageBox::warning(0, QObject::tr("Error"), QObject::tr("Failed to change wallpaper. Maybe your Windows version is not supported? Usually Windows XP fails to change JPEG images."));
-    }
+#endif //UNICODE
 
-#endif //#ifdef Q_OS_UNIX
+    if(!result)
+        QMessageBox::warning(0, QObject::tr("Error"),
+                             QObject::tr("Failed to change wallpaper. Maybe your Windows version is not supported? "
+                                         "Usually Windows XP fails to change JPEG images."));
+    else if (update_image_style)
+        Q_EMIT updateImageStyle();
+
+#endif //Q_OS_UNIX
 
     if(result && feature!=0){
-        if(gv.setAverageColor && changeAverageColor){
+        if(gv.setAverageColor && changeAverageColor)
             Global::setAverageColor(image);
-        }
 
-        if(gv.showNotification && showNotification){
+        if(gv.showNotification && showNotification)
             Global().desktopNotify(QObject::tr("Current wallpaper has been changed!"), true, image);
-        }
 
-        if(gv.saveHistory){
+        if(gv.saveHistory)
             Global::saveHistory(image, feature);
-        }
+
         settings->setValue("images_changed", settings->value("images_changed", 0).toUInt()+1);
         settings->sync();
         gv.wallpapersChangedCurrentSession++;
@@ -465,4 +479,232 @@ QImage WallpaperManager::indexed8ToARGB32(const QImage &image){
     painter.drawImage(QPoint(0, 0), image);
     painter.end();
     return newImage;
+}
+
+short WallpaperManager::getCurrentFit(){
+#ifdef Q_OS_UNIX
+    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
+        QString style=Global::gsettingsGet("org.gnome.desktop.background", "picture-options");
+        if(style=="none")
+            return 0;
+        else if (style=="wallpaper")
+            return 1;
+        else if (style=="zoom")
+            return 2;
+        else if (style=="centered")
+            return 3;
+        else if (style=="scaled")
+            return 4;
+        else if (style=="stretched")
+            return 5;
+        else if (style=="spanned")
+            return 6;
+    }
+    else if(gv.currentDE == DesktopEnvironment::XFCE){
+        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
+            if(entry.contains("image-style")){
+                QString imageStyle=Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry);
+                return imageStyle.toInt();
+            }
+        }
+    }
+    else if(gv.currentDE == DesktopEnvironment::LXDE)
+        return Global::getPcManFmValue("wallpaper_mode").toInt();
+#else
+    QSettings desktop_settings("HKEY_CURRENT_USER\\Control Panel\\Desktop", QSettings::NativeFormat);
+
+    QString currentBackground = currentBackgroundWallpaper();
+    if(currentBackground == "" || currentBackground == gv.wallchHomePath+COLOR_IMAGE)
+        return 0;
+
+    switch(desktop_settings.value("WallpaperStyle").toInt())
+    {
+    case 0:
+        if(desktop_settings.value("TileWallpaper")!=0)
+            return 1;
+        else
+            return 2;
+    case 2:
+        return 3;
+    case 6:
+        return 4;
+    case 10:
+        return 5;
+    case 22:
+        return 6;
+    }
+#endif
+
+    return 1;
+}
+
+void WallpaperManager::setCurrentFit(short index){
+#ifdef Q_OS_UNIX
+    if(index == getCurrentFit())
+        return;
+
+    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
+        QString type;
+        switch(index){
+        case 0:
+            type="none";
+            break;
+        case 1:
+            type="wallpaper";
+            break;
+        case 2:
+            type="zoom";
+            break;
+        case 3:
+            type="centered";
+            break;
+        case 4:
+            type="scaled";
+            break;
+        case 5:
+            type="stretched";
+            break;
+        case 6:
+            type="spanned";
+            break;
+        default:
+            type="wallpaper";
+        }
+        Global::gsettingsSet("org.gnome.desktop.background", "picture-options", type);
+    }
+    else if(gv.currentDE == DesktopEnvironment::XFCE){
+        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
+            if(entry.contains("image-style")){
+                QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry << "-s" << QString::number(index));
+            }
+        }
+    }
+    else if(gv.currentDE == DesktopEnvironment::LXDE){
+        QString style;
+        switch(index){
+        default:
+        case 0:
+            style="color";
+            break;
+        case 1:
+            style="stretch";
+            break;
+        case 2:
+            style="fit";
+            break;
+        case 3:
+            style="center";
+            break;
+        case 4:
+            style="tile";
+            break;
+        }
+
+        QProcess::startDetached("pcmanfm", QStringList() << "--wallpaper-mode="+style);
+    }
+#else
+    QString currentBg = currentBackgroundWallpaper();
+
+    if(index == 0){
+        if(currentBg != gv.wallchHomePath+COLOR_IMAGE && !currentBg.isEmpty())
+            settings->setValue("last_wallpaper", currentBg);
+
+        if (settings->value("ShadingType", "solid") == "solid")
+            setBackground("", false, false, 0);
+        else
+            setBackground(gv.wallchHomePath+COLOR_IMAGE, false, false, 0);
+        return;
+    }
+    else{
+        if(index == getCurrentFit())
+            return;
+    }
+
+    /*
+     * ---------- Reference: https://learn.microsoft.com/en-us/windows/win32/controls/themesfileformat-overview#control-paneldesktop-section ------------
+     * Two registry values are set in the Control Panel\Desktop key.
+     * TileWallpaper
+     * 0: The wallpaper picture should not be tiled
+     * 1: The wallpaper picture should be tiled
+     * WallpaperStyle
+     * 0:  The image is centered if TileWallpaper=0 or tiled if TileWallpaper=1
+     * 2:  The image is stretched to fill the screen
+     * 6:  The image is resized to fit the screen while maintaining the aspect
+     *     ratio. (Windows 7 and later)
+     * 10: The image is resized and cropped to fill the screen while
+     *     maintaining the aspect ratio. (Windows 7 and later)
+     * 22: (Not in the documentation) Span style
+     * -----------------------------------------------------------------------------------------------------
+     */
+
+    /*
+     * Unfortunately QSettings can't manage to change a registry DWORD,
+     * so we have to go with the Windows' way.
+     */
+
+    HRESULT hr = S_OK;
+
+    HKEY hKey = NULL;
+    hr = HRESULT_FROM_WIN32(RegOpenKeyEx(HKEY_CURRENT_USER,
+                                         L"Control Panel\\Desktop", 0, KEY_READ | KEY_WRITE, &hKey));
+    if (SUCCEEDED(hr))
+    {
+        PWSTR pszWallpaperStyle;
+        PWSTR pszTileWallpaper;
+
+        wchar_t zero[10] = L"0";
+        wchar_t one[10] = L"1";
+        wchar_t two[10] = L"2";
+        wchar_t six[10] = L"6";
+        wchar_t ten[10] = L"10";
+        wchar_t twentytwo[10] = L"22";
+
+        switch (index)
+        {
+        case 1: //tile
+            pszWallpaperStyle = zero;
+            pszTileWallpaper = one;
+            break;
+        case 2: //center
+            pszWallpaperStyle = zero;
+            pszTileWallpaper = zero;
+            break;
+        case 3: //stretch
+            pszWallpaperStyle = two;
+            pszTileWallpaper = zero;
+            break;
+        case 4: //fit (Windows 7 and later)
+            pszWallpaperStyle = six;
+            pszTileWallpaper = zero;
+            break;
+        case 5: //fill (Windows 7 and later)
+            pszWallpaperStyle = ten;
+            pszTileWallpaper = zero;
+            break;
+        case 6: //span (Windows 8 and later)
+            pszWallpaperStyle = twentytwo;
+            pszTileWallpaper = zero;
+            break;
+        }
+
+        //set the WallpaperStyle and TileWallpaper registry values.
+        DWORD cbData = lstrlen(pszWallpaperStyle) * sizeof(*pszWallpaperStyle);
+        hr = HRESULT_FROM_WIN32(RegSetValueEx(hKey, L"WallpaperStyle", 0, REG_SZ,
+                                              reinterpret_cast<const BYTE *>(pszWallpaperStyle), cbData));
+        if (SUCCEEDED(hr))
+        {
+            cbData = lstrlen(pszTileWallpaper) * sizeof(*pszTileWallpaper);
+            hr = HRESULT_FROM_WIN32(RegSetValueEx(hKey, L"TileWallpaper", 0, REG_SZ,
+                                                  reinterpret_cast<const BYTE *>(pszTileWallpaper), cbData));
+        }
+
+        RegCloseKey(hKey);
+    }
+
+    // Update desktop background with the style changed
+    if(currentBg.isEmpty() || currentBg == gv.wallchHomePath+COLOR_IMAGE)
+        setBackground(settings->value("last_wallpaper", getPreviousWallpaper()).toString(), false, false, 0);
+    else
+       setBackground(currentBg, false, false, 0);
+#endif
 }

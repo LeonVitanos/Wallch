@@ -24,7 +24,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "statistics.h"
 #include "ui_statistics.h"
 #include "glob.h"
-#include "QDesktopWidget"
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -37,8 +36,6 @@ Statistics::Statistics(QWidget *parent) :
     ui(new Ui::statistics)
 {
     ui->setupUi(this);
-    //move dialog to center of the screen
-    this->move(QApplication::desktop()->availableGeometry().center() - this->rect().center());
 
     totalLaunchedTimes_=settings->value("times_launched", 0).toUInt();
     totalUptime_=settings->value("seconds_passed", 0).toUInt();

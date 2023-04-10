@@ -27,18 +27,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QRadioButton>
 #include <QFileDialog>
 #include <QNetworkReply>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QScrollBar>
 #include <QStandardItem>
 #include <QColorDialog>
 #include <QShortcut>
-
-#ifdef Q_OS_WIN
-#include <QtGui/private/qzipreader_p.h>
-#endif
+#include <QSysInfo>
 
 #include "mainwindow.h"
-
 #include "math.h"
 
 MainWindow *mainWindowInstance;
@@ -54,15 +50,21 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     attachedMemory_ = attachedMemory;
 
     initializePrivateVariables(globalParser, imageFetcher);
-
-    wallpaperManager_ = wallpaperManager;
+    wallpaperManager_ = (wallpaperManager == NULL) ? new WallpaperManager() : wallpaperManager;
     websiteSnapshot_ = websiteSnapshot;
 
-    QDesktopWidget desktopWidget;
+    getScreenResolution(QGuiApplication::primaryScreen()->geometry());
+    getScreenAvailableResolution(QGuiApplication::primaryScreen()->availableGeometry());
+    imagePreviewResizeFactorX_ = SCREEN_LABEL_SIZE_X*2.0/(gv.screenAvailableWidth*1.0);
+    imagePreviewResizeFactorY_ = SCREEN_LABEL_SIZE_Y*2.0/(gv.screenAvailableHeight*1.0);
 
-    availableGeometry_ = desktopWidget.availableGeometry(desktopWidget.screen());
-    imagePreviewResizeFactorX_ = SCREEN_LABEL_SIZE_X*2.0/(gv.screenWidth*1.0);
-    imagePreviewResizeFactorY_ = SCREEN_LABEL_SIZE_Y*2.0/(gv.screenHeight*1.0);
+    btn_group = new QButtonGroup(this);
+    btn_group->addButton(ui->page_0_wallpapers, 0);
+    btn_group->addButton(ui->page_1_earth, 1);
+    btn_group->addButton(ui->page_2_potd, 2);
+    btn_group->addButton(ui->page_3_clock, 3);
+    btn_group->addButton(ui->page_4_web, 4);
+    btn_group->addButton(ui->page_5_other, 5);
 
     setupMenu();
     connectSignalSlots();
@@ -74,25 +76,27 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     continueAlreadyRunningFeature(timeoutCount, lastRandomDelay);
     setAcceptDrops(true);
 
-
-    //Moving the window to the center of screen!
-    this->move(desktopWidget.availableGeometry().center() - this->rect().center());
-
-    processingOnlineRequest_ = false;
+    // Restore window's position and size
+    if(settings->value("x").isValid()){
+        this->move(QPoint(settings->value("x").toInt(), settings->value("y").toInt()));
+        this->resize(QSize(settings->value("width").toInt(), settings->value("height").toInt()));
+    }
+    else
+        this->move(QPoint(gv.screenAvailableWidth/2, gv.screenAvailableHeight/2) - this->rect().center());
 
     //processing request (loading gif)
+    processingOnlineRequest_ = false;
     ui->process_request_label->hide();
     processingRequestGif_ = new QMovie(this);
     processingRequestGif_->setFileName(":/images/process_request.gif");
     ui->process_request_label->setMovie(processingRequestGif_);
 
     //for manually searching for files or re-selecting a picture after a folder contents have changed
-    match_ = new QRegExp();
-    match_->setCaseSensitivity(Qt::CaseInsensitive);
-    match_->setPatternSyntax(QRegExp::Wildcard);
+    match_ = new QRegularExpression();
+    match_->setPatternOptions(QRegularExpression::CaseInsensitiveOption);
 
     QTimer::singleShot(10, this, SLOT(setButtonColor()));
-    QTimer::singleShot(20, this, SLOT(setStyle()));
+    QTimer::singleShot(20, this, SLOT(findAvailableWallpaperStyles()));
 }
 
 MainWindow::~MainWindow()
@@ -109,45 +113,29 @@ void MainWindow::closeEvent(QCloseEvent * event)
 
 void MainWindow::actionsOnClose()
 {
-    if(loadedPages_[0]){
+    settings->setValue("x", this->x());
+    settings->setValue("y", this->y());
+    settings->setValue("width", this->width());
+    settings->setValue("height", this->height());
+    settings->sync();
+
+    if(loadedPages_[0])
         savePicturesLocations();
-    }
+
     appAboutToClose_ = true;
     this->hide();
 }
 
 void MainWindow::resizeEvent(QResizeEvent *e){
-    if(!gv.mainwindowLoaded){
+    if(!gv.mainwindowLoaded)
         return;
-    }
-    if(ui->stackedWidget->currentIndex() == 0){
+
+    if(ui->stackedWidget->currentIndex() == 0)
         launchTimerToUpdateIcons();
-    }
 
-    //screen preview is not getting updated when we resize the window, so we do it manually
-    if(ui->screen_label->pixmap())
-    {
-        if(gv.previewImagesOnScreen && gv.mainwindowLoaded)
-        {
-            QPixmap *pixmap = new QPixmap(*ui->screen_label->pixmap());
-            if(pixmap){
-                ui->screen_label_transition->setPixmap(*pixmap);
-            }
-            else
-            {
-                ui->screen_label_transition->clear();
-            }
-
-            ui->screen_label->setPixmap(*pixmap);
-            delete pixmap;
-        }
-    }
-    else
-    {
-        QString temp = ui->screen_label_text->text();
-        ui->screen_label_text->clear();
-        ui->screen_label_text->setText(temp);
-    }
+    ui->screen_label->update();
+    ui->screen_label_transition->update();
+    ui->screen_label_text->update();
 
     QMainWindow::resizeEvent(e);
 }
@@ -166,62 +154,34 @@ QPoint MainWindow::calculateSettingsMenuPos(){
     int menuHeight = settingsMenu_->height();
     int buttonWidth = ui->menubarMenu->width();
     int buttonHeight = ui->menubarMenu->height();
+
     QPoint globalCoords = ui->menubarMenu->mapToGlobal(QPoint(0, buttonHeight));
-
-    //default value, the menu fits just fine
     QPoint showPoint = globalCoords - QPoint((menuWidth-buttonWidth), 0);
-
     QRect settingsMenuRect(showPoint.x(), showPoint.y(), menuWidth, menuHeight);
 
-    if(availableGeometry_.contains(settingsMenuRect, true)){
-        //menu fits
+    if(availableGeometry_.contains(settingsMenuRect, true))
         return showPoint;
-    }
     else
     {
-        //menu doesn't fit
         QRect intersection = availableGeometry_.intersected(settingsMenuRect);
 
-        if(intersection.width() < menuWidth){
-            //width doesn't fit
-            if(intersection.x() == 0){
-                //it doesn't fit to the left, move to the right
+        if(intersection.width() < menuWidth){ // Width doesn't fit
+            if(intersection.x() == 0) //it doesn't fit to the left, move to the right
                 showPoint.setX(0);
-            }
-            else
-            {
-                //it doesn't fit to the right, move to the left
+            else //it doesn't fit to the right, move to the left
                 showPoint.setX(availableGeometry_.width()-menuWidth);
-            }
         }
 
-        if(intersection.height() < menuHeight){
-            //height doesn't fit
-
-            if((intersection.y()-buttonHeight-availableGeometry_.y()) > menuHeight){
-                //it fits to the top just fine
+        if(intersection.height() < menuHeight){ //height doesn't fit
+            if((intersection.y()-buttonHeight-availableGeometry_.y()) > menuHeight) //it fits to the top just fine
                 showPoint.setY(globalCoords.y()-buttonHeight-menuHeight);
-            }
-            else
+            else //it doesn't fit all above, fit it to the left/right
             {
-                //it doesn't fit all above, fit it to the left/right
                 showPoint.setY(availableGeometry_.y()+availableGeometry_.height()-menuHeight);
-
-                bool fitsLeft = true; //does it fit to move to the left?
-
-                if(intersection.x()-buttonWidth < 0){
-                    fitsLeft = false;
-                }
-
-                if(fitsLeft){
-                    //fit to left
+                if(intersection.x() - buttonWidth >= 0) //fit to left
                     showPoint.setX(intersection.x()-buttonWidth);
-                }
-                else
-                {
-                    //fit to right
+                else //fit to right
                     showPoint.setX(globalCoords.x()+buttonWidth);
-                }
             }
         }
     }
@@ -257,12 +217,6 @@ void MainWindow::connectSignalSlots(){
     connect(imageFetcher_, SIGNAL(fail()), this, SLOT(onlineRequestFailed()));
     connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineImageRequestReady(QString)));
     connect(cacheManager_, SIGNAL(requestCurrentFolders()), this, SLOT(beginFixCacheForFolders()));
-    connect(ui->month_checkBox, SIGNAL(clicked()), this, SLOT(clockCheckboxClicked()));
-    connect(ui->day_month_checkBox, SIGNAL(clicked()), this, SLOT(clockCheckboxClicked()));
-    connect(ui->day_week_checkBox, SIGNAL(clicked()), this, SLOT(clockCheckboxClicked()));
-    connect(ui->am_checkBox, SIGNAL(clicked()), this, SLOT(clockCheckboxClicked()));
-    connect(ui->hour_checkBox, SIGNAL(clicked()), this, SLOT(clockCheckboxClicked()));
-    connect(ui->minutes_checkBox, SIGNAL(clicked()), this, SLOT(clockCheckboxClicked()));
     connect(ui->website, SIGNAL(textChanged(QString)), this, SLOT(update_website_settings()));
     connect(ui->website_slider, SIGNAL(valueChanged(int)), this, SLOT(update_website_settings()));
     connect(ui->website_crop_checkbox, SIGNAL(clicked()), this, SLOT(update_website_settings()));
@@ -271,13 +225,23 @@ void MainWindow::connectSignalSlots(){
     connect(ui->password, SIGNAL(textChanged(QString)), this, SLOT(update_website_settings()));
     connect(ui->final_webpage, SIGNAL(textChanged(QString)), this, SLOT(update_website_settings()));
     connect(ui->wallpapersList->verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(launchTimerToUpdateIcons()));
-    connect(scaleWatcher_, SIGNAL(finished()), this, SLOT(setupAnimationsAndChangeImage()));
-    connect(clocksPreviewWatcher_, SIGNAL(finished()), this, SLOT(clocksPreviewGenerationFinished()));
+    connect(scaleWatcher_, SIGNAL(finished()), this, SLOT(setPreviewImage()));
     connect(settingsMenu_, SIGNAL(aboutToHide()), this, SLOT(unhoverMenuButton()));
     connect(ui->days_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(ui->hours_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(ui->minutes_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(ui->seconds_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
+    connect(btn_group, SIGNAL(buttonClicked(int)), this, SLOT(page_button_clicked(int)));
+    connect(wallpaperManager_, SIGNAL(updateImageStyle()), this, SLOT(updateImageStyleCombo()));
+    connect(QGuiApplication::primaryScreen(), SIGNAL(geometryChanged(QRect)), this, SLOT(getScreenResolution(QRect)));
+    connect(QGuiApplication::primaryScreen(), SIGNAL(availableGeometryChanged(QRect)), this, SLOT(getScreenAvailableResolution(QRect)));
+
+#ifdef Q_OS_UNIX
+    dconf = new QProcess(this);
+    connect(dconf, SIGNAL(readyReadStandardOutput()), this, SLOT(dconfChanges()));
+    connect(dconf , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(dconfChanges()));
+    dconf->start("dconf watch /");
+#endif
 }
 
 void MainWindow::retrieveSettings()
@@ -302,9 +266,9 @@ void MainWindow::retrieveSettings()
     gv.randomTimeFrom = settings->value("random_time_from", 300).toInt();
     gv.randomTimeTo = settings->value("random_time_to", 1200).toInt();
     gv.iconMode = settings->value("icon_style", true).toBool();
-    gv.defaultWallpaperClock = settings->value("default_wallpaper_clock", "").toString();
     gv.randomImagesEnabled = settings->value("random_images_enabled", true).toBool();
     gv.previewImagesOnScreen = settings->value("preview_images_on_screen", true).toBool();
+    currentShading = ColorManager::getColoringType();
 }
 
 void MainWindow::resetWatchFolders(){
@@ -333,11 +297,6 @@ void MainWindow::setupTimers(){
     updateCheckTime_ = new QTimer(this);
     connect(updateCheckTime_, SIGNAL(timeout()), this, SLOT(updateTiming()));
 
-    //Timer if you click one of the checkboxes of wallpaper clock, if wallpaper clock is running
-    wallpaperClockWait_ = new QTimer(this);
-    wallpaperClockWait_->setSingleShot(true);
-    connect(wallpaperClockWait_, SIGNAL(timeout()), this, SLOT(clockCheckboxClickedWhileRunning()));
-
     //Timer that update the icons of the visible items
     iconUpdater_ = new QTimer(this);
     connect(iconUpdater_, SIGNAL(timeout()), this, SLOT(updateVisibleIcons()));
@@ -358,18 +317,6 @@ void MainWindow::setupKeyboardShortcuts(){
     (void) new QShortcut(Qt::Key_Escape, this, SLOT(escapePressed()));
     (void) new QShortcut(Qt::Key_Delete, this, SLOT(deletePressed()));
     (void) new QShortcut(Qt::ALT + Qt::Key_Return, this, SLOT(showProperties()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_1, this, SLOT(on_page_0_wallpapers_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_2, this, SLOT(on_page_1_earth_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_3, this, SLOT(on_page_2_potd_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_4, this, SLOT(on_page_3_clock_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_5, this, SLOT(on_page_4_web_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_6, this, SLOT(on_page_5_other_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_1, this, SLOT(on_page_0_wallpapers_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_2, this, SLOT(on_page_1_earth_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_3, this, SLOT(on_page_2_potd_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_4, this, SLOT(on_page_3_clock_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_5, this, SLOT(on_page_4_web_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_6, this, SLOT(on_page_5_other_clicked()));
     (void) new QShortcut(Qt::CTRL + Qt::Key_F, this, SLOT(showHideSearchBox()));
     (void) new QShortcut(Qt::Key_Return, this, SLOT(enterPressed()));
     (void) new QShortcut(Qt::CTRL + Qt::Key_PageUp, this, SLOT(previousPage()));
@@ -377,40 +324,73 @@ void MainWindow::setupKeyboardShortcuts(){
     (void) new QShortcut(Qt::ALT + Qt::Key_F4, this, SLOT(escapePressed()));
 }
 
-void MainWindow::changeCurrentThemeTo(const QString &theme)
+#ifdef Q_OS_UNIX
+void MainWindow::dconfChanges(){
+    QByteArray output = dconf->readAllStandardOutput();
+    if(output.contains("theme"))
+        changeCurrentTheme();
+    else if(output.contains("picture-options"))
+        updateImageStyleCombo();
+    else if(output.contains("primary-color"))
+    {
+        qDebug() << "primary-color";
+    }
+    else if(output.contains("secondary-color"))
+    {
+        qDebug() << "econdary-color";
+    }
+    else if(output.contains("color-shading-type"))
+        colorManager_->changeCurrentShading();
+}
+#endif
+
+void MainWindow::changeCurrentTheme()
 {
-    gv.currentTheme=theme;
-    if(theme=="ambiance")
-    {
-        setThemeToAmbiance();
-    }
-    else if(theme=="radiance")
-    {
-        setThemeToRadiance();
-    }
+    gv.currentTheme = settings->value("theme", "autodetect").toString();
+
+    int theme;
+    if(gv.currentTheme == "autodetect")
+        theme = globalParser_->autodetectTheme();
     else
-    {
-        switch(globalParser_->autodetectTheme()){
-        default:
-        case 0:
-            setThemeToAmbiance();
-            break;
-        case 1:
-            setThemeToRadiance();
-            break;
+        theme = gv.currentTheme == "radiance";
+
+    if(theme == 0){
+        changeAppStyleSheetTo(":/themes/ambiance.qss");
+        Q_FOREACH(QLabel *separator, menuSeparators_){
+            separator->show();
+            separator->setPixmap(AMBIANCE_SEPARATOR);
+        }
+    }
+    else{
+        changeAppStyleSheetTo(":/themes/radiance.qss");
+        Q_FOREACH(QLabel *separator, menuSeparators_){
+            separator->show();
+            separator->setPixmap(RADIANCE_SEPARATOR);
         }
     }
 }
 
 void MainWindow::initializePrivateVariables(Global *globalParser, ImageFetcher *imageFetcher){
-    globalParser_ = (globalParser == NULL) ? new Global() : globalParser;
+    globalParser_ = (globalParser_ == NULL) ? new Global() : globalParser;
     imageFetcher_ = (imageFetcher == NULL) ? new ImageFetcher() : imageFetcher;
     cacheManager_ = new CacheManager();
     opacityEffect_ = new QGraphicsOpacityEffect(this);
     opacityEffect2_ = new QGraphicsOpacityEffect(this);
-    clocksRadioButtonsGroup = new QButtonGroup(this);
     scaleWatcher_ = new QFutureWatcher<QImage>(this);
-    clocksPreviewWatcher_ = new QFutureWatcher<QImage>(this);
+
+    increaseOpacityAnimation = new QPropertyAnimation();
+    increaseOpacityAnimation->setTargetObject(opacityEffect_);
+    increaseOpacityAnimation->setPropertyName("opacity");
+    increaseOpacityAnimation->setDuration(IMAGE_TRANSITION_SPEED);
+    increaseOpacityAnimation->setEndValue(1);
+    increaseOpacityAnimation->setEasingCurve(QEasingCurve::OutQuad);
+
+    decreaseOpacityAnimation = new QPropertyAnimation();
+    decreaseOpacityAnimation->setTargetObject(opacityEffect2_);
+    decreaseOpacityAnimation->setPropertyName("opacity");
+    decreaseOpacityAnimation->setDuration(IMAGE_TRANSITION_SPEED);
+    decreaseOpacityAnimation->setEndValue(0);
+    decreaseOpacityAnimation->setEasingCurve(QEasingCurve::OutQuad);
 }
 
 void MainWindow::setupMenu()
@@ -431,7 +411,6 @@ void MainWindow::setupMenu()
     settingsMenu_->addSeparator();
     settingsMenu_->addAction(tr("History"), this, SLOT(on_actionHistory_triggered()), QKeySequence(tr("Ctrl+H")));
     settingsMenu_->addAction(tr("Statistics"), this, SLOT(on_actionStatistics_triggered()));
-    settingsMenu_->addAction(tr("Download 1000 HD Wallpapers"), this, SLOT(on_actionDownload_triggered()));
     settingsMenu_->addAction(tr("What is my screen resolution?"), this, SLOT(on_actionWhat_is_my_screen_resolution_triggered()));
     settingsMenu_->addSeparator();
     settingsMenu_->addAction(tr("About Wallch"), this, SLOT(on_action_About_triggered()));
@@ -459,7 +438,7 @@ void MainWindow::setupMenu()
 
 void MainWindow::applySettings()
 {
-    changeCurrentThemeTo(settings->value("theme", "autodetect").toString());
+    changeCurrentTheme();
 
     int maxCacheIndex = settings->value("max_cache_size", 2).toInt();
     if(maxCacheIndex < 0 || maxCacheIndex >= cacheManager_->maxCacheIndexes.size()){
@@ -524,13 +503,6 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
     {
         loadWallpapersPage();
 
-        if(ui->wallpapersList->count() < LEAST_WALLPAPERS_FOR_START){
-            startButtonsSetEnabled(false);
-        }
-        else{
-            startButtonsSetEnabled(true);
-        }
-
         if(gv.processPaused){
             actAsStart_=true;
             ui->startButton->setText(tr("&Start"));
@@ -573,25 +545,15 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
         ui->activate_livearth->setEnabled(false);
         ui->deactivate_livearth->setEnabled(true);
         startUpdateSeconds();
-        on_page_1_earth_clicked();
+        page_button_clicked(1);
         animateProgressbarOpacity(1);
     }
     else if(gv.potdRunning)
     {
         ui->deactivate_potd->setEnabled(true);
         ui->activate_potd->setEnabled(false);
-        on_page_2_potd_clicked();
+        page_button_clicked(2);
         startPotd(false);
-    }
-    else if(gv.wallpaperClocksRunning)
-    {
-        ui->deactivate_clock->setEnabled(true);
-        ui->activate_clock->setEnabled(false);
-        totalSeconds_=secondsLeft_=timeoutCount;
-        startUpdateSeconds();
-        setProgressbarsValue(100);
-        on_page_3_clock_clicked();
-        animateProgressbarOpacity(1);
     }
     else if(gv.liveWebsiteRunning)
     {
@@ -599,7 +561,7 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
         ui->deactivate_website->setEnabled(true);
         ui->activate_website->setEnabled(false);
         startUpdateSeconds();
-        on_page_4_web_clicked();
+        page_button_clicked(4);
         animateProgressbarOpacity(1);
     }
     else
@@ -609,28 +571,7 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
         previousAndNextButtonsSetEnabled(false);
 
         hideTimeForNext();
-
-        switch(settings->value("current_page", 0).toInt()){
-        default:
-        case 0:
-            on_page_0_wallpapers_clicked();
-            break;
-        case 1:
-            on_page_1_earth_clicked();
-            break;
-        case 2:
-            on_page_2_potd_clicked();
-            break;
-        case 3:
-            on_page_3_clock_clicked();
-            break;
-        case 4:
-            on_page_4_web_clicked();
-            break;
-        case 5:
-            on_page_5_other_clicked();
-            break;
-        }
+        page_button_clicked(settings->value("current_page", 0).toInt());
 
         //the app has opened normally, so there is no point in keeping a previous independent interval
         if(gv.independentIntervalEnabled){
@@ -649,9 +590,6 @@ void MainWindow::closeWhatsRunning(){
     else if(gv.potdRunning){
         on_deactivate_potd_clicked();
     }
-    else if(gv.wallpaperClocksRunning){
-        on_deactivate_clock_clicked();
-    }
     else if(gv.liveWebsiteRunning){
         on_deactivate_website_clicked();
     }
@@ -667,11 +605,11 @@ void MainWindow::onlineRequestFailed(){
 }
 
 void MainWindow::onlineImageRequestReady(QString image){
-    WallpaperManager::setBackground(image, true, gv.potdRunning||gv.liveEarthRunning, (gv.potdRunning ? 3 : 2));
+    wallpaperManager_->setBackground(image, true, gv.potdRunning||gv.liveEarthRunning, (gv.potdRunning ? 3 : 2));
     if(gv.setAverageColor){
         setButtonColor();
     }
-    imageTransition(false, image);
+    imageTransition(image);
     processRequestStop();
 }
 
@@ -694,9 +632,6 @@ void MainWindow::deletePressed(){
         {
             removeImageFromDisk();
         }
-    }
-    else if(ui->stackedWidget->currentIndex() == 3 && ui->clocksTableWidget->selectedItems().count() > 0){
-        uninstall_clock();
     }
 }
 
@@ -741,7 +676,7 @@ void MainWindow::setProgressbarsValue(short value){
 #endif
 }
 
-void MainWindow::imageTransition(bool wallpaperClock, const QString &filename /*=QString()*/)
+void MainWindow::imageTransition(const QString &filename /*=QString()*/)
 {
     if(!gv.previewImagesOnScreen || !gv.mainwindowLoaded){
         return;
@@ -751,36 +686,7 @@ void MainWindow::imageTransition(bool wallpaperClock, const QString &filename /*
         scaleWatcher_->cancel();
     }
 
-    if(clocksPreviewWatcher_->isRunning()){
-        clocksPreviewWatcher_->cancel();
-    }
-
-    if(wallpaperClock){
-        //generate the wallpaper clock preview
-        clocksPreviewWatcher_->setFuture(QtConcurrent::run(this, &MainWindow::wallpaperClocksPreview));
-    }
-    else
-    {
-        //scale the image
-        scaleWatcher_->setFuture(QtConcurrent::run(this, &MainWindow::scaleWallpapersPreview, filename));
-    }
-}
-
-void MainWindow::clocksPreviewGenerationFinished(){
-    if(clocksPreviewWatcher_->isCanceled()){
-        //last moment cancel, if we don't return, we crash
-        return;
-    }
-    //the wallpaper clock preview has been generated. Now scale it
-    scaleWatcher_->setFuture(QtConcurrent::run(this, &MainWindow::scaleWallpapersPreview));
-}
-
-QImage MainWindow::scaleWallpapersPreview(){
-    if(clocksPreviewWatcher_->isCanceled() || scaleWatcher_->isCanceled()){
-        return QImage();
-    }
-    QImage image = clocksPreviewWatcher_->future().result();
-    return QImage(image.scaled(QSize(image.width()*imagePreviewResizeFactorX_, image.height()*imagePreviewResizeFactorY_), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    scaleWatcher_->setFuture(QtConcurrent::run(this, &MainWindow::scaleWallpapersPreview, filename));
 }
 
 QImage MainWindow::scaleWallpapersPreview(QString filename){
@@ -790,46 +696,28 @@ QImage MainWindow::scaleWallpapersPreview(QString filename){
     return reader.read();
 }
 
-void MainWindow::setupAnimationsAndChangeImage(){
-    if(ui->screen_label->pixmap())
-    {
-        ui->screen_label_transition->setPixmap(*ui->screen_label->pixmap());
-    }
-    else
-    {
+void MainWindow::animateScreenLabel(bool onlyHide){
+    if(!gv.previewImagesOnScreen || !gv.mainwindowLoaded)
+        return;
+
+    if(ui->screen_label->pixmap(Qt::ReturnByValue).isNull())
         ui->screen_label_transition->clear();
+    else{
+        ui->screen_label_transition->setPixmap(ui->screen_label->pixmap(Qt::ReturnByValue));
+
+        opacityEffect2_->setOpacity(true);
+        ui->screen_label_transition->setGraphicsEffect(opacityEffect2_);
+        decreaseOpacityAnimation->setStartValue(opacityEffect2_->opacity());
+        decreaseOpacityAnimation->start();
     }
 
-    ui->screen_label_text->clear();
-
-    opacityEffect_->setOpacity(false);
-    ui->screen_label->setGraphicsEffect(opacityEffect_);
-    QPropertyAnimation* increaseOpacityAnimation = new QPropertyAnimation(this);
-    increaseOpacityAnimation->setTargetObject(opacityEffect_);
-    increaseOpacityAnimation->setPropertyName("opacity");
-    increaseOpacityAnimation->setDuration(IMAGE_TRANSITION_SPEED);
-    increaseOpacityAnimation->setStartValue(opacityEffect_->opacity());
-    increaseOpacityAnimation->setEndValue(1);
-    increaseOpacityAnimation->setEasingCurve(QEasingCurve::OutQuad);
-    increaseOpacityAnimation->start(QAbstractAnimation::DeleteWhenStopped);
-
-    if(ui->screen_label->isHidden()){
-        ui->screen_label->show();
-    }
-
-    opacityEffect2_->setOpacity(true);
-    ui->screen_label_transition->setGraphicsEffect(opacityEffect2_);
-    QPropertyAnimation* decreaseOpacityAnimation = new QPropertyAnimation(this);
-    decreaseOpacityAnimation->setTargetObject(opacityEffect2_);
-    decreaseOpacityAnimation->setPropertyName("opacity");
-    decreaseOpacityAnimation->setDuration(IMAGE_TRANSITION_SPEED);
-    decreaseOpacityAnimation->setStartValue(opacityEffect2_->opacity());
-    decreaseOpacityAnimation->setEndValue(0);
-    decreaseOpacityAnimation->setEasingCurve(QEasingCurve::OutQuad);
-    decreaseOpacityAnimation->start(QAbstractAnimation::DeleteWhenStopped);
-
-    if(!scaleWatcher_->isCanceled()){
-        setPreviewImage();
+    if(onlyHide)
+        ui->screen_label->clear();
+    else{
+        opacityEffect_->setOpacity(false);
+        ui->screen_label->setGraphicsEffect(opacityEffect_);
+        increaseOpacityAnimation->setStartValue(opacityEffect_->opacity());
+        increaseOpacityAnimation->start();
     }
 }
 
@@ -843,46 +731,18 @@ void MainWindow::unhoverMenuButton(){
     QApplication::sendEvent(ui->menubarMenu, event2);
 }
 
-void MainWindow::hideScreenLabel()
-{
-    if(!gv.previewImagesOnScreen){
-        return;
-    }
-
-    if(ui->screen_label->pixmap()){
-        ui->screen_label_transition->setPixmap(QPixmap::fromImage(ui->screen_label->pixmap()->toImage()));
-    }
-    else
-    {
-        ui->screen_label_transition->clear();
-        return;
-    }
-
-    ui->screen_label->clear();
-
-    opacityEffect2_->setOpacity(true);
-    ui->screen_label_transition->setGraphicsEffect(opacityEffect2_);
-    QPropertyAnimation* anim = new QPropertyAnimation(this);
-    anim->setTargetObject(opacityEffect2_);
-    anim->setPropertyName("opacity");
-    anim->setDuration(IMAGE_TRANSITION_SPEED);
-    anim->setStartValue(opacityEffect2_->opacity());
-    anim->setEndValue(false);
-    anim->setEasingCurve(QEasingCurve::OutQuad);
-    anim->start(QAbstractAnimation::DeleteWhenStopped);
-}
-
 void MainWindow::setPreviewImage(){
-    if(!gv.previewImagesOnScreen || scaleWatcher_->isCanceled()){
+    if(!gv.previewImagesOnScreen || scaleWatcher_->isCanceled())
         return;
-    }
+
+    animateScreenLabel(false);
 
     QImage image = scaleWatcher_->result();
 
     if(!image.isNull()){
 #ifdef Q_OS_UNIX
 
-        DesktopStyle desktopStyle = getDesktopStyle();
+        DesktopStyle desktopStyle = qvariant_cast<DesktopStyle>(ui->image_style_combo->currentData());
 
         if(image.format() == QImage::Format_Indexed8){
             //painting on QImage::Format_Indexed8 is not supported
@@ -893,72 +753,33 @@ void MainWindow::setPreviewImage(){
         //bring me some food right meow!
         bool previewColorsAndGradientsMeow=true;
 
-        if(desktopStyle == Tile || desktopStyle == Stretch){
+        if(desktopStyle == Tile || desktopStyle == Stretch || desktopStyle == Span){
             //the preview of the background color(s) is meaningless for the current styling
             previewColorsAndGradientsMeow = false;
         }
-        ColoringType::Value coloringType = globalParser_->getColoringType();
         if(previewColorsAndGradientsMeow || desktopStyle == NoneStyle){
-            if(desktopStyle == NoneStyle){
+            if(desktopStyle == NoneStyle)
                 image = QImage();
-            }
+
             QString primaryColor;
-            if(gv.setAverageColor)
-            {
+            if(gv.setAverageColor) //TODO: Shouldn't primary color been already be the average color?
                 primaryColor = WallpaperManager::getAverageColorOf(image).name();
-            }
             else
-            {
-                primaryColor = globalParser_->getPrimaryColor();
-            }
+                primaryColor = ColorManager::getPrimaryColor();
 
             colorsGradientsImage.fill(primaryColor);
 
-            if(coloringType != ColoringType::SolidColor && coloringType != ColoringType::NoneColor)
-            {
-                QString secondaryColor=globalParser_->getSecondaryColor();
-
-                short alpha=255;
-                short softness=0;
-
-                QPainter painter(&colorsGradientsImage);
-                QColor color(secondaryColor);
-
-                for(short i=75;i>0;i--){
-                    if(!softness){
-                        alpha-=1;
-                        if(alpha<=244){
-                            softness=1;
-                        }
-                    }
-                    else if(softness==1){
-                        alpha-=3;
-                        if(alpha<=205){
-                            softness=2;
-                        }
-                    }
-                    else if(softness==2){
-                        alpha-=4;
-                    }
-
-                    color.setAlpha(alpha);
-                    painter.fillRect(i-1, 0, 1, 75, QColor(color));
-                }
-                painter.end();
-
-                if(coloringType == ColoringType::VerticalColor){
-                    //just rotate the image
-                    colorsGradientsImage = colorsGradientsImage.transformed(QTransform().rotate(90), Qt::SmoothTransformation);
-                }
-            }
+            if(currentShading != ColoringType::Solid)
+                colorsGradientsImage = colorManager_->createVerticalHorizontalImage(75, 75);
         }
-        int vScreenWidth= int((float)imagePreviewResizeFactorX_*gv.screenWidth);
-        int vScreenHeight=int((float)imagePreviewResizeFactorY_*gv.screenHeight);
+        QImage originalImage = image;
+        int vScreenWidth= int((float)imagePreviewResizeFactorX_*gv.screenAvailableWidth);
+        int vScreenHeight=int((float)imagePreviewResizeFactorY_*gv.screenAvailableHeight);
 
         //making the preview exactly like it will be shown at the desktop
         switch(desktopStyle){
         //Many thanks to http://askubuntu.com/questions/226816/background-setting-cropping-options
-        case Tile:
+        case Tile: //TODO: Wrong preview on small pictures. The image starts from the center of the screen.
         {
             //Tile (or "wallpaper" picture-option)
             /*
@@ -968,14 +789,12 @@ void MainWindow::setPreviewImage(){
              *  is greater or equal is centered
              */
             if(image.width() < vScreenWidth || image.height() < vScreenHeight){
-                QImage originalImage = image;
                 //find how many times (rounded UPWARDS)
                 short timesX = (vScreenWidth+originalImage.width()-1)/originalImage.width();
                 short timesY = (vScreenHeight+originalImage.height()-1)/originalImage.height();
 
                 image = QImage(image.copy(0, 0, vScreenWidth, vScreenHeight));
                 image.fill(Qt::black);
-
                 QPainter painter(&image);
 
                 if(timesX>1 && timesY>1){
@@ -987,7 +806,7 @@ void MainWindow::setPreviewImage(){
                     }
                 }
                 else if(timesX>1){
-                    //timesY equals 1, this means the image's height is greater or equal to gv.screenHeight. So, the image must be centered on the height.
+                    //timesY equals 1, this means the image's height is greater or equal to gv.screenAvailableHeight. So, the image must be centered on the height.
                     short yPos = 0-(originalImage.height()-vScreenHeight)/2.0;
                     for(short i=0; i<timesX; i++){
                         painter.drawPixmap(originalImage.width()*i, yPos, QPixmap::fromImage(originalImage));
@@ -995,7 +814,7 @@ void MainWindow::setPreviewImage(){
                 }
                 else
                 {
-                    //timesX equals 1, this means the image's width is greater or equal to gv.screenWidth. So, the image must be centered on the width.
+                    //timesX equals 1, this means the image's width is greater or equal to gv.screenAvailableWidth. So, the image must be centered on the width.
                     short xPos = 0-(originalImage.width()-vScreenWidth)/2.0;
                     for(short j=0; j<timesY; j++){
                         painter.drawPixmap(xPos, originalImage.height()*j, QPixmap::fromImage(originalImage));
@@ -1008,13 +827,11 @@ void MainWindow::setPreviewImage(){
                 previewColorsAndGradientsMeow=false;
                 if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome){
                     //both dimensions are bigger than the screen's. Center both dimensions.
-                    QImage originalImage = image;
 
                     image = QImage(image.copy(0, 0, vScreenWidth, vScreenHeight));
-
                     image.fill(Qt::black);
-
                     QPainter painter(&image);
+
                     painter.drawPixmap((vScreenWidth-originalImage.width())/2, (vScreenHeight-originalImage.height())/2, QPixmap::fromImage(originalImage));
                     painter.end();
                 }
@@ -1035,12 +852,8 @@ void MainWindow::setPreviewImage(){
              *  It stretches the corresponding dimension to fit the screen.
              *  The other dimension is centered.
              */
-            QImage originalImage = image;
-
             image = QImage(vScreenWidth, vScreenHeight, QImage::Format_ARGB32_Premultiplied);
-
             image.fill(Qt::transparent);
-
             QPainter painter(&image);
 
             float widthFactor = (float) vScreenWidth  / originalImage.width();
@@ -1075,33 +888,25 @@ void MainWindow::setPreviewImage(){
              *  If one or more dimensions of the image are larger than the screen's just crop the image to the
              *  screen's dimension and center it.
              */
-            QImage originalImage = image;
-
             image = QImage(vScreenWidth, vScreenHeight, QImage::Format_ARGB32_Premultiplied);
-
             image.fill(Qt::transparent);
-
             QPainter painter(&image);
+
             painter.drawPixmap((vScreenWidth-originalImage.width())/2, (vScreenHeight-originalImage.height())/2, QPixmap::fromImage(originalImage));
             painter.end();
             break;
         }
         case Scale:
         {
-            //Scale - same as Span.
+            //Scale.
             /*
              *  How it works:
              *  It calculates the min of vScreenWidth/imageWidth and vScreenHeight/imageHeight.
              *  It stretches the corresponding dimension to fit the screen.
              *  The other dimension is centered.
              */
-            QImage originalImage = image;
-
             image = QImage(vScreenWidth, vScreenHeight, QImage::Format_ARGB32_Premultiplied);
-
-
             image.fill(Qt::transparent);
-
             QPainter painter(&image);
 
             float width_factor = (float) vScreenWidth  / originalImage.width();
@@ -1129,18 +934,17 @@ void MainWindow::setPreviewImage(){
         }
         case NoneStyle:
         case Stretch:
-            //Fill (or "stretched"). This is the default for the QLabel.
+        case Span:
+            //TODO: Stretch and Span seem to be the same. Confirm this
         default:
             break;
         }
         if(desktopStyle!=NoneStyle){
-            if(image.width() > 2*SCREEN_LABEL_SIZE_X || image.height() > 2*SCREEN_LABEL_SIZE_Y){
-                image = QImage(image.scaled(2*SCREEN_LABEL_SIZE_X, 2*SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::FastTransformation).scaled(SCREEN_LABEL_SIZE_X, SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
-            }
+            if(image.width() > 2*SCREEN_LABEL_SIZE_X || image.height() > 2*SCREEN_LABEL_SIZE_Y)
+                image = QImage(image.scaled(2*SCREEN_LABEL_SIZE_X, 2*SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::FastTransformation)
+                               .scaled(SCREEN_LABEL_SIZE_X, SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
             else
-            {
                 image = QImage(image.scaled(SCREEN_LABEL_SIZE_X, SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
-            }
         }
 
         if(previewColorsAndGradientsMeow || desktopStyle==NoneStyle){
@@ -1152,8 +956,10 @@ void MainWindow::setPreviewImage(){
             image = QImage(colorsGradientsImage);
         }
 #else
-        image = QImage(image.scaled(2*SCREEN_LABEL_SIZE_X, 2*SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::FastTransformation).scaled(SCREEN_LABEL_SIZE_X, SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+        image = QImage(image.scaled(2*SCREEN_LABEL_SIZE_X, 2*SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::FastTransformation)
+                       .scaled(SCREEN_LABEL_SIZE_X, SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
 #endif //#ifdef Q_OS_UNIX
+
         ui->screen_label->setPixmap(QPixmap::fromImage(image));
     }
 }
@@ -1178,20 +984,6 @@ void MainWindow::dropEvent(QDropEvent *event)
             QString dropped_temp=(*i).toString();
             QString droppedfile = dropped_temp.mid(7, dropped_temp.length()-2);
             addFolderForMonitor(droppedfile);
-        }
-        break;
-    }
-    case 3:
-    {
-        QList<QUrl> urlList = event->mimeData()->urls();
-        for (QList<QUrl>::const_iterator i = urlList.begin(); i != urlList.end();i++)
-        {
-            QString dropped_temp=(*i).toString();
-            QString droppedfile = dropped_temp.mid(7, dropped_temp.length()-2);
-            if(droppedfile.endsWith(".wcz")){
-                //wallpaper clock! Install it!
-                installWallpaperClock(droppedfile);
-            }
         }
         break;
     }
@@ -1295,400 +1087,91 @@ void MainWindow::processRequestStop(){
     if(gv.potdRunning){
         QString filename=globalParser_->getFilename(gv.wallchHomePath+POTD_IMAGE+"*");
         if(!filename.isEmpty() && ui->stackedWidget->currentIndex()==2 && QFile::exists(filename)){
-            imageTransition(false, filename);
+            imageTransition(filename);
         }
     }
 }
 
-void MainWindow::setStyle(){
+void MainWindow::findAvailableWallpaperStyles(){
 #ifdef Q_OS_UNIX
     if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
-        ui->image_style_combo->addItem(tr("Tile"));
-        ui->image_style_combo->addItem(tr("Zoom"));
-        ui->image_style_combo->addItem(tr("Center"));
-        ui->image_style_combo->addItem(tr("Scale"));
-        ui->image_style_combo->addItem(tr("Fill"));
-        ui->image_style_combo->addItem(tr("Span"));
-
-        QString style=globalParser_->gsettingsGet("org.gnome.desktop.background", "picture-options");
-        short index=0;
-        if (style=="zoom")
-        {
-            index=1;
-        }
-        else if (style=="centered"){
-            index=2;
-        }
-        else if (style=="scaled")
-        {
-            index=3;
-        }
-        else if (style=="stretched")
-        {
-            index=4;
-        }
-        else if (style=="spanned")
-        {
-            index=5;
-        }
-        ui->image_style_combo->setCurrentIndex(index);
+        ui->image_style_combo->addItem(tr("Color"), NoneStyle);
+        ui->image_style_combo->addItem(tr("Tile"), Tile);
+        ui->image_style_combo->addItem(tr("Zoom"), Zoom);
+        ui->image_style_combo->addItem(tr("Center"), Center);
+        ui->image_style_combo->addItem(tr("Scale"), Scale);
+        ui->image_style_combo->addItem(tr("Fill"), Stretch);
+        ui->image_style_combo->addItem(tr("Span"), Span);
     }
     else if(gv.currentDE == DesktopEnvironment::XFCE){
-        ui->image_style_combo->addItem(tr("None"));
-        ui->image_style_combo->addItem(tr("Centered"));
-        ui->image_style_combo->addItem(tr("Tiled"));
-        ui->image_style_combo->addItem(tr("Stretched"));
-        ui->image_style_combo->addItem(tr("Scaled"));
-        ui->image_style_combo->addItem(tr("Zoomed"));
-        int index=0;
-        Q_FOREACH(QString entry, globalParser_->getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("image-style")){
-                QString imageStyle=globalParser_->getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry);
-                index=imageStyle.toInt();
-            }
-        }
-        if(index<ui->image_style_combo->count() && index>=0){
-            ui->image_style_combo->setCurrentIndex(index);
-        }
+        ui->image_style_combo->addItem(tr("None"), NoneStyle);
+        ui->image_style_combo->addItem(tr("Centered"), Center);
+        ui->image_style_combo->addItem(tr("Tiled"), Tile);
+        ui->image_style_combo->addItem(tr("Stretched"), Stretch);
+        ui->image_style_combo->addItem(tr("Scaled"), Scale);
+        ui->image_style_combo->addItem(tr("Zoomed"), Zoom);
     }
     else if(gv.currentDE == DesktopEnvironment::LXDE){
-        ui->image_style_combo->addItem(tr("Empty"));
-        ui->image_style_combo->addItem(tr("Fill"));
-        ui->image_style_combo->addItem(tr("Fit"));
-        ui->image_style_combo->addItem(tr("Center"));
-        ui->image_style_combo->addItem(tr("Tile"));
-        int value = globalParser_->getPcManFmValue("wallpaper_mode").toInt();
-        if(value<ui->image_style_combo->count() && value>=0){
-            ui->image_style_combo->setCurrentIndex(value);
-        }
+        ui->image_style_combo->addItem(tr("Empty"), NoneStyle);
+        ui->image_style_combo->addItem(tr("Fill"), Stretch);
+        ui->image_style_combo->addItem(tr("Fit"), Scale);
+        ui->image_style_combo->addItem(tr("Center"), Center);
+        ui->image_style_combo->addItem(tr("Tile"), Tile);
     }
 #else
-    ui->image_style_combo->addItem(tr("Tile"));
-    ui->image_style_combo->addItem(tr("Center"));
-    ui->image_style_combo->addItem(tr("Stretch"));
+    ui->image_style_combo->addItem(tr("Color"), NoneStyle);
+    ui->image_style_combo->addItem(tr("Tile"), Tile);
+    ui->image_style_combo->addItem(tr("Center"), Center);
+    ui->image_style_combo->addItem(tr("Stretch"), Stretch);
 
-    if(settings->value("windows_major_version").toInt()==6 && settings->value("windows_minor_version").toInt()>= 1)
+    // Windows 7 and above
+    if(QSysInfo::productVersion().toInt()>=6.1)
     {
-        ui->image_style_combo->addItem(tr("Fit"));
-        ui->image_style_combo->addItem(tr("Fill"));
+        //Scale,Zoom
+        ui->image_style_combo->addItem(tr("Fit"), Scale);
+        ui->image_style_combo->addItem(tr("Fill"), Zoom);
+        // Windows 8 and above
+        if(QSysInfo::productVersion().toInt()>=6.2)
+            ui->image_style_combo->addItem(tr("Span"), Span);
     }
-    QSettings desktop_settings("HKEY_CURRENT_USER\\Control Panel\\Desktop", QSettings::NativeFormat);
+#endif
 
-    switch(desktop_settings.value("WallpaperStyle").toInt())
-    {
-    default:
-    case 0:
-        if(desktop_settings.value("TileWallpaper")!=0){
-            ui->image_style_combo->setCurrentIndex(0);
-        }
-        else{
-            ui->image_style_combo->setCurrentIndex(1);
-        }
-        break;
-    case 2:
-        ui->image_style_combo->setCurrentIndex(2);
-        break;
-    case 6:
-        ui->image_style_combo->setCurrentIndex(3);
-        break;
-    case 10:
-        ui->image_style_combo->setCurrentIndex(4);
-        break;
-    }
+    updateImageStyleCombo();
+    currentBgMenu_->setEnabled(ui->image_style_combo->currentIndex()!=0);
 
-#endif //#ifdef Q_OS_UNIX
+    updateScreenLabel();
 
     gv.mainwindowLoaded=true;
-    updateScreenLabel();
 }
 
-#ifdef Q_OS_UNIX
-DesktopStyle MainWindow::getDesktopStyle(){
-    DesktopStyle desktopStyle=Stretch;
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
-        switch(ui->image_style_combo->currentIndex()){
-        default:
-        case 0:
-            desktopStyle=Tile;
-            break;
-        case 1:
-            desktopStyle=Zoom;
-            break;
-        case 2:
-            desktopStyle=Center;
-            break;
-        case 5:
-        case 3:
-            desktopStyle=Scale;
-            break;
-        case 4:
-            desktopStyle=Stretch;
-            break;
-        }
-    }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        switch(ui->image_style_combo->currentIndex()){
-        case 0:
-            desktopStyle=NoneStyle;
-            break;
-        case 1:
-            desktopStyle=Center;
-            break;
-        case 2:
-            desktopStyle=Tile;
-            break;
-        default:
-        case 3:
-            desktopStyle=Stretch;
-            break;
-        case 4:
-            desktopStyle=Scale;
-            break;
-        case 5:
-            desktopStyle=Zoom;
-            break;
-        }
-    }
-    else if(gv.currentDE == DesktopEnvironment::LXDE){
-        switch(ui->image_style_combo->currentIndex()){
-        case 0:
-            desktopStyle=NoneStyle;
-            break;
-        default:
-        case 1:
-            desktopStyle=Stretch;
-            break;
-        case 2:
-            desktopStyle=Scale;
-            break;
-        case 3:
-            desktopStyle=Center;
-            break;
-        case 4:
-            desktopStyle=Tile;
-            break;
-        }
-    }
-    return desktopStyle;
-}
-#endif
+void MainWindow::updateImageStyleCombo(){
+    short index = wallpaperManager_->getCurrentFit();
 
-void MainWindow::setButtonColor()
-{
-    QString colorName = globalParser_->getPrimaryColor();
-    setButtonColor(colorName);
+    if(index<ui->image_style_combo->count() && index>=0 && index!=ui->image_style_combo->currentIndex())
+        ui->image_style_combo->setCurrentIndex(index);
 }
 
-void MainWindow::setButtonColor(const QString &colorName){
-#ifdef Q_OS_WIN
-    QImage image(40, 19, QImage::Format_ARGB32_Premultiplied);
-    image.fill(colorName);
-    ui->set_desktop_color->setIcon(QIcon(QPixmap::fromImage(image)));
-#else
-    ColoringType::Value coloringType=globalParser_->getColoringType();
-    if(coloringType == ColoringType::SolidColor){
-        QImage image(40, 19, QImage::Format_ARGB32_Premultiplied);
-        image.fill(colorName);
-        ui->set_desktop_color->setIcon(QIcon(QPixmap::fromImage(image)));
-    }
+void MainWindow::setButtonColor(){
+    QImage image(40, 19, QImage::Format_RGB32);
+
+    if(currentShading == ColoringType::Solid)
+        image.fill(ColorManager::getPrimaryColor());
     else
-    {
-        QString secondaryColor=globalParser_->getSecondaryColor();
+        image = colorManager_->createVerticalHorizontalImage(40, 19);
 
-        QImage image(75, 75, QImage::Format_RGB32);
-        image.fill(Qt::white);
-        QColor color(colorName);
-        image.fill(color);
-        color.setNamedColor(secondaryColor);
-        short alpha=255;
-        short softness=0;
-        QPainter painter;
-        painter.begin(&image);
-        for(short i=75;i>0;i--){
-            if(!softness){
-                alpha-=1;
-                if(alpha<=244){
-                    softness=1;
-                }
-            }
-            else if(softness==1){
-                alpha-=3;
-                if(alpha<=205){
-                    softness=2;
-                }
-            }
-            else if(softness==2){
-                alpha-=4;
-            }
-
-            color.setAlpha(alpha);
-            painter.fillRect(i-1, 0, 1, 75, QColor(color));
-        }
-        painter.end();
-        if(coloringType == ColoringType::VerticalColor)
-        {
-            image = image.transformed(QTransform().rotate(+90), Qt::SmoothTransformation);
-        }
-        updateColorButton(image);
-    }
-#endif
+    ui->set_desktop_color->setIcon(QIcon(QPixmap::fromImage(image)));
 }
 
 void MainWindow::on_image_style_combo_currentIndexChanged(int index)
 {
-    if(!gv.mainwindowLoaded){
+    if(!gv.mainwindowLoaded)
         return;
-    }
 
-#ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
-        QString type;
-        switch(index){
-        case 0:
-            type="wallpaper";
-            break;
-        default:
-        case 1:
-            type="zoom";
-            break;
-        case 2:
-            type="centered";
-            break;
-        case 3:
-            type="scaled";
-            break;
-        case 4:
-            type="stretched";
-            break;
-        case 5:
-            type="spanned";
-            break;
-        }
-        globalParser_->gsettingsSet("org.gnome.desktop.background", "picture-options", type);
-    }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, globalParser_->getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("image-style")){
-                QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry << "-s" << QString::number(index));
-            }
-        }
-    }
-    else if(gv.currentDE == DesktopEnvironment::LXDE){
-        QString style;
-        switch(index){
-        default:
-        case 0:
-            style="color";
-            break;
-        case 1:
-            style="stretch";
-            break;
-        case 2:
-            style="fit";
-            break;
-        case 3:
-            style="center";
-            break;
-        case 4:
-            style="tile";
-            break;
-        }
+    wallpaperManager_->setCurrentFit(index);
+    currentBgMenu_->setEnabled(index!=0);
 
-        QProcess::startDetached("pcmanfm", QStringList() << "--wallpaper-mode="+style);
-    }
-
-#else
-    /*
-     * ----------Reference: http://msdn.microsoft.com/en-us/library/bb773190(VS.85).aspx#desktop------------
-     * Two registry values are set in the Control Panel\Desktop key.
-     * TileWallpaper
-     * 0: The wallpaper picture should not be tiled
-     * 1: The wallpaper picture should be tiled
-     * WallpaperStyle
-     * 0:  The image is centered if TileWallpaper=0 or tiled if TileWallpaper=1
-     * 2:  The image is stretched to fill the screen
-     * 6:  The image is resized to fit the screen while maintaining the aspect
-     *     ratio. (Windows 7 and later)
-     * 10: The image is resized and cropped to fill the screen while
-     *     maintaining the aspect ratio. (Windows 7 and later)
-     * -----------------------------------------------------------------------------------------------------
-     */
-
-    /*
-     * Unfortunately QSettings can't manage to change a registry DWORD,
-     * so we have to go with the Windows' way.
-     */
-
-    HRESULT hr = S_OK;
-
-    HKEY hKey = NULL;
-    hr = HRESULT_FROM_WIN32(RegOpenKeyEx(HKEY_CURRENT_USER,
-                                         L"Control Panel\\Desktop", 0, KEY_READ | KEY_WRITE, &hKey));
-    if (SUCCEEDED(hr))
-    {
-        PWSTR pszWallpaperStyle;
-        PWSTR pszTileWallpaper;
-
-        wchar_t zero[10] = L"0";
-        wchar_t one[10] = L"1";
-        wchar_t two[10] = L"2";
-        wchar_t six[10] = L"6";
-        wchar_t ten[10] = L"10";
-
-        switch (index)
-        {
-        case 0: //tile
-            pszWallpaperStyle = zero;
-            pszTileWallpaper = one;
-            break;
-
-        case 1: //center
-            pszWallpaperStyle = zero;
-            pszTileWallpaper = zero;
-            break;
-
-        case 2: //stretch
-            pszWallpaperStyle = two;
-            pszTileWallpaper = zero;
-            break;
-
-        case 3: //fit (Windows 7 and later)
-            pszWallpaperStyle = six;
-            pszTileWallpaper = zero;
-            break;
-
-        case 4: //fill (Windows 7 and later)
-            pszWallpaperStyle = ten;
-            pszTileWallpaper = zero;
-            break;
-        }
-
-        //set the WallpaperStyle and TileWallpaper registry values.
-        DWORD cbData = lstrlen(pszWallpaperStyle) * sizeof(*pszWallpaperStyle);
-        hr = HRESULT_FROM_WIN32(RegSetValueEx(hKey, L"WallpaperStyle", 0, REG_SZ,
-                                              reinterpret_cast<const BYTE *>(pszWallpaperStyle), cbData));
-        if (SUCCEEDED(hr))
-        {
-            cbData = lstrlen(pszTileWallpaper) * sizeof(*pszTileWallpaper);
-            hr = HRESULT_FROM_WIN32(RegSetValueEx(hKey, L"TileWallpaper", 0, REG_SZ,
-                                                  reinterpret_cast<const BYTE *>(pszTileWallpaper), cbData));
-        }
-
-        RegCloseKey(hKey);
-    }
-
-    //set the desktop background to the already current background image now with the style changed!
-#ifdef UNICODE
-    SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, (PVOID) WallpaperManager::currentBackgroundWallpaper().toLocal8Bit().data(), SPIF_UPDATEINIFILE);
-#else
-    SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, (PVOID) WallpaperManager::currentBackgroundWallpaper().toLocal8Bit().data(), SPIF_UPDATEINIFILE);
-#endif
-
-#endif //#ifdef Q_OS_UNIX
-
-    if(ui->screen_label_text->text().isEmpty()){
+    if(ui->screen_label_text->text().isEmpty())
         updateScreenLabel();
-    }
 }
 
 void MainWindow::actionsOnWallpaperChange(){
@@ -1723,21 +1206,11 @@ void MainWindow::actionsOnWallpaperChange(){
         }
         globalParser_->saveSecondsLeftNow(secondsLeft_, 0);
     }
-    else if(gv.wallpaperClocksRunning){
-        calculateSecondsLeftForWallClocks();
-        totalSeconds_=secondsLeft_;
-        QString currentWallpaperClock = globalParser_->wallpaperClockNow(gv.defaultWallpaperClock, ui->minutes_checkBox->isChecked(), ui->hour_checkBox->isChecked(), ui->am_checkBox->isChecked(),
-                                                                ui->day_week_checkBox->isChecked(), ui->day_month_checkBox->isChecked(), ui->month_checkBox->isChecked());
-        WallpaperManager::setBackground(currentWallpaperClock, true, false, 4);
-        if(gv.setAverageColor){
-            setAverageColor(currentWallpaperClock);
-        }
-    }
     else if(gv.liveWebsiteRunning){
         ui->timeout_text_label->show();
         ui->website_timeout_label->show();
         processRequestStart();
-        websiteSnapshot_->start();
+        //websiteSnapshot_->start();
         secondsLeft_=globalParser_->websiteSliderValueToSeconds(ui->website_slider->value());
         globalParser_->saveSecondsLeftNow(secondsLeft_, 2);
     }
@@ -1793,9 +1266,9 @@ void MainWindow::updateSeconds(){
     if(gv.pauseOnBattery){
         if(globalParser_->runsOnBattery()){
             if(!manuallyStartedOnBattery_){
-                bool array[5] = {gv.wallpapersRunning, gv.liveEarthRunning, gv.potdRunning, gv.wallpaperClocksRunning, gv.liveWebsiteRunning};
+                bool array[4] = {gv.wallpapersRunning, gv.liveEarthRunning, gv.potdRunning, gv.liveWebsiteRunning};
 
-                for(int i=0;i<5;i++){
+                for(int i=0;i<4;i++){
                     if(array[i]){
                         previouslyRunningFeature_=i;
                         break;
@@ -1849,7 +1322,7 @@ void MainWindow::updateSeconds(){
                 actionsOnWallpaperChange();
                 gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsLeft_);
             }
-            else if (!(gv.wallpaperClocksRunning&& (secondsLeft_-secondsToChange<-1 || secondsLeft_-secondsToChange>1))){
+            else if (!(secondsLeft_-secondsToChange<-1 || secondsLeft_-secondsToChange>1)){
                 //the time has yet to come, just update
                 if(abs(secondsLeft_-secondsToChange)>1){
                     secondsLeft_=secondsToChange;
@@ -1878,15 +1351,6 @@ void MainWindow::updateSeconds(){
                 {
                     setProgressbarsValue((secondsLeft_*100)/(totalSeconds_));
                 }
-            }
-        }
-        else if(gv.wallpaperClocksRunning){
-            if(totalSeconds_==0){
-                setProgressbarsValue(100);
-            }
-            else
-            {
-                setProgressbarsValue((secondsLeft_*100)/(totalSeconds_));
             }
         }
         else if(gv.liveWebsiteRunning){
@@ -1934,24 +1398,6 @@ void MainWindow::changeAppStyleSheetTo(const QString &styleSheetFile){
     file.close();
 }
 
-void MainWindow::setThemeToAmbiance(){
-    changeAppStyleSheetTo(":/themes/ambiance.qss");
-    Q_FOREACH(QLabel *separator, menuSeparators_){
-        separator->show();
-        separator->setPixmap(AMBIANCE_SEPARATOR);
-    }
-}
-
-void MainWindow::setThemeToRadiance(){
-
-    changeAppStyleSheetTo(":/themes/radiance.qss");
-    Q_FOREACH(QLabel *separator, menuSeparators_){
-        separator->show();
-        separator->setPixmap(RADIANCE_SEPARATOR);
-    }
-
-}
-
 void MainWindow::stopEverythingThatsRunning(short excludingFeature)
 {
     if(excludingFeature!=1 && gv.wallpapersRunning){
@@ -1962,9 +1408,6 @@ void MainWindow::stopEverythingThatsRunning(short excludingFeature)
     }
     else if(excludingFeature!=3 && gv.potdRunning){
         on_deactivate_potd_clicked();
-    }
-    else if(excludingFeature!=4 && gv.wallpaperClocksRunning){
-        on_deactivate_clock_clicked();
     }
     else if(excludingFeature!=5 && gv.liveWebsiteRunning){
         on_deactivate_website_clicked();
@@ -1984,9 +1427,6 @@ void MainWindow::pauseEverythingThatsRunning()
     }
     else if(gv.potdRunning){
         on_deactivate_potd_clicked();
-    }
-    else if(gv.wallpaperClocksRunning){
-        on_deactivate_clock_clicked();
     }
     else if(gv.liveWebsiteRunning){
         on_deactivate_website_clicked();
@@ -2085,7 +1525,8 @@ QString MainWindow::secondsToMh(int seconds)
 
 void MainWindow::setAverageColor(const QString &image){
     //sets the desktop background color, updates mainwindow's primary color box
-    setButtonColor(globalParser_->setAverageColor(image));
+    globalParser_->setAverageColor(image);
+    setButtonColor();
 }
 
 QString MainWindow::fixBasenameSize(const QString &basename){
@@ -2097,98 +1538,56 @@ QString MainWindow::fixBasenameSize(const QString &basename){
 
 void MainWindow::updateScreenLabel()
 {
+    if(!gv.previewImagesOnScreen || !gv.mainwindowLoaded)
+        return;
+
     ui->screen_label_info->clear();
     ui->screen_label_text->clear();
 
     switch(ui->stackedWidget->currentIndex()){
     case 0:
-
-        if(ui->wallpapersList->count()==0 || ui->wallpapersList->selectedItems().count()==0)
-        {
+    {
+        if(wallpaperManager_->wallpapersCount()==0 || ui->wallpapersList->selectedItems().count()==0)
             changeTextOfScreenLabelTo(tr("Select an image to preview"));
-        }
         else
-        {
             on_wallpapersList_itemSelectionChanged();
-        }
-
         break;
-
+    }
     case 1:
     {
-
         QString filename=globalParser_->getFilename(gv.wallchHomePath+"liveEarth*");
-        if(!filename.isEmpty()){
-            imageTransition(false, filename);
-        }
+        if(!filename.isEmpty())
+            imageTransition(filename);
         else
-        {
             changeTextOfScreenLabelTo(tr("Preview not available"));
-        }
-
         break;
-
     }
     case 2:
     {
-
         QString filename=globalParser_->getFilename(gv.wallchHomePath+POTD_IMAGE+"*");
-        if(!filename.isEmpty()){
-            imageTransition(false, filename);
-        }
+        if(!filename.isEmpty())
+            imageTransition(filename);
         else
-        {
             changeTextOfScreenLabelTo(tr("Preview not available"));
-        }
-
         break;
-
     }
-    case 3:
-
-        if(ui->clocksTableWidget->rowCount()==0)
-        {
-            changeTextOfScreenLabelTo(tr("Preview not available"));
-        }
-        else if(ui->clocksTableWidget->rowCount()!=0 && ui->clocksTableWidget->selectedItems().count()==0)
-        {
-            changeTextOfScreenLabelTo(tr("Preview not available"));
-        }
-        else if(ui->clocksTableWidget->rowCount()!=0 && ui->clocksTableWidget->selectedItems().count()!=0)
-        {
-            imageTransition(true);
-        }
-
-        break;
-
     case 4:
-
-        if(QFile::exists(gv.wallchHomePath+LW_PREVIEW_IMAGE)){
-            imageTransition(false, gv.wallchHomePath+LW_PREVIEW_IMAGE);
-        }
+    {
+        if(QFile::exists(gv.wallchHomePath+LW_PREVIEW_IMAGE))
+            imageTransition(gv.wallchHomePath+LW_PREVIEW_IMAGE);
         else
-        {
             changeTextOfScreenLabelTo(tr("Preview not available"));
-        }
-
         break;
-
-    case 5:
-
-        changeTextOfScreenLabelTo("Mellori Studio");
-
-        break;
-
+    }
     }
 }
 
 void MainWindow::changeTextOfScreenLabelTo(const QString &text)
 {
-    if(!gv.previewImagesOnScreen){
+    if(!gv.previewImagesOnScreen)
         return;
-    }
 
-    hideScreenLabel();
+    animateScreenLabel(true);
 
     opacityEffect_->setOpacity(false);
     ui->screen_label_text->setGraphicsEffect(opacityEffect_);
@@ -2205,7 +1604,7 @@ void MainWindow::changeTextOfScreenLabelTo(const QString &text)
 
 #ifdef Q_OS_UNIX
 void MainWindow::unityProgressbarSetEnabled(bool enabled){
-    if(gv.wallpapersRunning || gv.liveEarthRunning || gv.potdRunning || gv.wallpaperClocksRunning || gv.liveWebsiteRunning ){
+    if(gv.wallpapersRunning || gv.liveEarthRunning || gv.potdRunning || gv.liveWebsiteRunning ){
         globalParser_->setUnityProgressBarEnabled(enabled);
         if(enabled){
             globalParser_->setUnityProgressbarValue(0);
@@ -2215,39 +1614,16 @@ void MainWindow::unityProgressbarSetEnabled(bool enabled){
 
 #endif //#ifdef Q_OS_UNIX
 
-void MainWindow::updateColorButton(QImage image)
-{
-    ui->set_desktop_color->setIcon(QIcon(QPixmap::fromImage(image.scaled(40, 19, Qt::IgnoreAspectRatio, Qt::FastTransformation))));
-}
-
 //Wallpapers code
 
 void MainWindow::justChangeWallpaper(){
-    if(!loadedPages_[0]){
-        loadWallpapersPage();
-        if(ui->wallpapersList->count()<LEAST_WALLPAPERS_FOR_START){
-            startButtonsSetEnabled(false);
-        }
-        else
-        {
-            startButtonsSetEnabled(true);
-        }
-    }
+    loadWallpapersPage();
 
     wallpaperManager_->setRandomWallpaperAsBackground();
 }
 
 void MainWindow::on_startButton_clicked(){
-    if(!loadedPages_[0]){
-        loadWallpapersPage();
-        if(wallpaperManager_->wallpapersCount()<LEAST_WALLPAPERS_FOR_START){
-            startButtonsSetEnabled(false);
-        }
-        else
-        {
-            startButtonsSetEnabled(true);
-        }
-    }
+    loadWallpapersPage();
 
     if (!ui->startButton->isEnabled()){
         globalParser_->desktopNotify(tr("Not enough pictures to start chaning wallpapers."), false, "info");
@@ -2343,7 +1719,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
         }
 
         startUpdateSeconds();
-        on_page_0_wallpapers_clicked();
+        page_button_clicked(0);
     }
     else
     {
@@ -2361,7 +1737,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
         updateSecondsTimer_->stop();
         ui->timeForNext->setFormat(ui->timeForNext->format()+" - Paused.");
         previousAndNextButtonsSetEnabled(false);
-        if(ui->wallpapersList->count() != 0){
+        if(wallpaperManager_->wallpapersCount() != 0){
             ui->shuffle_images_checkbox->setEnabled(true);
         }
         if(gv.independentIntervalEnabled){
@@ -2371,12 +1747,12 @@ void MainWindow::startPauseWallpaperChangingProcess(){
 }
 
 void MainWindow::on_stopButton_clicked(){
-    if (!ui->stopButton->isEnabled()){
+    if (!ui->stopButton->isEnabled())
         return;
-    }
-    if(ui->wallpapersList->count()!=0){
+
+    if(wallpaperManager_->wallpapersCount()!=0)
         ui->shuffle_images_checkbox->setEnabled(true);
-    }
+
     stoppedBecauseOnBattery_=false;
     wallpaperManager_->startOver();
     actAsStart_=true;
@@ -2391,7 +1767,7 @@ void MainWindow::on_stopButton_clicked(){
     }
     previousAndNextButtonsSetEnabled(false);
 
-    startButtonsSetEnabled(ui->wallpapersList->count() >= LEAST_WALLPAPERS_FOR_START);
+    startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
 
     stopButtonsSetEnabled(false);
     gv.wallpapersRunning=false;
@@ -2417,9 +1793,8 @@ void MainWindow::on_stopButton_clicked(){
 
 void MainWindow::on_next_Button_clicked()
 {
-    if (!ui->next_Button->isEnabled() || !currentFolderExists()){
+    if (!ui->next_Button->isEnabled() || !currentFolderExists())
         return;
-    }
 
     updateSecondsTimer_->stop();
     secondsLeft_=0;
@@ -2428,21 +1803,17 @@ void MainWindow::on_next_Button_clicked()
 
 void MainWindow::on_previous_Button_clicked()
 {
-    if(!ui->previous_Button->isEnabled() || !currentFolderExists()){
+    if(!ui->previous_Button->isEnabled() || !currentFolderExists())
         return;
-    }
 
     updateSecondsTimer_->stop();
 
     wallpaperManager_->setBackground(wallpaperManager_->getPreviousWallpaper(), true, true, 1);
-    if(gv.setAverageColor){
+    if(gv.setAverageColor)
         setButtonColor();
-    }
 
-    if(gv.rotateImages && gv.iconMode){
+    if(gv.rotateImages && gv.iconMode)
         forceUpdateIconOf(wallpaperManager_->currentWallpaperIndex()-2);
-    }
-
 
     if(gv.typeOfInterval){
         srand(time(0));
@@ -2450,11 +1821,9 @@ void MainWindow::on_previous_Button_clicked()
         initialRandomSeconds_=secondsLeft_;
     }
     else
-    {
         findSeconds(true);
-    }
-    globalParser_->resetSleepProtection(secondsLeft_);
 
+    globalParser_->resetSleepProtection(secondsLeft_);
     startUpdateSeconds();
 }
 
@@ -2538,37 +1907,36 @@ void MainWindow::on_wallpapersList_itemSelectionChanged()
         if(!processingOnlineRequest_){
             ui->screen_label_info->setText(fixBasenameSize(globalParser_->basenameOf(filename)));
         }
-        imageTransition(false, filename);
+        imageTransition(filename);
     }
 }
 
 void MainWindow::on_wallpapersList_itemDoubleClicked()
 {
-    if(!ui->wallpapersList->count()){
+    if(!wallpaperManager_->wallpapersCount())
         return;
-    }
 
     int curRow = ui->wallpapersList->currentRow();
-    if(curRow < 0){
+    if(curRow < 0)
         return;
-    }
 
     QString picture = getPathOfListItem(curRow);
 
-    if(WallpaperManager::imageIsNull(picture)){
+    if(WallpaperManager::imageIsNull(picture))
         return;
-    }
+
     wallpaperManager_->addToPreviousWallpapers(picture);
     wallpaperManager_->setBackground(picture, true, true, 1);
-    if(gv.setAverageColor){
+
+    if(gv.setAverageColor)
         setButtonColor();
-    }
-    if(gv.rotateImages && gv.iconMode){
+
+    if(gv.rotateImages && gv.iconMode)
         forceUpdateIconOf(curRow);
-    }
+
 #ifdef Q_OS_UNIX
     if(gv.currentDE == DesktopEnvironment::LXDE){
-        DesktopStyle desktopStyle = getDesktopStyle();
+        DesktopStyle desktopStyle = qvariant_cast<DesktopStyle>(ui->image_style_combo->currentData());
         if(desktopStyle == NoneStyle){
             ui->image_style_combo->setCurrentIndex(2);
         }
@@ -2601,9 +1969,8 @@ void MainWindow::removeImageFromDisk(){
         cacheManager_->removeCacheOf(imageFilename);
     }
 
-    if(ui->wallpapersList->count() <= LEAST_WALLPAPERS_FOR_START){
+    if(wallpaperManager_->wallpapersCount() <= LEAST_WALLPAPERS_FOR_START)
         startButtonsSetEnabled(false);
-    }
 }
 
 void MainWindow::removeImagesFromDisk(){
@@ -2653,9 +2020,8 @@ void MainWindow::rotateRight(){
     if(gv.iconMode){
         forceUpdateIconOf(ui->wallpapersList->currentRow());
     }
-    else if(gv.previewImagesOnScreen){
+    else
         updateScreenLabel();
-    }
 
     if(path==wallpaperManager_->currentBackgroundWallpaper()){
         wallpaperManager_->setBackground(path, false, false, 1);
@@ -2675,12 +2041,11 @@ void MainWindow::rotateLeft(){
     if(gv.iconMode){
         forceUpdateIconOf(ui->wallpapersList->currentRow());
     }
-    else if(gv.previewImagesOnScreen){
+    else
         updateScreenLabel();
-    }
 
     if(path==WallpaperManager::currentBackgroundWallpaper()){
-        WallpaperManager::setBackground(path, false, false, 1);
+        wallpaperManager_->setBackground(path, false, false, 1);
     }
 }
 
@@ -2735,9 +2100,8 @@ void MainWindow::on_wallpapersList_customContextMenuRequested()
         connect(enterAction, SIGNAL(triggered()), this, SLOT(on_wallpapersList_itemDoubleClicked()));
         listwidgetMenu_->addAction(enterAction);
 
-        if(ui->wallpapersList->count()>2){
+        if(wallpaperManager_->wallpapersCount()>2)
             listwidgetMenu_->addAction(tr("Start from this image"), this, SLOT(startWithThisImage()));
-        }
 
         QAction *deleteAction = new QAction(tr("Delete image from disk"), listwidgetMenu_);
         deleteAction->setShortcut(QKeySequence::Delete);
@@ -2813,19 +2177,18 @@ void MainWindow::changeImage(){
 
     wallpaperManager_->addToPreviousWallpapers(image);
 
-    WallpaperManager::setBackground(image, true, true, 1);
-    if(gv.setAverageColor){
+    wallpaperManager_->setBackground(image, true, true, 1);
+    if(gv.setAverageColor)
         setButtonColor();
-    }
-    if(gv.rotateImages && gv.iconMode){
+
+    if(gv.rotateImages && gv.iconMode)
         forceUpdateIconOf(wallpaperManager_->currentWallpaperIndex());
-    }
 }
 
 void MainWindow::searchFor(const QString &term){
     ui->wallpapersList->clearSelection();
     searchList_.clear();
-    int listCount=ui->wallpapersList->count();
+    int listCount=wallpaperManager_->wallpapersCount();
     if(gv.iconMode){
         for(int i=0;i<listCount;i++){
             if(ui->wallpapersList->item(i)->statusTip().isEmpty()){
@@ -2843,7 +2206,7 @@ void MainWindow::searchFor(const QString &term){
             searchList_ << globalParser_->basenameOf(ui->wallpapersList->item(i)->text());
         }
     }
-    match_->setPattern("*"+term+"*");
+    match_->setPattern(QRegularExpression::wildcardToRegularExpression("*"+term+"*"));
     currentSearchItemIndex = searchList_.indexOf(*match_, 0);
     if(currentSearchItemIndex < 0){
         doesntMatch();
@@ -2859,7 +2222,7 @@ void MainWindow::searchFor(const QString &term){
 
 void MainWindow::continueToNextMatch(){
     ui->wallpapersList->clearSelection();
-    if(currentSearchItemIndex >= ui->wallpapersList->count()+1){
+    if(currentSearchItemIndex >= wallpaperManager_->wallpapersCount()+1){
         //restart the search...
         currentSearchItemIndex=searchList_.indexOf(*match_, 0);
         if(currentSearchItemIndex<0){
@@ -2973,9 +2336,10 @@ void MainWindow::updateTiming(){
     if(updateCheckTime_->isActive()){
         updateCheckTime_->stop();
     }
-    if(!loadedPages_[0]){
+
+    if(!loadedPages_[0])
         return;
-    }
+
     settings->setValue( "timeSlider", ui->timerSlider->value());
     settings->setValue( "delay", secondsInWallpapersSlider_ );
     settings->sync();
@@ -2997,9 +2361,6 @@ void MainWindow::checkBatteryStatus(){
             break;
         case 2:
             on_activate_potd_clicked();
-            break;
-        case 3:
-            on_activate_clock_clicked();
             break;
         case 4:
             on_activate_website_clicked();
@@ -3076,13 +2437,7 @@ void MainWindow::monitor(const QStringList &finalListOfPaths){
         monitor(path, itemCount);
     }
 
-    if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START){
-        startButtonsSetEnabled(false);
-    }
-    else
-    {
-        startButtonsSetEnabled(true);
-    }
+    startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
 
     if(gv.iconMode){
         launchTimerToUpdateIcons();
@@ -3180,15 +2535,13 @@ void MainWindow::researchFolders()
         monitor(globalParser_->listFolders(currentFolder_, true, true));
     }
 
-    if(ui->wallpapersList->count() < LEAST_WALLPAPERS_FOR_START){
+    if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START){
         if(gv.wallpapersRunning){
             on_stopButton_clicked();
         }
     }
     else
-    {
         startButtonsSetEnabled(true);
-    }
 
     if(gv.wallpapersRunning){
         processRunningResetPictures();
@@ -3238,7 +2591,7 @@ void MainWindow::changePathsToIcons()
     ui->wallpapersList->setUniformItemSizes(true);
     ui->wallpapersList->setDragEnabled(false);
     gv.iconMode=true;
-    int listCount=ui->wallpapersList->count();
+    int listCount=wallpaperManager_->wallpapersCount();
 
     for(int i=0;i<listCount;i++){
         QString status=ui->wallpapersList->item(i)->statusTip();
@@ -3249,14 +2602,7 @@ void MainWindow::changePathsToIcons()
         ui->wallpapersList->item(i)->setIcon(imageLoading_);
     }
     launchTimerToUpdateIcons();
-    if(gv.previewImagesOnScreen && ui->stackedWidget->currentIndex()==0){
-        hideScreenLabel();
-        updateScreenLabel();
-    }
-    if(searchIsOn_){
-        on_search_close_clicked();
-    }
-    ui->search_box->clear();
+    iconsPathsChanged();
 }
 
 void MainWindow::changeIconsToPaths(){
@@ -3264,7 +2610,7 @@ void MainWindow::changeIconsToPaths(){
     ui->wallpapersList->setUniformItemSizes(false);
     ui->wallpapersList->setIconSize(QSize(-1, -1));
     gv.iconMode=false;
-    int file_count=ui->wallpapersList->count();
+    int file_count=wallpaperManager_->wallpapersCount();
 
     QFont font;
     font.defaultFamily();
@@ -3284,8 +2630,12 @@ void MainWindow::changeIconsToPaths(){
         ui->wallpapersList->item(i)->setIcon(QIcon(""));
         ui->wallpapersList->item(i)->setData(Qt::SizeHintRole, QVariant());
     }
-    if(gv.previewImagesOnScreen && ui->stackedWidget->currentIndex()==0){
-        hideScreenLabel();
+    iconsPathsChanged();
+}
+
+void MainWindow::iconsPathsChanged(){
+    if(ui->stackedWidget->currentIndex()==0){
+        animateScreenLabel(true);
         updateScreenLabel();
     }
     if(searchIsOn_){
@@ -3306,9 +2656,9 @@ void MainWindow::launchTimerToUpdateIcons(){
 }
 
 void MainWindow::updateVisibleIcons(){
-    if(!ui->wallpapersList->count()){
+    if(!wallpaperManager_->wallpapersCount())
         return;
-    }
+
     currentlyUpdatingIcons_=true;
     QListWidgetItem* minItem=ui->wallpapersList->itemAt(0, 0);
     QListWidgetItem* maxItem=ui->wallpapersList->itemAt(ui->wallpapersList->width()-30, ui->wallpapersList->height()-5);
@@ -3318,7 +2668,7 @@ void MainWindow::updateVisibleIcons(){
         diff+=5;
         maxItem=ui->wallpapersList->itemAt(ui->wallpapersList->width()-diff, ui->wallpapersList->height()-5);
         if(ui->wallpapersList->width()-diff<0){
-            maxItem=ui->wallpapersList->item(ui->wallpapersList->count()-1);
+            maxItem=ui->wallpapersList->item(wallpaperManager_->wallpapersCount()-1);
         }
     }
 
@@ -3348,7 +2698,7 @@ bool MainWindow::updateIconOf(int index){
     QImage image = cacheManager_->controlCache(originalImagePath);
 
     if(image.isNull()){
-        if(ui->wallpapersList->count() > 1){
+        if(wallpaperManager_->wallpapersCount() > 1){
             delete ui->wallpapersList->item(index);
             wallpaperManager_->getCurrentWallpapers().removeAt(index);
         }
@@ -3378,9 +2728,8 @@ void MainWindow::forceUpdateIconOf(int index){
 
     ui->wallpapersList->item(index)->setIcon(QIcon(QPixmap::fromImage(thumbnail)));
 
-    if(gv.previewImagesOnScreen && ui->wallpapersList->currentRow() == index && ui->stackedWidget->currentIndex() == 0){
+    if(ui->wallpapersList->currentRow() == index && ui->stackedWidget->currentIndex() == 0)
         updateScreenLabel();
-    }
 }
 
 QStringList MainWindow::getCurrentWallpaperFolders(){
@@ -3499,18 +2848,13 @@ void MainWindow::on_pictures_location_comboBox_currentIndexChanged(int index)
 
     if(selectionIsOk)
     {
-        if ( wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START ){
-            startButtonsSetEnabled(false);
-        }
-        else{
-            startButtonsSetEnabled(true);
-        }
+        startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
+
         settings->setValue("currentFolder_index", ui->pictures_location_comboBox->currentIndex());
         settings->sync();
 
-        if(ui->wallpapersList->count()){
+        if(wallpaperManager_->wallpapersCount())
             ui->wallpapersList->setCurrentRow(0);
-        }
 
         if(gv.wallpapersRunning){
             processRunningResetPictures();
@@ -3545,9 +2889,8 @@ void MainWindow::processRunningResetPictures(){
 
     //folder has changed/updated
     if(ui->shuffle_images_checkbox->isChecked()){
-        if(wallpaperManager_->wallpapersCount()<LEAST_WALLPAPERS_FOR_START){
-            on_stopButton_clicked();//not enough pictures to continue
-        }
+        if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START)
+            on_stopButton_clicked();
         else
         {
             //generate new random images
@@ -3555,15 +2898,13 @@ void MainWindow::processRunningResetPictures(){
             wallpaperManager_->startOver();
         }
     }
-    else if(wallpaperManager_->wallpapersCount()>=LEAST_WALLPAPERS_FOR_START)
+    else if(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START)
     {
         wallpaperManager_->startOver(); //start from the beginning of the new folder
         secondsLeft_=0;
     }
     else
-    {
-        on_stopButton_clicked();//not enough pictures to continue
-    }
+        on_stopButton_clicked();
 }
 
 void MainWindow::savePicturesLocations()
@@ -3687,7 +3028,7 @@ void MainWindow::on_activate_livearth_clicked()
         return;
     }
     stopEverythingThatsRunning(2);
-    on_page_1_earth_clicked();
+    page_button_clicked(1);
     ui->activate_livearth->setEnabled(false);
     ui->deactivate_livearth->setEnabled(true);
     gv.liveEarthRunning=true;
@@ -3766,7 +3107,7 @@ void MainWindow::on_activate_potd_clicked()
         return;
     }
     stopEverythingThatsRunning(3);
-    on_page_2_potd_clicked();
+    page_button_clicked(2);
     startPotd(true);
 }
 
@@ -3841,616 +3182,12 @@ void MainWindow::restartLeIfRunningAfterSettingChange()
     on_activate_livearth_clicked();
 }
 
-//Wallpaper clocks code
-
-void MainWindow::on_install_clock_clicked()
-{
-    QStringList paths = QFileDialog::getOpenFileNames(this, tr("Import Wallpaper Clock(s)"), gv.homePath, "*.wcz");
-
-    if(paths.isEmpty()){
-        return;
-    }
-
-    Q_FOREACH(QString path, paths){
-        installWallpaperClock(path);
-    }
-    if(!gv.wallpaperClocksRunning){
-        ui->clocksTableWidget->selectRow(ui->clocksTableWidget->rowCount());
-    }
-    ui->clocksTableWidget->setFocus();
-}
-
-void MainWindow::installWallpaperClock(const QString &currentPath){
-
-    currentWallpaperClockPath_=gv.wallchHomePath+"Wallpaper_clocks/"+QFileInfo(currentPath).baseName();
-    if(QDir(gv.wallchHomePath+"Wallpaper_clocks/").exists()){
-        if(QFile::exists(currentWallpaperClockPath_))
-        {
-            QMessageBox::warning(this, tr("Error!"), QString(tr("Wallpaper clock already installed.")+" ("+currentWallpaperClockPath_+")"));
-            return;
-        }
-    }
-    else
-    {
-        if(!QDir().mkpath(gv.wallchHomePath+"Wallpaper_clocks/")){
-            QMessageBox::warning(this, tr("Error!"), QString(tr("Could not create an essential path for the Wallpaper clock use. Your Wallpaper clock could not be installed.")));
-            return;
-        }
-    }
-
-#ifdef Q_OS_UNIX
-    unzipArchive_ = new QProcess(this);
-    QStringList params;
-    params << "-qq" << "-o" << currentPath << "-d" << currentWallpaperClockPath_;
-    connect(unzipArchive_, SIGNAL(finished(int)), this, SLOT(addClockToList()));
-    unzipArchive_->start("unzip", params);
-    unzipArchive_->waitForFinished();
-#else
-    unzip(currentPath, currentWallpaperClockPath_);
-#endif
-    ui->clocksTableWidget->setFocus();
-    if(!gv.wallpaperClocksRunning)
-        ui->clocksTableWidget->selectRow(ui->clocksTableWidget->rowCount()-1);
-}
-
-void MainWindow::addClockToList(){
-#ifdef Q_OS_UNIX
-    if(unzipArchive_ && !unzipArchive_->isOpen()){
-        unzipArchive_->deleteLater();
-    }
-#endif
-
-    QFile file(currentWallpaperClockPath_+"/clock.ini");
-    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
-        globalParser_->error("I could not open your clock.ini file successfully!");
-        return;
-    }
-    QString clockName, clockWidth, clockHeight;
-
-    QTextStream in(&file);
-    bool name_found=false, w_found=false, h_found=false;
-    while(!in.atEnd())
-    {
-        QString line=in.readLine();
-        if(!name_found){
-            if(line.left(5)=="name=")
-            {
-                clockName=line.right(line.count()-5);
-                name_found=true;
-            }
-        }
-        if(!w_found){
-            if(line.left(6)=="width=")
-            {
-                clockWidth=line.right(line.count()-6);
-                w_found=true;
-            }
-        }
-        if(!h_found){
-            if(line.left(7)=="height=")
-            {
-                clockHeight=line.right(line.count()-7);
-                h_found=true;
-            }
-        }
-
-    }
-    file.close();
-    int old_r_count=ui->clocksTableWidget->rowCount();
-    ui->clocksTableWidget->insertRow(ui->clocksTableWidget->rowCount());
-    //adding radio button, which one is selected is the one that will be used when Wallpaper clocks are activated
-    QWidget* wdg = new QWidget;
-    QRadioButton *radiobutton_item = new QRadioButton(this);
-    clocksRadioButtonsGroup->addButton(radiobutton_item);
-    connect(radiobutton_item, SIGNAL(clicked()), this, SLOT(clockRadioButton_check_state_changed()));
-    radiobutton_item->setFocusPolicy(Qt::NoFocus);
-    QHBoxLayout* layout = new QHBoxLayout(wdg);
-    layout->addWidget(radiobutton_item);
-    layout->setAlignment( Qt::AlignCenter );
-    layout->setMargin(0);
-    wdg->setLayout(layout);
-    ui->clocksTableWidget->setCellWidget(old_r_count, 0, wdg);
-
-    //adding preview image
-    QLabel *label_item = new QLabel(this);
-    label_item->setAlignment(Qt::AlignCenter);
-    label_item->setPixmap(QPixmap(currentWallpaperClockPath_+"/preview100x75.jpg").scaled(80, 60, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    ui->clocksTableWidget->setCellWidget(old_r_count, 1, label_item);
-
-    //adding title of clock and dimensions
-    QTableWidgetItem *name_item = new QTableWidgetItem;
-    name_item->setText(clockName+"\n"+clockWidth+"x"+clockHeight);
-    name_item->setData(32, currentWallpaperClockPath_);
-    name_item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-    ui->clocksTableWidget->setItem(old_r_count,2,name_item);
-
-    if(!gv.wallpaperClocksRunning)
-    {
-        ui->activate_clock->setEnabled(true);
-    }
-}
-
-#ifdef Q_OS_WIN
-void MainWindow::unzip(QString input, const QString &outputDirectory){
-    QDir baseDir(outputDirectory);
-    baseDir.mkpath(baseDir.path());
-    QZipReader unzip(input, QIODevice::ReadOnly);
-    QList<QZipReader::FileInfo> allFiles = unzip.fileInfoList();
-
-    Q_FOREACH (QZipReader::FileInfo fi, allFiles)
-    {
-        const QString absPath = outputDirectory + QDir::separator() + fi.filePath;
-        if(fi.isDir){
-            if (!baseDir.mkpath(fi.filePath)){
-                continue;
-            }
-            if (!QFile::setPermissions(absPath, fi.permissions)){
-                continue;
-            }
-        }
-        else if (fi.isFile)
-        {
-            QFile file(absPath);
-            if( file.open(QFile::WriteOnly) )
-            {
-                file.write(unzip.fileData(fi.filePath), unzip.fileData(fi.filePath).size());
-                file.setPermissions(fi.permissions);
-                file.close();
-            }
-        }
-        qApp->processEvents(QEventLoop::AllEvents);
-    }
-    unzip.close();
-
-    addClockToList();
-}
-#endif
-
-void MainWindow::uninstall_clock()
-{
-    if(currentlyUninstallingWallpaperClock_ || ui->clocksTableWidget->rowCount()==0 ){
-        return;
-    }
-
-    if(gv.wallpaperClocksRunning)
-    {
-        return;
-    }
-
-    currentlyUninstallingWallpaperClock_=true;
-
-    if(!QDir(gv.defaultWallpaperClock).removeRecursively()){
-        globalParser_->error("Could not delete wallpaper clock, check folder's and subfolders' permissions.");
-    }
-
-    if(ui->clocksTableWidget->rowCount()==1){
-        ui->activate_clock->setEnabled(false);
-        gv.defaultWallpaperClock="None";
-        settings->setValue("default_wallpaper_clock", gv.defaultWallpaperClock);
-        settings->sync();
-        if(gv.previewImagesOnScreen){
-            changeTextOfScreenLabelTo(tr("Preview not available"));
-        }
-    }
-
-    ui->clocksTableWidget->removeRow(ui->clocksTableWidget->currentRow());
-
-    currentlyUninstallingWallpaperClock_=false;
-}
-
-void MainWindow::on_clocksTableWidget_customContextMenuRequested()
-{
-    if(ui->clocksTableWidget->selectedRanges().count() == 0){
-        return;
-    }
-    clockwidgetMenu_ = new QMenu(this);
-    clockwidgetMenu_->addAction(tr("Uninstall"), this, SLOT(uninstall_clock()));
-    clockwidgetMenu_->actions().at(0)->setIcon(QIcon::fromTheme("list-remove", QIcon(":/images/list-remove.png")));
-    if(gv.wallpaperClocksRunning){
-        clockwidgetMenu_->actions().at(0)->setEnabled(false);
-    }
-    clockwidgetMenu_->popup(MENU_POPUP_POS);
-}
-
-void MainWindow::clockRadioButton_check_state_changed()
-{
-    int rowCount=ui->clocksTableWidget->rowCount();
-    for(int i=0; i<rowCount; i++)
-    {
-        QWidget* w = ui->clocksTableWidget->cellWidget(i, 0 );
-        if( w )
-        {
-            QRadioButton* radioButton = w->findChild<QRadioButton*>();
-            if( radioButton && radioButton->isChecked())
-            {
-                ui->clocksTableWidget->selectRow(i);
-                break;
-            }
-        }
-    }
-}
-
-void MainWindow::on_clocksTableWidget_currentCellChanged(int currentRow, int currentColumn, int previousRow, int previousColumn)
-{
-    Q_UNUSED(currentColumn);
-    Q_UNUSED(previousColumn);
-
-    if(currentRow==previousRow || (ui->clocksTableWidget->rowCount()==1 && currentlyUninstallingWallpaperClock_)){
-        return;
-    }
-
-    gv.defaultWallpaperClock=ui->clocksTableWidget->item(currentRow,2)->data(32).toString();
-    settings->setValue("default_wallpaper_clock", gv.defaultWallpaperClock);
-
-    if(gv.wallpaperClocksRunning){
-        globalParser_->readClockIni();
-        QString currentWallpaperClock = globalParser_->wallpaperClockNow(gv.defaultWallpaperClock, ui->minutes_checkBox->isChecked(), ui->hour_checkBox->isChecked(), ui->am_checkBox->isChecked(),
-                                  ui->day_week_checkBox->isChecked(), ui->day_month_checkBox->isChecked(), ui->month_checkBox->isChecked());
-        WallpaperManager::setBackground(currentWallpaperClock, true, false, 4);
-        if(gv.setAverageColor){
-            setButtonColor();
-        }
-    }
-
-    QWidget* w = ui->clocksTableWidget->cellWidget(currentRow, 0 );
-    if( w )
-    {
-        QRadioButton* radioButton = w->findChild<QRadioButton*>();
-        if( radioButton )
-        {
-            radioButton->setChecked(true);
-        }
-    }
-
-    //just installed first wallpaper clock.. Selection has not yet been applied, so select first row in order to preview
-    if(ui->clocksTableWidget->rowCount()==1 && ui->clocksTableWidget->selectedItems().count()==0){
-        ui->clocksTableWidget->selectRow(0);
-    }
-
-    if(ui->clocksTableWidget->rowCount()==0 || ui->clocksTableWidget->selectedItems().count()==0)
-    {
-        if(gv.previewImagesOnScreen){
-            hideScreenLabel();
-        }
-    }
-    else
-    {
-        if(gv.previewImagesOnScreen){
-            imageTransition(true);
-        }
-    }
-}
-
-void MainWindow::on_activate_clock_clicked()
-{
-    stopEverythingThatsRunning(4);
-    if(!loadedPages_[3]){
-        loadWallpaperClocksPage();
-    }
-    if(!ui->activate_clock->isEnabled()){
-        globalParser_->desktopNotify(tr("No wallpaper clocks have been installed."), false, "info");
-        globalParser_->error("No wallpaper clocks have been installed.");
-        return;
-    }
-
-    on_page_3_clock_clicked();
-
-    if(ui->minutes_checkBox->isChecked() || ui->hour_checkBox->isChecked() || (ui->am_checkBox->isChecked() && gv.amPmEnabled) ||
-            ui->day_week_checkBox->isChecked() || ui->day_month_checkBox->isChecked() || ui->month_checkBox->isChecked())
-    {
-        globalParser_->readClockIni();
-        QString currentWallpaperClock = globalParser_->wallpaperClockNow(gv.defaultWallpaperClock, ui->minutes_checkBox->isChecked(), ui->hour_checkBox->isChecked(), ui->am_checkBox->isChecked(),
-                                                                  ui->day_week_checkBox->isChecked(), ui->day_month_checkBox->isChecked(), ui->month_checkBox->isChecked());
-        WallpaperManager::setBackground(currentWallpaperClock, true, false, 4);
-        if(gv.setAverageColor){
-            setAverageColor(currentWallpaperClock);
-        }
-
-        ui->activate_clock->setEnabled(false);
-        ui->deactivate_clock->setEnabled(true);
-
-        gv.wallpaperClocksRunning=true;
-        globalParser_->updateStartup();
-#ifdef Q_OS_UNIX
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
-            dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, true);
-        }
-#endif //#ifdef Q_OS_UNIX
-        Q_EMIT signalRecreateTray();
-
-        calculateSecondsLeftForWallClocks();
-
-        totalSeconds_=secondsLeft_;
-        globalParser_->resetSleepProtection(secondsLeft_);
-        startUpdateSeconds();
-        setProgressbarsValue(100);
-        animateProgressbarOpacity(1);
-    }
-    else
-    {
-        if (QMessageBox::question(this,tr("Wallpaper Clock"), tr("You haven't selected any of the options (day of week etc...), thus the wallpaper clock will not be activated. You can use the wallpaper of the selecte wallpaper clock as a background, instead.")) == QMessageBox::Yes)
-        {
-            QString pic=gv.defaultWallpaperClock+"/bg.jpg";
-            WallpaperManager::setBackground(pic, true, true, 4);
-            if(gv.setAverageColor){
-                setButtonColor();
-            }
-        }
-    }
-}
-
-void MainWindow::on_deactivate_clock_clicked()
-{
-    if(!ui->deactivate_clock->isEnabled()){
-        return;
-    }
-
-    secondsLeft_=0;
-    gv.wallpaperClocksRunning=false;
-    globalParser_->updateStartup();
-    if(updateSecondsTimer_->isActive()){
-        updateSecondsTimer_->stop();
-    }
-    animateProgressbarOpacity(0);
-    ui->deactivate_clock->setEnabled(false);
-    ui->activate_clock->setEnabled(true);
-    stoppedBecauseOnBattery_=false;
-
-#ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome){
-        dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
-    }
-#endif //#ifdef Q_OS_UNIX
-    Q_EMIT signalUncheckRunningFeatureOnTray();
-}
-
-void MainWindow::calculateSecondsLeftForWallClocks(){
-    QTime timeNow = QTime::currentTime();
-
-    double secondsLeftForNextMinute=0;
-    if(timeNow.minute()==59 && timeNow.hour()!=23){
-        secondsLeftForNextMinute=timeNow.msecsTo(QTime(timeNow.hour()+1,0,1));
-    }
-    else if (timeNow.minute()==59 && timeNow.hour()==23){
-        secondsLeftForNextMinute=timeNow.msecsTo(QTime(23,59,59))+2;
-    }
-    else{
-        secondsLeftForNextMinute=timeNow.msecsTo(QTime(timeNow.hour(),timeNow.minute()+1,1));
-    }
-
-    secondsLeftForNextMinute-=500;
-
-    secondsLeftForNextMinute/=1000;
-
-    secondsLeftForNextMinute=qRound(secondsLeftForNextMinute);
-
-    if(ui->minutes_checkBox->isChecked())
-    {
-        secondsLeft_=secondsLeftForNextMinute;
-    }
-    else if(ui->hour_checkBox->isChecked())
-    {
-        secondsLeft_=(((QString::number(timeNow.minute()/gv.refreshhourinterval).toInt()+1)*gv.refreshhourinterval-timeNow.minute()-1)*60+secondsLeftForNextMinute);
-    }
-    else if(ui->am_checkBox->isChecked() && gv.amPmEnabled)
-    {
-        float secondsLeftForAmPm=0;
-        if (timeNow.hour()>=12){
-            secondsLeftForAmPm=timeNow.secsTo(QTime(23,59,59))+2;
-        }
-        else
-        {
-            secondsLeftForAmPm=timeNow.secsTo(QTime(12,0,1));
-        }
-        secondsLeft_=secondsLeftForAmPm;
-    }
-    else if(ui->day_week_checkBox->isChecked() || ui->day_month_checkBox->isChecked())
-    {
-        float seconds_left_for_next_day=timeNow.secsTo(QTime(23,59,59))+2;
-        secondsLeft_=seconds_left_for_next_day;
-    }
-    else if(ui->month_checkBox->isChecked())
-    {
-        float seconds_left_for_next_day=timeNow.secsTo(QTime(23,59,59))+2;
-        secondsLeft_=seconds_left_for_next_day;
-    }
-}
-
-QImage MainWindow::wallpaperClocksPreview()
-{
-    const QString wallClockPath=gv.defaultWallpaperClock;
-    bool minuteCheck=ui->minutes_checkBox->isChecked();
-    bool hourCheck=ui->hour_checkBox->isChecked();
-    bool amPmCheck=ui->am_checkBox->isChecked();
-    bool dayWeekCheck=ui->day_week_checkBox->isChecked();
-    bool dayMonthCheck=ui->day_month_checkBox->isChecked();
-    bool monthCheck=ui->month_checkBox->isChecked();
-
-    short hour_inte=0;
-    short am_pm_en=0;
-    short images_of_hour=0;
-
-    //reading clock.ini of wallpaper clock in order to get the gv.refreshhourinterval,if there are images for am or pm and the total of hour images
-    QFile file(wallClockPath+"/clock.ini");
-    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
-        globalParser_->error("I could not open the clock.ini file ("+wallClockPath+"/clock.ini) for reading successfully!");
-        return QImage();
-    }
-
-    QTextStream in(&file);
-    while(!in.atEnd())
-    {
-        QString line=in.readLine();
-        if(line.startsWith("refreshhourinterval=")){
-            hour_inte=QString(line.right(line.count()-20)).toInt();
-        }
-        else if(line.startsWith("ampmenabled=")){
-            am_pm_en=QString(line.right(line.count()-12)).toInt();
-        }
-        else if(line.startsWith("ampmenabled=")){
-            images_of_hour=QString(line.right(line.count()-11)).toInt();
-        }
-    }
-    file.close();
-    if(hour_inte==0){
-        return QImage();
-    }
-    QDateTime datetime = QDateTime::currentDateTime();
-
-    //12h format is needed for the analog clocks
-    short hour_12h_format=0;
-    QString am_or_pm;
-    if (datetime.time().hour()>=12){
-        am_or_pm="pm";
-    }
-    else
-    {
-        am_or_pm="am";
-    }
-
-    if(images_of_hour==24 || datetime.time().hour()<12 ){
-        hour_12h_format=datetime.time().hour();
-    }
-    else if(images_of_hour!=24 && datetime.time().hour()>=12){
-        hour_12h_format=datetime.time().hour()-12;
-    }
-
-    QImage merged = QImage(wallClockPath+"/bg.jpg");
-
-    QPainter painter(&merged);
-    if(clocksPreviewWatcher_->isCanceled()){
-        return QImage();
-    }
-
-    if(monthCheck){
-        painter.drawPixmap(0, 0, QPixmap(wallClockPath+"/month"+QString::number(datetime.date().month())+".png"));
-    }
-    if(dayWeekCheck){
-        painter.drawPixmap(0, 0, QPixmap(wallClockPath+"/weekday"+QString::number(datetime.date().dayOfWeek())+".png"));
-    }
-    if(dayMonthCheck){
-        painter.drawPixmap(0, 0, QPixmap(wallClockPath+"/day"+QString::number(datetime.date().day())+".png"));
-    }
-    if(hourCheck){
-        painter.drawPixmap(0, 0, QPixmap(wallClockPath+"/hour"+QString::number(hour_12h_format*(60/hour_inte)+QString::number(datetime.time().minute()/hour_inte).toInt())+".png"));
-    }
-    if(minuteCheck){
-        painter.drawPixmap(0, 0, QPixmap(wallClockPath+"/minute"+QString::number(datetime.time().minute())+".png"));
-    }
-    if(am_pm_en && amPmCheck){
-        painter.drawPixmap(0, 0, QPixmap(wallClockPath+"/"+am_or_pm+".png"));
-    }
-
-    painter.end();
-
-    if(clocksPreviewWatcher_->isCanceled()){
-        return QImage();
-    }
-
-    return merged;
-}
-
-void MainWindow::clockCheckboxClickedWhileRunning()
-{
-    if(ui->minutes_checkBox->isChecked() || ui->hour_checkBox->isChecked() || (ui->am_checkBox->isChecked() && gv.amPmEnabled) || ui->day_week_checkBox->isChecked() || ui->day_month_checkBox->isChecked() || ui->month_checkBox->isChecked())
-    {
-        QString currentWallpaperClock = globalParser_->wallpaperClockNow(gv.defaultWallpaperClock, ui->minutes_checkBox->isChecked(), ui->hour_checkBox->isChecked(), ui->am_checkBox->isChecked(),
-                                                                  ui->day_week_checkBox->isChecked(), ui->day_month_checkBox->isChecked(), ui->month_checkBox->isChecked());
-        WallpaperManager::setBackground(currentWallpaperClock, true, false, 4);
-        if(gv.setAverageColor){
-            setAverageColor(currentWallpaperClock);
-        }
-
-        QTime time = QTime::currentTime();
-
-        float seconds_left_for_min=0;
-        if(time.minute()==59 && time.hour()!=23){
-            seconds_left_for_min=time.secsTo(QTime(time.hour()+1,0,1));
-        }
-        else if (time.minute()==59 && time.hour()==23){
-            seconds_left_for_min=time.secsTo(QTime(23,59,59))+2;
-        }
-        else
-        {
-            seconds_left_for_min=time.secsTo(QTime(time.hour(),time.minute()+1,1));
-        }
-
-        ui->activate_clock->setEnabled(false);
-        ui->deactivate_clock->setEnabled(true);
-
-        if(ui->minutes_checkBox->isChecked()){
-            secondsLeft_=seconds_left_for_min;
-        }
-        else if(ui->hour_checkBox->isChecked()){
-            secondsLeft_=(((QString::number(time.minute()/gv.refreshhourinterval).toInt()+1)*gv.refreshhourinterval-time.minute()-1)*60+seconds_left_for_min);
-        }
-        else if(ui->am_checkBox->isChecked() && gv.amPmEnabled)
-        {
-            float seconds_left_for_am_pm=0;
-            if (time.hour()>=12){
-                seconds_left_for_am_pm=time.secsTo(QTime(23,59,59))+2;
-            }
-            else{
-                seconds_left_for_am_pm=time.secsTo(QTime(12,0,1));
-            }
-            secondsLeft_=seconds_left_for_am_pm;
-        }
-        else if(ui->day_week_checkBox->isChecked() || ui->day_month_checkBox->isChecked() || ui->month_checkBox->isChecked())
-        {
-            float seconds_left_for_next_day=time.secsTo(QTime(23,59,59))+2;
-            secondsLeft_=seconds_left_for_next_day;
-        }
-
-        totalSeconds_=secondsLeft_;
-        startUpdateSeconds();
-        setProgressbarsValue(100);
-    }
-    else
-    {
-        QString currentWallpaperClock = globalParser_->wallpaperClockNow(gv.defaultWallpaperClock, ui->minutes_checkBox->isChecked(), ui->hour_checkBox->isChecked(), ui->am_checkBox->isChecked(),
-                                                                  ui->day_week_checkBox->isChecked(), ui->day_month_checkBox->isChecked(), ui->month_checkBox->isChecked());
-        WallpaperManager::setBackground(currentWallpaperClock, true, false, 4);
-        if(gv.setAverageColor){
-            setAverageColor(currentWallpaperClock);
-        }
-        on_deactivate_clock_clicked();
-    }
-}
-
-void MainWindow::on_wallpaper_clocks_source_linkActivated()
-{
-    globalParser_->openUrl("http://www.vladstudio.com/wallpaperclocks/browse.php");
-}
-
-void MainWindow::clockCheckboxClicked()
-{
-    imageTransition(true);
-
-    settings->setValue("month", ui->month_checkBox->isChecked());
-    settings->setValue("day_of_month", ui->day_month_checkBox->isChecked());
-    settings->setValue("day_of_week", ui->day_week_checkBox->isChecked());
-    settings->setValue("am_pm", ui->am_checkBox->isChecked());
-    settings->setValue("hour", ui->hour_checkBox->isChecked());
-    settings->setValue("minute", ui->minutes_checkBox->isChecked());
-    settings->sync();
-
-    if(gv.wallpaperClocksRunning)
-    {
-        if(wallpaperClockWait_->isActive()){
-            wallpaperClockWait_->stop();
-        }
-
-        wallpaperClockWait_->start(500);
-    }
-}
-
 //Live Website Code
 void MainWindow::on_activate_website_clicked()
 {   
     stopEverythingThatsRunning(5);
-    if(!loadedPages_[4]){
-        loadLiveWebsitePage();
-    }
+    loadLiveWebsitePage();
+
     if(websiteSnapshot_==NULL || !ui->activate_website->isEnabled() || !websiteConfiguredCorrectly()){
         return;
     }
@@ -4458,8 +3195,7 @@ void MainWindow::on_activate_website_clicked()
     gv.websiteWebpageToLoad=gv.onlineLinkForHistory=ui->website->text();
     gv.websiteInterval=ui->website_slider->value();
 
-    on_page_4_web_clicked();
-    ui->stackedWidget->setCurrentIndex(4);
+    page_button_clicked(4);
 
     ui->deactivate_website->setEnabled(true);
     ui->activate_website->setEnabled(false);
@@ -4482,11 +3218,11 @@ void MainWindow::on_activate_website_clicked()
     setProgressbarsValue(100);
     animateProgressbarOpacity(1);
 
-    prepareWebsiteSnapshot();
+    /*prepareWebsiteSnapshot();
     websiteSnapshot_->setCrop(ui->website_crop_checkbox->isChecked(), gv.websiteCropArea);
     disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageCreated(QImage*,short)));
     connect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageCreated(QImage*,short)));
-    startUpdateSeconds();
+    startUpdateSeconds();*/
 }
 
 void MainWindow::on_deactivate_website_clicked()
@@ -4513,12 +3249,12 @@ void MainWindow::on_deactivate_website_clicked()
     }
 #endif //#ifdef Q_OS_UNIX
     Q_EMIT signalUncheckRunningFeatureOnTray();
-    disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageCreated(QImage*,short)));
+    /*disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageCreated(QImage*,short)));
     ui->deactivate_website->setEnabled(false); ui->activate_website->setEnabled(true);
     ui->timeout_text_label->hide();
     ui->website_timeout_label->hide();
     processRequestStop();
-    websiteSnapshot_->stop();
+    websiteSnapshot_->stop();*/
 }
 
 void MainWindow::on_website_preview_clicked()
@@ -4565,10 +3301,10 @@ void MainWindow::liveWebsiteImageCreated(QImage *image, short errorCode){
         image->save(filename);
         delete image;
 
-        WallpaperManager::setBackground(filename, true, true, 5);
-        if(gv.setAverageColor){
+        wallpaperManager_->setBackground(filename, true, true, 5);
+        if(gv.setAverageColor)
             setButtonColor();
-        }
+
         QFile::remove(gv.wallchHomePath+LW_PREVIEW_IMAGE);
         QFile(filename).link(gv.wallchHomePath+LW_PREVIEW_IMAGE);
         updateScreenLabel();
@@ -4601,7 +3337,7 @@ void MainWindow::prepareWebsiteSnapshot(){
      * the cropping that it has to do (for compatibility
      * with the crop_image and website_preview dialogs)
      */
-    websiteSnapshot_->setParameters(QUrl(ui->website->text()), gv.screenWidth, gv.screenHeight);
+    /*websiteSnapshot_->setParameters(QUrl(ui->website->text()), gv.screenAvailableWidth, gv.screenAvailableHeight);
 
     websiteSnapshot_->setWaitAfterFinish(gv.websiteWaitAfterFinishSeconds);
     websiteSnapshot_->setJavascriptConfig(gv.websiteJavascriptEnabled, gv.websiteJavascriptCanReadClipboard);
@@ -4633,7 +3369,7 @@ void MainWindow::prepareWebsiteSnapshot(){
         websiteSnapshot_->disableAuthentication();
     }
 
-    websiteSnapshot_->setTimeout(WEBSITE_TIMEOUT);
+    websiteSnapshot_->setTimeout(WEBSITE_TIMEOUT);*/
 }
 
 void MainWindow::setWebsitePreviewImage(QImage *image){
@@ -4754,6 +3490,8 @@ void MainWindow::picturesLocationsChanged()
 //Pages code
 
 void MainWindow::loadWallpapersPage(){
+    if(loadedPages_[0])
+        return;
 
     if(wallpaperManager_==NULL){
         wallpaperManager_=new WallpaperManager();
@@ -4880,11 +3618,12 @@ void MainWindow::loadWallpapersPage(){
     connect(openCloseSearch_, SIGNAL(finished()), this, SLOT(openCloseSearchAnimationFinished()));
     openCloseSearch_->setDuration(GENERAL_ANIMATION_SPEED);
 
-    loadedPages_[0]=true;
+    startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
 }
 
 void MainWindow::loadLePage(){
-    loadedPages_[1] = true;
+    if(loadedPages_[1])
+        return;
 
     gv.leEnableTag = settings->value("le_enable_tag", false).toBool();
 
@@ -4893,7 +3632,8 @@ void MainWindow::loadLePage(){
 }
 
 void MainWindow::loadPotdPage(){
-    loadedPages_[2] = true;
+    if(loadedPages_[2])
+        return;
 
     gv.potdIncludeDescription = settings->value("potd_include_description", true).toBool();
     gv.leEnableTag = settings->value("le_enable_tag", false).toBool();
@@ -4916,53 +3656,14 @@ void MainWindow::loadPotdPage(){
 
 void MainWindow::loadWallpaperClocksPage()
 {
-    loadedPages_[3]=true;
-
-    ui->install_clock->setIcon(QIcon::fromTheme("list-add", QIcon(":/images/list-add.png")));
-
-    HideGrayLinesDelegate *delegate = new HideGrayLinesDelegate(ui->clocksTableWidget);
-    ui->clocksTableWidget->setItemDelegate(delegate);
-
-    ui->wallpaper_clocks_source->setText("<span style=\"font-style:italic;\">"+tr("Download wallpaper clocks from")+" </span><a href=\"http://www.vladstudio.com/wallpaperclocks/browse.php\"><span style=\"font-style:italic; text-decoration: underline; color: #ff5500;\">VladStudio.com</span></a>");
-    ui->clocksTableWidget->setColumnWidth(0, 20);
-
-    //add to the listwidget the wallpaper clocks that exist in ~/.wallch/Wallpaper_clocks (AppData/Local/Mellori Studio/Wallch/Wallpaper_clocks for Windows)
-#ifdef Q_OS_UNIX
-    unzipArchive_=NULL;
-#endif
-    Q_FOREACH(currentWallpaperClockPath_, globalParser_->listFolders(gv.wallchHomePath+"Wallpaper_clocks", true, false))
-    {
-        addClockToList();
-    }
-
-    short clocksCount=ui->clocksTableWidget->rowCount();
-
-    for(short i=0;i<clocksCount;i++){
-        if(ui->clocksTableWidget->item(i,2)->data(32)==gv.defaultWallpaperClock){
-            ui->clocksTableWidget->selectRow(i);
-            ui->clocksTableWidget->setFocus();
-            break;
-        }
-    }
-
-    ui->activate_clock->setEnabled(!gv.wallpaperClocksRunning && clocksCount!=0);
-
-    if(!clocksCount)
-    {
-        gv.defaultWallpaperClock="None";
-        settings->setValue("default_wallpaper_clock", gv.defaultWallpaperClock);
-        settings->sync();
-    }
-
-    ui->month_checkBox->setChecked(settings->value("month",true).toBool());
-    ui->day_month_checkBox->setChecked(settings->value("day_of_month",true).toBool());
-    ui->day_week_checkBox->setChecked(settings->value("day_of_week",true).toBool());
-    ui->am_checkBox->setChecked(settings->value("am_pm",true).toBool());
-    ui->hour_checkBox->setChecked(settings->value("hour",true).toBool());
-    ui->minutes_checkBox->setChecked(settings->value("minute",true).toBool());
+    if(loadedPages_[3])
+        return;
 }
 
 void MainWindow::loadLiveWebsitePage(){
+    if(loadedPages_[4])
+        return;
+
     //add login details information
     openCloseAddLogin_ = new QPropertyAnimation(ui->live_website_login_widget, "maximumHeight");
     connect(openCloseAddLogin_, SIGNAL(finished()), this, SLOT(openCloseAddLoginAnimationFinished()));
@@ -4970,7 +3671,7 @@ void MainWindow::loadLiveWebsitePage(){
     gv.websiteWebpageToLoad=settings->value("website", "http://google.com").toString();
     gv.websiteInterval=settings->value("website_interval", 6).toInt();
     gv.websiteCropEnabled=settings->value("website_crop", false).toBool();
-    gv.websiteCropArea=settings->value("website_crop_area", QRect(0, 0, gv.screenWidth, gv.screenHeight)).toRect();
+    gv.websiteCropArea=settings->value("website_crop_area", QRect(0, 0, gv.screenAvailableWidth, gv.screenAvailableHeight)).toRect();
     gv.websiteLoginEnabled=settings->value("website_login", false).toBool();
     gv.websiteLoginUsername=settings->value("website_username", "").toString();
     gv.websiteLoginPasswd=settings->value("website_password", "").toString();
@@ -5022,16 +3723,12 @@ void MainWindow::loadLiveWebsitePage(){
     if(websiteSnapshot_==NULL){
         websiteSnapshot_ = new WebsiteSnapshot();
     }
-
-    loadedPages_[4]=true;
 }
 
 void MainWindow::loadMelloriPage()
 {
-    loadedPages_[5]=true;
-
-    ui->melloristudio_label->setText(tr("Wallch is developed by")+" <span style=\" font-weight:600; font-style:bold;\">Mellori Studio</span>.");
-    ui->melloristudio_link_label->setText(tr("Learn more about our projects at:")+" <a href=\"http://melloristudio.com\"><span style=\" text-decoration: underline; color:#ff5500;\">melloristudio.com</span></a>");
+    if(loadedPages_[5])
+        return;
 }
 
 void MainWindow::openCloseAddLoginAnimationFinished(){
@@ -5078,196 +3775,77 @@ void MainWindow::on_add_login_details_clicked(bool checked)
     openCloseAddLogin_->start();
 }
 
-void MainWindow::on_page_0_wallpapers_clicked()
-{
-    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==0){
+void MainWindow::page_button_clicked(int btn){
+    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==btn)
         return;
-    }
 
-    if(!loadedPages_[0]){
-
+    switch(btn){
+    case 0:
+    {
         loadWallpapersPage();
+        launchTimerToUpdateIcons();
+        on_timerSlider_valueChanged(ui->timerSlider->value());
 
-        if(wallpaperManager_->wallpapersCount()<=1){
-            startButtonsSetEnabled(false);
-        }
-        else
-        {
-            startButtonsSetEnabled(true);
-        }
+        ui->sep1->raise();
+        break;
     }
-    launchTimerToUpdateIcons();
-    on_timerSlider_valueChanged(ui->timerSlider->value());
-
-    ui->page_0_wallpapers->setChecked(true);//in case it is called via the shortcut
-    ui->stackedWidget->setCurrentIndex(0);
-    ui->page_0_wallpapers->raise();
-    ui->sep1->raise();
-    if(gv.previewImagesOnScreen){
-        updateScreenLabel();
-    }
-}
-
-void MainWindow::on_page_1_earth_clicked()
-{
-    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==1){
-        return;
-    }
-
-    if(!loadedPages_[1]){
+    case 1:
+    {
         loadLePage();
+        ui->sep1->raise();
+        ui->sep2->raise();
+        break;
     }
-
-    ui->page_1_earth->setChecked(true);
-    ui->stackedWidget->setCurrentIndex(1);
-    ui->page_1_earth->raise();
-    ui->sep1->raise();
-    ui->sep2->raise();
-
-    if(gv.previewImagesOnScreen){
-        QTimer::singleShot(10, this, SLOT(updateScreenLabel()));
-    }
-}
-
-void MainWindow::on_page_2_potd_clicked()
-{
-    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==2){
-        return;
-    }
-
-    if(!loadedPages_[2]){
+    case 2:
+    {
         loadPotdPage();
+        ui->sep2->raise();
+        ui->sep3->raise();
+        break;
     }
-
-    ui->page_2_potd->setChecked(true);
-    ui->stackedWidget->setCurrentIndex(2);
-    ui->page_2_potd->raise();
-    ui->sep2->raise();
-    ui->sep3->raise();
-
-    if(gv.previewImagesOnScreen){
-        QTimer::singleShot(10, this, SLOT(updateScreenLabel()));
-    }
-}
-
-void MainWindow::on_page_3_clock_clicked()
-{
-    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==3){
-        return;
-    }
-
-    if(!loadedPages_[3]){
+    case 3:
+    {
         loadWallpaperClocksPage();
+        ui->sep3->raise();
+        ui->sep4->raise();
+        break;
     }
-
-    ui->page_3_clock->setChecked(true);
-    ui->stackedWidget->setCurrentIndex(3);
-    ui->page_3_clock->raise();
-    ui->sep3->raise();
-    ui->sep4->raise();
-
-    if(gv.previewImagesOnScreen){
-        QTimer::singleShot(10, this, SLOT(updateScreenLabel()));
-    }
-}
-
-void MainWindow::on_page_4_web_clicked()
-{
-    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==4){
-        return;
-    }
-
-    if(!loadedPages_[4]){
+    case 4:
+    {
         loadLiveWebsitePage();
+        ui->sep4->raise();
+        ui->sep5->raise();
+        break;
     }
-
-    ui->page_4_web->setChecked(true);
-    ui->stackedWidget->setCurrentIndex(4);
-    ui->page_4_web->raise();
-    ui->sep4->raise();
-    ui->sep5->raise();
-
-    if(gv.previewImagesOnScreen){
-        QTimer::singleShot(10, this, SLOT(updateScreenLabel()));
-    }
-}
-
-void MainWindow::on_page_5_other_clicked()
-{
-    if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==6){
-        return;
-    }
-
-    if(!loadedPages_[5]){
+    case 5:
+    {
         loadMelloriPage();
+        ui->sep5->raise();
+        ui->sep6->raise();
+        break;
+    }
     }
 
-    ui->page_5_other->setChecked(true);
-    ui->stackedWidget->setCurrentIndex(5);
-    ui->page_5_other->raise();
-    ui->sep5->raise();
-    ui->sep6->raise();
-    if(gv.previewImagesOnScreen){
-        updateScreenLabel();
-    }
+    btn_group->button(btn)->setChecked(true);
+    btn_group->button(btn)->raise();
+
+    ui->stackedWidget->setCurrentIndex(btn);
+    loadedPages_[btn]=true;
+    QTimer::singleShot(10, this, SLOT(updateScreenLabel()));
 }
 
 void MainWindow::previousPage(){
-    short currentPage = ui->stackedWidget->currentIndex()-1;
-    if(currentPage<0){
-        currentPage=6;
-    }
-    switch (currentPage){
-    case 0:
-        on_page_0_wallpapers_clicked();
-        break;
-    case 1:
-        on_page_1_earth_clicked();
-        break;
-    case 2:
-        on_page_2_potd_clicked();
-        break;
-    case 3:
-        on_page_3_clock_clicked();
-        break;
-    case 4:
-        on_page_4_web_clicked();
-        break;
-    case 5:
-        on_page_5_other_clicked();
-        break;
-    default:
-        on_page_0_wallpapers_clicked();
-    }
+    if(ui->stackedWidget->currentIndex()==0)
+        page_button_clicked(5);
+    else
+        page_button_clicked(ui->stackedWidget->currentIndex()-1);
 }
 
 void MainWindow::nextPage(){
-    short currentPage = ui->stackedWidget->currentIndex()+1;
-    if(currentPage>7){
-        currentPage=0;
-    }
-    switch (currentPage){
-    case 0:
-        on_page_0_wallpapers_clicked();
-        break;
-    case 1:
-        on_page_1_earth_clicked();
-        break;
-    case 2:
-        on_page_2_potd_clicked();
-        break;
-    case 3:
-        on_page_3_clock_clicked();
-        break;
-    case 4:
-        on_page_4_web_clicked();
-        break;
-    case 5:
-        on_page_5_other_clicked();
-        break;
-    default:
-        on_page_0_wallpapers_clicked();
-    }
+    if(ui->stackedWidget->currentIndex()==5)
+        page_button_clicked(0);
+    else
+        page_button_clicked(ui->stackedWidget->currentIndex()+1);
 }
 
 //Actions code
@@ -5346,11 +3924,6 @@ void MainWindow::on_actionDonate_triggered()
     globalParser_->openUrl(DONATE_URL);
 }
 
-void MainWindow::on_actionDownload_triggered()
-{
-    globalParser_->openUrl("http://melloristudio.com/wallch/1000-HD-Wallpapers");
-}
-
 void MainWindow::on_actionReport_A_Bug_triggered()
 {
     globalParser_->openUrl("https://bugs.launchpad.net/wallpaper-changer/+filebug");
@@ -5370,6 +3943,17 @@ void MainWindow::on_actionWhat_is_my_screen_resolution_triggered()
     msgBox.setIconPixmap(QIcon(":/images/monitor.png").pixmap(QSize(100,100)));
     msgBox.setWindowIcon(QIcon(":/images/wallch.png"));
     msgBox.exec();
+}
+
+void MainWindow::getScreenResolution (QRect geometry){
+    gv.screenWidth = geometry.width();
+    gv.screenHeight = geometry.height();
+}
+
+void MainWindow::getScreenAvailableResolution (QRect geometry){
+    availableGeometry_ = geometry;
+    gv.screenAvailableWidth = geometry.width();
+    gv.screenAvailableHeight = geometry.height();
 }
 
 //Dialogs Code
@@ -5399,7 +3983,7 @@ void MainWindow::on_actionHistory_triggered()
         return;
     }
     historyShown_=true;
-    history_ = new History (this);
+    history_ = new History (wallpaperManager_, this);
     history_->setModal(true);
     history_->setAttribute(Qt::WA_DeleteOnClose);
     connect(history_, SIGNAL(destroyed()), this, SLOT(historyDestroyed()));
@@ -5447,7 +4031,7 @@ void MainWindow::on_action_Preferences_triggered()
     connect(preferences_, SIGNAL(researchFolders()), this, SLOT(researchFolders()));
     connect(preferences_, SIGNAL(previewChanged()), this, SLOT(wait_preview_changed()));
     connect(preferences_, SIGNAL(intervalTypeChanged()), this, SLOT(intervalTypeChanged()));
-    connect(preferences_, SIGNAL(changeThemeTo(QString)), this, SLOT(changeCurrentThemeTo(const QString&)));
+    connect(preferences_, SIGNAL(changeTheme()), this, SLOT(changeCurrentTheme()));
     connect(preferences_, SIGNAL(maxCacheChanged(qint64)), cacheManager_, SLOT(setMaxCache(qint64)));
 #ifdef Q_OS_UNIX
     connect(preferences_, SIGNAL(unityProgressbarChanged(bool)), this, SLOT(unityProgressbarSetEnabled(bool)));
@@ -5467,15 +4051,15 @@ void MainWindow::on_set_desktop_color_clicked()
         return;
     }
     colorsGradientsShown_=true;
-    colorsGradients_ = new ColorsGradients(this);
+    colorsGradients_ = new ColorsGradients(wallpaperManager_, this);
 
     colorsGradients_->setModal(true);
     colorsGradients_->setAttribute(Qt::WA_DeleteOnClose);
     colorsGradients_->setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowCloseButtonHint);
     connect(colorsGradients_, SIGNAL(destroyed()), this, SLOT(colorsGradientsDestroyed()));
     connect(colorsGradients_, SIGNAL(updateTv()), this, SLOT(updateScreenLabel()));
-    connect(colorsGradients_, SIGNAL(updateDesktopColor(QString)), this, SLOT(setButtonColor(const QString&)));
-    connect(colorsGradients_, SIGNAL(updateColorButtonSignal(QImage)), this, SLOT(updateColorButton(QImage)));
+    connect(colorsGradients_, SIGNAL(updateDesktopColor()), this, SLOT(setButtonColor()));
+    connect(colorsGradients_, SIGNAL(updateImageStyle()), this, SLOT(updateImageStyleCombo()));
     colorsGradients_->show();
     colorsGradients_->activateWindow();
 }
@@ -5521,7 +4105,7 @@ void MainWindow::showProperties()
     else
     {
         propertiesShown_=true;
-        properties_ = new Properties(currentImage, true, ui->wallpapersList->currentRow(), this);
+        properties_ = new Properties(currentImage, true, ui->wallpapersList->currentRow(), wallpaperManager_, this);
 
         properties_->setModal(true);
         properties_->setAttribute(Qt::WA_DeleteOnClose);
@@ -5540,29 +4124,23 @@ void MainWindow::propertiesDestroyed(){
 }
 
 void MainWindow::sendPropertiesNext(int current){
-    int listCount=ui->wallpapersList->count();
+    int listCount=wallpaperManager_->wallpapersCount();
     if(current>=(listCount-1)){
-        if(listCount){
+        if(listCount)
             Q_EMIT givePropertiesRequest(getPathOfListItem(0), 0);
-        }
     }
     else
-    {
         Q_EMIT givePropertiesRequest(getPathOfListItem(current+1), current+1);
-    }
 }
 
 void MainWindow::sendPropertiesPrevious(int current){
-    int listCount = ui->wallpapersList->count();
+    int listCount = wallpaperManager_->wallpapersCount();
     if(current == 0){
-        if(listCount){
+        if(listCount)
             Q_EMIT givePropertiesRequest(getPathOfListItem(listCount-1), listCount-1);
-        }
     }
     else
-    {
         Q_EMIT givePropertiesRequest(getPathOfListItem(current-1), current-1);
-    }
 }
 
 void MainWindow::on_include_description_checkBox_clicked(bool checked)
@@ -5610,12 +4188,10 @@ void MainWindow::on_stackedWidget_currentChanged(int page)
         ui->help_label->setText("A \"live\" image of the sunlight and the clouds at earth, updating every ½ hour");
     else if(page==2)
         ui->help_label->setText("Outstanding photos that are selected daily from Wikipedia");
-    else if(page==3)
-        ui->help_label->setText("Wallpapers choosen from VladStudio that show the time and date");
     else if(page==4)
         ui->help_label->setText("Screenshot of a website");
     else
-        ui->help_label->setText("About Us");
+        ui->help_label->setText("Empty Page");
 
     settings->setValue("current_page" , page);
 }
@@ -5637,26 +4213,6 @@ void MainWindow::update_website_settings()
     settings->setValue("website_final_webpage", ui->final_webpage->text());
     settings->setValue("website_redirect", ui->redirect_checkBox->isChecked());
     settings->sync();
-}
-
-void MainWindow::on_donateButton_clicked()
-{
-    globalParser_->openUrl(DONATE_URL);
-}
-
-void MainWindow::on_melloristudio_link_label_linkActivated(const QString &link)
-{
-    globalParser_->openUrl(link);
-}
-
-void MainWindow::on_donateButton_pressed()
-{
-    ui->donateButton->setIcon(QIcon(":/images/donate_pressed.png"));
-}
-
-void MainWindow::on_donateButton_released()
-{
-    ui->donateButton->setIcon(QIcon(":/images/donate.png"));
 }
 
 // Animations in case user changes preview screen to show/hide
@@ -5764,9 +4320,9 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, long* r
        {
            //Just to note, when we plug the cable, Windows for some reason sends discharging,
            //and after 1 second sends charging so just ignore first discharging message
-           bool array[5] = {gv.wallpapersRunning, gv.liveEarthRunning, gv.potdRunning, gv.wallpaperClocksRunning, gv.liveWebsiteRunning};
+           bool array[4] = {gv.wallpapersRunning, gv.liveEarthRunning, gv.potdRunning, gv.liveWebsiteRunning};
 
-           for(int i=0;i<5;i++){
+           for(int i=0;i<4;i++){
                if(array[i]){
                    previouslyRunningFeature_=i;
                    pauseEverythingThatsRunning();
@@ -5789,9 +4345,6 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, long* r
                    break;
                case 2:
                    on_activate_potd_clicked();
-                   break;
-               case 3:
-                   on_activate_clock_clicked();
                    break;
                case 4:
                    on_activate_website_clicked();

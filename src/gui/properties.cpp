@@ -28,7 +28,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <QDir>
 #include <QShortcut>
-#include <QDesktopWidget>
 #include <QImageReader>
 #include <QImage>
 #include <QtConcurrent/QtConcurrentRun>
@@ -36,11 +35,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define BYTES_PER_KiB 1024.0
 #define BYTES_PER_MiB 1048576.0
 
-Properties::Properties(const QString &image, bool showNextPrevious, int currentIndex, QWidget *parent) :
+Properties::Properties(const QString &image, bool showNextPrevious, int currentIndex, WallpaperManager *wallpaperManager, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::properties)
 {
     ui->setupUi(this);
+
+    wallpaperManager_ = wallpaperManager;
 
     setWindowFlags(Qt::Dialog | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint);
 
@@ -90,14 +91,14 @@ QImage Properties::resizePreview(){
         currentImageWidth_ = reader.size().width();
         currentImageHeight_ = reader.size().height();
 
-        if(currentImageWidth_>(gv.screenWidth) || currentImageHeight_>(gv.screenHeight)){
+        if(currentImageWidth_>(gv.screenAvailableWidth) || currentImageHeight_>(gv.screenAvailableHeight)){
             float scaleFactor;
-            if((currentImageWidth_-(gv.screenWidth)) > (currentImageHeight_-(gv.screenHeight))){
-                scaleFactor = (gv.screenWidth*1.0)/currentImageWidth_;
+            if((currentImageWidth_-(gv.screenAvailableWidth)) > (currentImageHeight_-(gv.screenAvailableHeight))){
+                scaleFactor = (gv.screenAvailableWidth*1.0)/currentImageWidth_;
             }
             else
             {
-                scaleFactor = (gv.screenHeight*1.0)/currentImageHeight_;
+                scaleFactor = (gv.screenAvailableHeight*1.0)/currentImageHeight_;
             }
             reader.setScaledSize(QSize(reader.size())*scaleFactor);
         }
@@ -129,46 +130,43 @@ void Properties::on_close_clicked()
 
 void Properties::resizeEvent(QResizeEvent *)
 {
-    if(justOpened_){
-        justOpened_ = false;
-        //Moving the window to the center of screen, now that the labels have been set
-        //(large labels, like path, may resize the window, thus now is the correct time to center it)
-        this->move(QApplication::desktop()->availableGeometry().center() - this->rect().center());
-    }
-    if(!ui->propertiesImage->pixmap()){
+    if(ui->propertiesImage->pixmap(Qt::ReturnByValue).isNull())
         return;
-    }
+
     QSize scaledSize = currentImage_.size();
     scaledSize.scale(ui->propertiesImage->size(), Qt::KeepAspectRatio);
-    if (scaledSize != ui->propertiesImage->pixmap()->size()){
+    if (scaledSize != ui->propertiesImage->pixmap(Qt::ReturnByValue).size())
         updatePropertiesImageLabel();
-    }
 }
 
 void Properties::updatePropertiesImageLabel(){
 
-    ui->propertiesImage->setPixmap(Global::roundedCorners(currentImage_.scaled(ui->propertiesImage->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation), 6));
+    ui->propertiesImage->setPixmap(Global::roundedCorners(currentImage_.scaled(ui->propertiesImage->size(),
+                                                                               Qt::KeepAspectRatio, Qt::SmoothTransformation), 6));
 }
 
 void Properties::updatePropertiesImageLabel(QImage image)
 {
     currentImage_ = image;
-    ui->propertiesImage->setPixmap(Global::roundedCorners(image.scaled(ui->propertiesImage->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation), 6));
+    ui->propertiesImage->setPixmap(Global::roundedCorners(image.scaled(ui->propertiesImage->size(),
+                                                                       Qt::KeepAspectRatio, Qt::SmoothTransformation), 6));
 }
 
 void Properties::updateEntries(const QString &filename, int currentIndex){
-    ui->propertiesImage->clear();
-    ui->propertiesImage->setText(tr("Loading..."));
     currentFilename_ = filename;
     currentIndex_ = currentIndex;
-    QFileInfo imageInfo(currentFilename_);
 
-    ui->nameLineEdit->setText(Global::basenameOf(currentFilename_));
+    ui->propertiesImage->clear();
+    ui->propertiesImage->setText(tr("Loading..."));
+
+    QFileInfo imageInfo(currentFilename_);
     ui->type_label->setText(imageInfo.suffix().toUpper());
-    ui->size_label->setText(sizeToNiceString(QFile(currentFilename_).size()));
-    ui->location_label->setText(Global::dirnameOf(currentFilename_));
     ui->created_label->setText(imageInfo.created().toString("ddd, MMM d yyyy hh:mm:ss"));
     ui->modified_label->setText(imageInfo.lastModified().toString("ddd, MMM d yyyy hh:mm:ss"));
+
+    ui->nameLineEdit->setText(Global::basenameOf(currentFilename_));
+    ui->size_label->setText(sizeToNiceString(QFile(currentFilename_).size()));
+    ui->location_label->setText(Global::dirnameOf(currentFilename_));
     ui->dimensionsLabel->setText("-");
 
     propertiesReadyWatcher_->setFuture(QtConcurrent::run(this, &Properties::resizePreview));
@@ -220,7 +218,7 @@ void Properties::uncheckButtons(){
 
 void Properties::on_set_as_background_clicked()
 {
-    WallpaperManager::setBackground(currentFilename_, true, true, 1);
+    wallpaperManager_->setBackground(currentFilename_, true, true, 1);
     if(gv.setAverageColor){
         Q_EMIT averageColorChanged();
     }

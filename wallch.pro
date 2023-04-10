@@ -7,7 +7,7 @@ INCLUDEPATH += .
 
 CONFIG += c++11
 
-QT += network widgets webkitwidgets
+QT += network widgets
 
 win32 {
     QT += gui-private
@@ -19,7 +19,7 @@ win32 {
     QMAKE_TARGET_COPYRIGHT = "GNU General Public License"
 } else {
     CONFIG += link_pkgconfig
-    PKGCONFIG += unity libnotify libexif gtk+-2.0
+    PKGCONFIG += unity libnotify libexif gtk+-3.0
 }
 
 isEmpty(PREFIX) {

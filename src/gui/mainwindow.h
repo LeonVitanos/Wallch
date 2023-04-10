@@ -33,14 +33,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define WALLPAPERS_HELP "/usr/share/gnome/help/wallch/C/howto_wallpapers.page";
 #define LIVEARTH_HELP "/usr/share/gnome/help/wallch/C/howto_livearth.page";
 #define POTD_HELP "/usr/share/gnome/help/wallch/C/howto_potd.page";
-#define WALLCLOCKS_HELP "/usr/share/gnome/help/wallch/C/howto_wallclocks.page";
 #define LIVEWEBSITE_HELP "/usr/share/gnome/help/wallch/C/howto_livewebsite.page";
 #define COLSANDGRADS_HELP "/usr/share/gnome/help/wallch/C/howto_colsandgrads.page";
 
 #define WALLPAPERS_LIST_ICON_SIZE QSize(60, 60)
 #define WALLPAPERS_LIST_ITEMS_OFFSET QSize(4, 3)
-#define WALLPAPER_CLOCKS_LIST_ICON_SIZE  QSize(100,75)
-#define WALLPAPER_CLOCKS_ITEM_ICON_SIZE QSize(82, 82)
 
 #include "about.h"
 #include "ui_mainwindow.h"
@@ -57,6 +54,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "potd_preview.h"
 #include "websitesnapshot.h"
 #include "wallpapermanager.h"
+#include "colormanager.h"
 #include "cachemanager.h"
 #include "imagefetcher.h"
 #include "pictures_locations.h"
@@ -95,8 +93,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QSharedMemory>
 
 typedef enum {
-    NoneStyle, Center, Tile, Stretch, Scale, Zoom
+    NoneStyle, Center, Tile, Stretch, Scale, Zoom, Span
 } DesktopStyle;
+Q_DECLARE_METATYPE(DesktopStyle);
 
 namespace Ui {
     class MainWindow;
@@ -105,7 +104,9 @@ namespace Ui {
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    MainWindow(QSharedMemory *attachedMemory, Global *globalParser, ImageFetcher *imageFetcher_, WebsiteSnapshot *websiteSnapshot, WallpaperManager *wallpaperManager, int timeoutCount, int lastRandomDelay, QWidget *parent = 0);
+    MainWindow(QSharedMemory *attachedMemory, Global *globalParser, ImageFetcher *imageFetcher_,
+               WebsiteSnapshot *websiteSnapshot, WallpaperManager *wallpaperManager,
+               int timeoutCount, int lastRandomDelay, QWidget *parent = 0);
     ~MainWindow();
     void click_shortcut_next();
     Ui::MainWindow *ui;
@@ -116,23 +117,30 @@ protected:
     bool eventFilter(QObject *object, QEvent *event);
 
 private:
+#ifdef Q_OS_UNIX
+    QTimer *batteryStatusChecker_;
+    QString getSecondaryColor();
+    QProcess *dconf;
+#else
+    Notification *notification_;
+    bool nativeEvent(const QByteArray& eventType, void* message, long* result);
+#endif
+
     QSharedMemory *attachedMemory_;
     WallpaperManager *wallpaperManager_;
+    ColorManager *colorManager_;
     CacheManager *cacheManager_;
     QTimer *updateSecondsTimer_;
-    QTimer *wallpaperClockWait_;
     QTimer *updateCheckTime_;
     QTimer *iconUpdater_;
     QTimer *researchFoldersTimer_;
     QTimer *hideProgress_;
-#ifdef Q_OS_UNIX
-    QTimer *batteryStatusChecker_;
-#endif //#ifdef Q_OS_UNIX
 
     QMenu *listwidgetMenu_;
-    QMenu *clockwidgetMenu_;
 
     QList<QLabel*> menuSeparators_;
+
+    QButtonGroup *btn_group;
 
     //building menubar's menu
     QMenu *settingsMenu_;
@@ -144,9 +152,6 @@ private:
     QFileSystemWatcher *watchFolders_;
 
     QFutureWatcher<QImage> *scaleWatcher_;
-    QFutureWatcher<QImage> *clocksPreviewWatcher_;
-
-    QButtonGroup *clocksRadioButtonsGroup;
 
     QRect availableGeometry_;
 
@@ -163,7 +168,7 @@ private:
     QTranslator *translator_;
     WebsitePreview *webPreview_;
 
-    QRegExp *match_;
+    QRegularExpression *match_;
     QMovie *processingRequestGif_;
     QPropertyAnimation *openCloseSearch_;
     QPropertyAnimation *rightWidgetAnimation_;
@@ -171,11 +176,8 @@ private:
     QPropertyAnimation *openCloseAddLogin_;
     QGraphicsOpacityEffect* opacityEffect_;
     QGraphicsOpacityEffect* opacityEffect2_;
-#ifdef Q_OS_UNIX
-    QProcess *unzipArchive_;
-#else
-    Notification *notification_;
-#endif
+    QPropertyAnimation *increaseOpacityAnimation;
+    QPropertyAnimation *decreaseOpacityAnimation;
     WebsiteSnapshot *websiteSnapshot_;
     QIcon imageLoading_;
     bool appAboutToClose_ = false;
@@ -192,7 +194,6 @@ private:
     double imagePreviewResizeFactorX_;
     double imagePreviewResizeFactorY_;
     int currentSearchItemIndex;
-    bool currentlyUninstallingWallpaperClock_ = false;
     short timePassedForLiveWebsiteRequest_;
     short tempForDelayedPicturesLocationChange_;
 
@@ -221,7 +222,6 @@ private:
     bool manuallyStartedOnBattery_ = false;
     QString initialWebPage_;
     QString changedWebPage_;
-    QString currentWallpaperClockPath_;
     QString nameOfSelectionPriorFolderChange_;
     QString currentFolder_;
     QStringList searchList_;
@@ -233,15 +233,6 @@ private:
     QShortcut *contentsShortcut_ = NULL;
     QShortcut *historyShortcut_ = NULL;
 
-#ifdef Q_OS_WIN
-    void unzip(QString input, const QString &outputDirectory);
-    bool nativeEvent(const QByteArray& eventType, void* message, long* result);
-#else
-    DesktopStyle getDesktopStyle();
-    ColoringType::Value getColoringType();
-    QString getPrimaryColor();
-    QString getSecondaryColor();
-#endif
     QString getPathOfListItem(int index = -1);
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
@@ -270,24 +261,21 @@ private:
     void animateProgressbarOpacity(bool show);
     void findSeconds(bool typeCountSeconds);
     void startPauseWallpaperChangingProcess();
+    void animateScreenLabel(bool onlyHide);
     void loadWallpapersPage();
     void loadLePage();
     void loadPotdPage();
     void loadWallpaperClocksPage();
     void loadLiveWebsitePage();
     void loadMelloriPage();
-    void setPreviewImage();
     void savePicturesLocations();
     void processRequestStart();
     void processRequestStop();
     void changeAppStyleSheetTo(const QString &styleSheetFile);
-    void setThemeToAmbiance();
-    void setThemeToRadiance();
     void doesMatch();
     void doesntMatch();
     void setProgressbarsValue(short value);
-    void imageTransition(bool wallpaperClock, const QString &filename = QString());
-    void hideScreenLabel();
+    void imageTransition(const QString &filename = QString());
     void changeTextOfScreenLabelTo(const QString &text);
     bool updateIconOf(int row);
     bool atLeastOneFolderFromTheSetExists();
@@ -295,9 +283,7 @@ private:
     void pauseEverythingThatsRunning();
     bool websiteConfiguredCorrectly();
     void updatePotdProgress();
-    void calculateSecondsLeftForWallClocks();
     void currentFolderDoesNotExist();
-    QImage wallpaperClocksPreview();
     QString secondsToMh(int seconds);
     QString secondsToHms(int seconds);
     QString secondsToHm(int seconds);
@@ -313,16 +299,19 @@ private:
     void disableLiveWebsitePage();
     bool currentFolderExists();
     QImage scaleWallpapersPreview(QString filename);
-    QImage scaleWallpapersPreview();
     QStringList getCurrentWallpaperFolders();
+    void iconsPathsChanged();
 
 private Q_SLOTS:
+#ifdef Q_OS_UNIX
+    void unityProgressbarSetEnabled(bool enabled);
+    void dconfChanges();
+#endif
     void timeSpinboxChanged();
     void intervalTypeChanged();
     void closeWhatsRunning();
     void checkBatteryStatus();
     void addFolderForMonitor(const QString &folder);
-    void installWallpaperClock(const QString &currentPath);
     void folderChanged();
     void researchFolders();
     void updateTiming();
@@ -341,18 +330,15 @@ private Q_SLOTS:
     void rotateLeft();
     void copyImage();
     void copyImagePath();
-    void clockCheckboxClickedWhileRunning();
     void readCoordinates(const QRect &cropArea);
-    void setStyle();
+    void findAvailableWallpaperStyles();
     void setWebsitePreviewImage(QImage *image);
     void setButtonColor();
-    void setButtonColor(const QString &colorName);
     void enterPressed();
     void openCloseAddLoginAnimationFinished();
     void updateSeconds();
     void liveWebsiteImageCreated(QImage *image, short errorCode);
-    void addClockToList();
-    void changeCurrentThemeTo(const QString &theme);
+    void changeCurrentTheme();
     void showHideSearchBox();
     void showHideSearchBoxMenu();
     void escapePressed();
@@ -371,9 +357,6 @@ private Q_SLOTS:
     void strongShowApp();
     void hideOrShow();
     void picturesLocationsChanged();
-#ifdef Q_OS_UNIX
-    void unityProgressbarSetEnabled(bool enabled);
-#endif //#ifdef Q_OS_UNIX
     void preferencesDestroyed();
     void statisticsDestroyed();
     void lePointDestroyed();
@@ -385,20 +368,15 @@ private Q_SLOTS:
     void colorsGradientsDestroyed();
     void potdViewerDestroyed();
     void potdPreviewDestroyed();
-    void updateColorButton(QImage image);
     void delayed_pictures_location_change();
-    void clockRadioButton_check_state_changed();
     void restartPotdIfRunningAfterSettingChange();
     void restartLeIfRunningAfterSettingChange();
     void justChangeWallpaper();
-    void clocksPreviewGenerationFinished();
-    void setupAnimationsAndChangeImage();
+    void setPreviewImage();
     void unhoverMenuButton();
     void beginFixCacheForFolders();
     void wait_preview_changed();
     void preview_changed();
-    void clockCheckboxClicked();
-    void uninstall_clock();
     void update_website_settings();
     void doQuit();
     void onlineRequestFailed();
@@ -412,8 +390,6 @@ private Q_SLOTS:
     void on_wallpapersList_itemDoubleClicked();
     void on_wallpapersList_itemSelectionChanged();
     void on_timerSlider_valueChanged(int value);
-    void on_install_clock_clicked();
-    void on_wallpaper_clocks_source_linkActivated();
     void on_website_preview_clicked();
     void on_edit_crop_clicked();
     void on_website_crop_checkbox_clicked(bool checked);
@@ -430,7 +406,6 @@ private Q_SLOTS:
     void on_search_up_clicked();
     void on_search_down_clicked();
     void on_actionDonate_triggered();
-    void on_actionDownload_triggered();
     void on_actionReport_A_Bug_triggered();
     void on_actionGet_Help_Online_triggered();
     void on_actionWhat_is_my_screen_resolution_triggered();
@@ -450,31 +425,21 @@ private Q_SLOTS:
     void on_deactivate_livearth_clicked();
     void on_activate_potd_clicked();
     void on_deactivate_potd_clicked();
-    void on_activate_clock_clicked();
-    void on_deactivate_clock_clicked();
     void on_activate_website_clicked();
     void on_deactivate_website_clicked();
-    void on_page_0_wallpapers_clicked();
-    void on_page_1_earth_clicked();
-    void on_page_2_potd_clicked();
-    void on_page_3_clock_clicked();
-    void on_page_4_web_clicked();
-    void on_page_5_other_clicked();
-    void on_clocksTableWidget_currentCellChanged(int currentRow, int currentColumn, int previousRow, int previousColumn);
+    void page_button_clicked(int btn);
     void on_include_description_checkBox_clicked(bool checked);
     void on_edit_potd_clicked();
-    void on_clocksTableWidget_customContextMenuRequested();
     void on_shuffle_images_checkbox_clicked();
     void on_stackedWidget_currentChanged(int page);
-    void on_donateButton_clicked();
-    void on_melloristudio_link_label_linkActivated(const QString &link);
-    void on_donateButton_pressed();
-    void on_donateButton_released();
     void on_random_from_valueChanged(int value);
     void on_random_to_valueChanged(int value2);
     void on_random_time_from_combobox_currentIndexChanged(int index);
     void on_random_time_to_combobox_currentIndexChanged(int index);
     void on_edit_pushButton_clicked();
+    void updateImageStyleCombo();
+    void getScreenResolution(QRect geometry);
+    void getScreenAvailableResolution(QRect geometry);
 
 Q_SIGNALS:
      void fixLivewebsiteButtons();

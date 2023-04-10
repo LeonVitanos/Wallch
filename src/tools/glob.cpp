@@ -23,7 +23,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <QProcess>
 #include <QMessageBox>
-#include <QDesktopWidget>
 #include <QDateTime>
 #include <QSettings>
 #include <QDirIterator>
@@ -39,15 +38,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 using namespace std;
 
 #ifdef Q_OS_UNIX
-
-#include <libnotify/notify.h>
-#include <gio/gio.h>
-#include <libexif/exif-data.h>
-
+    #include <libnotify/notify.h>
+    #include <gio/gio.h>
+    #include <libexif/exif-data.h>
 #else
-
-#include <windows.h>
-
+    #include <windows.h>
 #endif
 
 #include "glob.h"
@@ -117,202 +112,7 @@ QString Global::monthInEnglish(short month)
     }
 }
 
-QString Global::getPrimaryColor(){
-    QString primaryColor;
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
-        primaryColor = Global::gsettingsGet("org.gnome.desktop.background", "primary-color");
-    }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("color1")){
-                QStringList colors=Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry).split("\n");
-                QList<int> rgbColors;
-                Q_FOREACH(QString color, colors){
-                    bool ok=false;
-                    int currentColor=color.toInt(&ok);
-                    if(!ok){
-                        continue;
-                    }
-                    rgbColors.append(int((256.0*currentColor)/65535.0));
-                }
-                if(rgbColors.count()!=4){
-                    continue;
-                }
-                QColor finalColor;
-                finalColor.setRgb(rgbColors.at(0), rgbColors.at(1), rgbColors.at(2));
-                primaryColor = finalColor.name();
-                break;
-            }
-        }
-    }
-    else if(gv.currentDE == DesktopEnvironment::LXDE){
-        primaryColor = getPcManFmValue("desktop_bg");
-    }
-
-#else
-    QSettings collorSetting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
-    primaryColor = collorSetting.value("Background", "0 0 0").toString();
-    QList<int> rgb;
-    QString temp;
-    for(short i=0; primaryColor.size() > i; i++)
-    {
-        if(i==primaryColor.size()-1)
-        {
-            temp.append(primaryColor.at(i));
-            rgb.append(temp.toInt());
-        }
-        else if(primaryColor.at(i)==' ')
-        {
-            rgb.append(temp.toInt());
-            temp.clear();
-        }
-        else
-        {
-            temp.append(primaryColor.at(i));
-        }
-    }
-    primaryColor = QColor(rgb.at(0), rgb.at(1), rgb.at(2)).name();
-#endif
-    return primaryColor;
-}
-
-#ifdef Q_OS_UNIX
-
-QString Global::getSecondaryColor(){
-    QString secondaryColor;
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
-        secondaryColor=Global::gsettingsGet("org.gnome.desktop.background", "secondary-color");
-    }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("color2")){
-                QStringList colors=Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry).split("\n");
-                QList<int> rgbColors;
-                Q_FOREACH(QString color, colors){
-                    bool ok=false;
-                    int currentColor=color.toInt(&ok);
-                    if(!ok){
-                        continue;
-                    }
-                    rgbColors.append(int((256.0*currentColor)/65535.0));
-                }
-                if(rgbColors.count()!=4){
-                    continue;
-                }
-                QColor finalColor;
-                finalColor.setRgb(rgbColors.at(0), rgbColors.at(1), rgbColors.at(2));
-                secondaryColor = finalColor.name();
-                break;
-            }
-        }
-    }
-    return secondaryColor;
-}
-
-void Global::setPrimaryColor(const QString &colorName){
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
-        Global::gsettingsSet("org.gnome.desktop.background", "primary-color", colorName);
-    }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        QStringList colorValues;
-        QColor color=QColor(colorName);
-        colorValues.append(QString::number(int((65535.0/256.0)*color.red())));
-        colorValues.append(QString::number(int((65535.0/256.0)*color.green())));
-        colorValues.append(QString::number(int((65535.0/256.0)*color.blue())));
-        colorValues.append("65535");
-        Q_FOREACH(QString entry, getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("color1")){
-                QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry
-                                        << "-t" << "uint" << "-s" << colorValues.at(0)
-                                        << "-t" << "uint" << "-s" << colorValues.at(1)
-                                        << "-t" << "uint" << "-s" << colorValues.at(2)
-                                        << "-t" << "uint" << "-s" << colorValues.at(3));
-            }
-        }
-    }
-    else if(gv.currentDE == DesktopEnvironment::LXDE){
-        setPcManFmValue("desktop_bg", colorName);
-        QStringList pids=getOutputOfCommand("pidof", QStringList() << "pcmanfm").replace("\n", "").split(" ");
-        Q_FOREACH(QString pid, pids){
-            QString output=getOutputOfCommand("ps", QStringList() << "-fp" << pid);
-            if(output.contains("--desktop")){
-                QProcess::startDetached("kill", QStringList() << "-9" << pid);
-            }
-        }
-        if(QDir(gv.homePath+"/.config/pcmanfm/lubuntu").exists()){
-            QProcess::startDetached("pcmanfm", QStringList() << "--desktop" << "-p" << "lubuntu");
-        }
-        else
-        {
-            QProcess::startDetached("pcmanfm", QStringList() << "--desktop");
-        }
-    }
-}
-
-void Global::setSecondaryColor(const QString &colorName){
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome ||gv.currentDE == DesktopEnvironment::Mate){
-        Global::gsettingsSet("org.gnome.desktop.background", "secondary-color", colorName);
-    }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        QStringList colorValues;
-        QColor color=QColor(colorName);
-        colorValues.append(QString::number(int((65535.0/256.0)*color.red())));
-        colorValues.append(QString::number(int((65535.0/256.0)*color.green())));
-        colorValues.append(QString::number(int((65535.0/256.0)*color.blue())));
-        colorValues.append("65535");
-        Q_FOREACH(QString entry, getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("color2")){
-                QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry
-                                        << "-t" << "uint" << "-s" << colorValues.at(0)
-                                        << "-t" << "uint" << "-s" << colorValues.at(1)
-                                        << "-t" << "uint" << "-s" << colorValues.at(2)
-                                        << "-t" << "uint" << "-s" << colorValues.at(3));
-            }
-        }
-    }
-}
-
-ColoringType::Value Global::getColoringType(){
-    ColoringType::Value coloringType = ColoringType::SolidColor;
-    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
-        QString colorStyle=Global::gsettingsGet("org.gnome.desktop.background", "color-shading-type");
-        if(colorStyle.contains("solid")){
-            coloringType = ColoringType::SolidColor;
-        }
-        else if(colorStyle.contains("vertical")){
-            coloringType = ColoringType::VerticalColor;
-        }
-        else if(colorStyle.contains("horizontal")){
-            coloringType = ColoringType::HorizontalColor;
-        }
-    }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("color-style")){
-                QString colorStyle=Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry).replace("\n", "");
-                if(colorStyle=="0"){
-                    coloringType = ColoringType::SolidColor;
-                }
-                else if(colorStyle=="1"){
-                    coloringType = ColoringType::HorizontalColor;
-                }
-                else if(colorStyle=="2"){
-                    coloringType = ColoringType::VerticalColor;
-                }
-                else if(colorStyle=="3"){
-                    coloringType = ColoringType::NoneColor;
-                }
-            }
-        }
-    }
-    else if(gv.currentDE == DesktopEnvironment::LXDE){
-        coloringType = ColoringType::SolidColor;
-    }
-
-    return coloringType;
-}
-
 QString Global::searchForFileInDir(QString folder, QString file){
     if(!QDir(folder).exists()){
         return QString();
@@ -393,9 +193,7 @@ short Global::getExifRotation(const QString &filename){
 QString Global::setAverageColor(const QString &image){
     //sets the desktop's average color and returns the name of it.
     QString averageColor = WallpaperManager::getAverageColorOf(image).name();
-#ifdef Q_OS_UNIX
-    Global::setPrimaryColor(averageColor);
-#endif //#ifdef Q_OS_UNIX
+    ColorManager::setPrimaryColor(averageColor);
 
     return averageColor;
 }
@@ -620,108 +418,6 @@ QStringList Global::listFolders(const QString &parentFolder, bool recursively, b
     }
 }
 
-void Global::readClockIni()
-{
-    //Reading clock.ini of wallpaper clock to get useful info from there.
-    QFile file(gv.defaultWallpaperClock+"/clock.ini");
-    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
-        Global::error("Could not open the clock.ini file ("+gv.defaultWallpaperClock+"/clock.ini) for reading successfully!");
-        return;
-    }
-
-    QTextStream in(&file);
-    while(!in.atEnd())
-    {
-        QString line=in.readLine();
-        if(line.startsWith("refreshhourinterval="))
-        {
-            gv.refreshhourinterval=QString(line.right(line.count()-20)).toInt();
-        }
-        else if(line.startsWith("ampmenabled="))
-        {
-            gv.amPmEnabled=QString(line.right(line.count()-12)).toInt();
-        }
-        else if(line.startsWith("hourimages="))
-        {
-            gv.wallpaperClocksHourImages=QString(line.right(line.count()-11)).toInt();
-        }
-    }
-    file.close();
-}
-
-QString Global::wallpaperClockNow(const QString &path, bool minuteCheck, bool hourCheck, bool amPmCheck, bool dayWeekCheck, bool dayMonthCheck, bool monthCheck)
-{
-    //returns where the saved wallpaper clock went
-
-    //getting system date and time
-    QDate date = QDate::currentDate();
-    QTime time = QTime::currentTime();
-
-    //knowing the current hour, we know if it am or pm
-    //12h format is needed for the analog clocks
-    short hour_12h_format=0;
-    QString am_or_pm;
-    if (time.hour()>=12){
-        am_or_pm="pm";
-    }
-    else
-    {
-        am_or_pm="am";
-    }
-
-    if(gv.wallpaperClocksHourImages==24 || time.hour()<12 ){
-        hour_12h_format=time.hour();
-    }
-    else if(gv.wallpaperClocksHourImages!=24 && time.hour()>=12){
-        hour_12h_format=time.hour()-12;
-    }
-
-    //create the image that will be used as desktop background
-    QPixmap merge(path+"/bg.jpg");
-
-    QPainter painter(&merge);
-    if(monthCheck){
-        painter.drawPixmap(0, 0, QPixmap(path+"/month"+QString::number(date.month())+".png"));
-    }
-    if(dayWeekCheck){
-        painter.drawPixmap(0, 0, QPixmap(path+"/weekday"+QString::number(date.dayOfWeek())+".png"));
-    }
-    if(dayMonthCheck){
-        painter.drawPixmap(0, 0, QPixmap(path+"/day"+QString::number(date.day())+".png"));
-    }
-    if(hourCheck){
-        painter.drawPixmap(0, 0, QPixmap(path+"/hour"+QString::number(hour_12h_format*(60/gv.refreshhourinterval)+QString::number(time.minute()/gv.refreshhourinterval).toInt())+".png"));
-    }
-    if(minuteCheck){
-        painter.drawPixmap(0, 0, QPixmap(path+"/minute"+QString::number(time.minute())+".png"));
-    }
-    if(gv.amPmEnabled && amPmCheck){
-        painter.drawPixmap(0, 0, QPixmap(path+"/"+am_or_pm+".png"));
-    }
-    painter.end();
-
-    Global::remove(gv.wallchHomePath+WC_IMAGE+"*");
-
-    QString currentWallpaperClock = gv.wallchHomePath+WC_IMAGE+QString::number(QDateTime::currentMSecsSinceEpoch())+".jpg";
-
-    merge.save(currentWallpaperClock);
-
-    if(gv.showNotification)
-    {
-        if(settings->value("clocks_notification", true).toBool()){
-            if(QTime::currentTime().minute() == 0){
-                desktopNotify(tr("Current wallpaper has been changed!")+"<br>"+tr("Time is")+": "+QTime::currentTime().toString("hh:mm"), true, currentWallpaperClock);
-            }
-        }
-        else
-        {
-            desktopNotify(tr("Current wallpaper has been changed!")+"<br>"+tr("Time is")+": "+QTime::currentTime().toString("hh:mm"), true, currentWallpaperClock);
-        }
-    }
-
-    return currentWallpaperClock;
-}
-
 QString Global::basenameOf(const QString &path){
     /*
      * Returns the fullname of the file that 'path' points to. E.g.:
@@ -852,21 +548,20 @@ bool Global::remove(const QString &files){
 
         rmDir.setFilter(QDir::NoDotAndDotDot | QDir::Files);
 
-        QRegExp rmValidation;
-        rmValidation.setPatternSyntax(QRegExp::Wildcard);
-        rmValidation.setPattern(basenameOf(files));
+        QRegularExpression rmValidation;
+        rmValidation.setPattern(QRegularExpression::wildcardToRegularExpression(basenameOf(files)));
 
         bool result = true;
 
         Q_FOREACH(QString currentFile, rmDir.entryList()){
-            if(rmValidation.indexIn(currentFile)!=-1){
+            if(rmValidation.match(currentFile).hasMatch()){
                 //currentFile matches the validation
                 if(!QFile::remove(parentDirectory+"/"+currentFile)){
                     Global::error("Could not remove file '"+parentDirectory+"/"+currentFile+"'. Skipping...");
                     result = false;
+                    break;
                 }
             }
-
         }
         //result is false if at least one file wasn't deleted properly.
         return result;
@@ -895,16 +590,13 @@ QString Global::getFilename(const QString &file){
 
     parentDir.setFilter(QDir::NoDotAndDotDot | QDir::Files);
 
-    QRegExp fileValidation;
-    fileValidation.setPatternSyntax(QRegExp::Wildcard);
-    fileValidation.setPattern(basenameOf(file));
+    QRegularExpression fileValidation;
+    fileValidation.setPattern(QRegularExpression::wildcardToRegularExpression(basenameOf(file)));
 
     Q_FOREACH(QString curFile, parentDir.entryList()){
-        if(fileValidation.indexIn(curFile)!=-1){
+        if(fileValidation.match(curFile).hasMatch())
             return parentDirectory+'/'+curFile;
-        }
-
-    }
+     }
     return QString();
 
 }
@@ -954,8 +646,9 @@ void Global::saveSecondsLeftNow(int secondsLeft, short forType){
 #ifdef Q_OS_UNIX
 void Global::gsettingsSet(const QString &schema, const QString &key, const QString &value){
     GSettings *settings = g_settings_new(schema.toLocal8Bit().data());
-
-    g_settings_set_string (settings, key.toLocal8Bit().data(), value.toLocal8Bit().data());
+    gboolean result = g_settings_set_string (settings, key.toLocal8Bit().data(), value.toLocal8Bit().data());
+    if(!result)
+        QMessageBox::warning(0, QObject::tr("Error"), QObject::tr("Could not apply change. If your Desktop Environment is not listed at \"Preferences->Integration->Current Desktop Environment\", then it is not supported."));
 
     g_settings_sync ();
 
@@ -1124,9 +817,6 @@ void Global::updateStartup()
         else if(gv.liveWebsiteRunning){
             settings2.setValue("Wallch", wallch_exe_path+" --website");
         }
-        else if(gv.wallpaperClocksRunning){
-            settings2.setValue("Wallch", wallch_exe_path+" --clock");
-        }
         else if(settings->value("start_hidden", false).toBool()){
             settings2.setValue("Wallch", wallch_exe_path+" --none");
         }
@@ -1165,10 +855,6 @@ void Global::updateStartup()
         else if(gv.liveWebsiteRunning){
             desktopFileCommand="/usr/bin/wallch --website";
             desktopFileComment="Enable Live Website";
-        }
-        else if(gv.wallpaperClocksRunning){
-            desktopFileCommand="/usr/bin/wallch --clock";
-            desktopFileComment="Enable Wallpaper Clock";
         }
         else if(settings->value("start_hidden", false).toBool()){
             desktopFileCommand="/usr/bin/wallch --none";
@@ -1232,31 +918,28 @@ QPixmap Global::roundedCorners(const QImage &image, const int radius){
 }
 
 short Global::autodetectTheme(){
-    QString themeString;
+    QString theme;
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome){
-        themeString=Global::gsettingsGet("org.gnome.desktop.interface", "gtk-theme");
-    }
+    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome)
+        theme=Global::gsettingsGet("org.gnome.desktop.interface", "gtk-theme");
     else
     {
-        if(gv.currentTheme=="radiance"){
-            themeString="Radiance";
-        }
+        if(gv.currentTheme=="radiance")
+            theme="Radiance";
         else
-        {
-            themeString="Ambiance";
-        }
+            theme="Ambiance";
+    }
+#else
+    QSettings appsUseLightTheme("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", QSettings::NativeFormat);
+    if(appsUseLightTheme.value("AppsUseLightTheme").isValid())
+        return appsUseLightTheme.value("AppsUseLightTheme").toInt();
+    else{
+        QSettings currentTheme("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes", QSettings::NativeFormat);
+        if(currentTheme.value("CurrentTheme").isValid())
+            theme = currentTheme.value("CurrentTheme").toString();
+        else
+            return 1;
     }
 #endif
-    if(themeString.contains("radiance", Qt::CaseInsensitive)){
-        return 1;
-    }
-
-    //ambiance
-    return 0;
-}
-
-void Global::currentBackgroundExists()
-{
-
+    return !(theme.contains("dark", Qt::CaseInsensitive) || theme.contains("ambiance", Qt::CaseInsensitive));
 }

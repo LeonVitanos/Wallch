@@ -24,7 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <QDebug>
 #include <QPainter>
-#include <QWebElement>
+//#include <QWebElement>
 #include <QKeyEvent>
 #include <QEvent>
 
@@ -36,6 +36,7 @@ const QStringList USUAL_PASSWORD_FIELDS = QStringList() << "password" << "pass" 
                                                         << "session_password-login" << "ap_password" << "signup_password";
 
 WebsiteSnapshot::WebsiteSnapshot(){
+    /*
     simpleAuthAlreadyDone_=false;
     currentlyLoading_=false;
     debug_=false;
@@ -69,18 +70,21 @@ WebsiteSnapshot::WebsiteSnapshot(){
     priorComplexTimer_.setTimerType(Qt::VeryCoarseTimer);
     priorComplexTimer_.setSingleShot(true);
     connect(&priorComplexTimer_, SIGNAL(timeout()), this, SLOT(proceedToComplexAuth()));
+    */
 }
 
+
 WebsiteSnapshot::~WebsiteSnapshot(){
+    /*
     if(debug_)
         dbg("Destructor.");
     if(webPage_){
         webPage_->settings()->clearMemoryCaches();
         webPage_->deleteLater();
-    }
+    }*/
 }
-
-/*PRIVATE SLOTS/FUNCTIONS*/
+/*
+//PRIVATE SLOTS/FUNCTIONS
 
 void WebsiteSnapshot::returnResults(bool result){
     if(!result){
@@ -324,7 +328,7 @@ void WebsiteSnapshot::disconnectWebPage(){
                this, SLOT(authenticateSimple(QNetworkReply*,QAuthenticator*)));
 }
 
-/*PUBLIC FUNCTIONS*/
+//PUBLIC FUNCTIONS
 
 bool WebsiteSnapshot::start(){
     if(currentlyLoading_ || requestedUrl_==QUrl("") || !requestedUrl_.isValid()){
@@ -497,3 +501,4 @@ QString WebsiteSnapshot::lastErrorString(){
 QObject *WebsiteSnapshot::asQObject(){
     return this;
 }
+*/

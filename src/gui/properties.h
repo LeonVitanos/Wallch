@@ -31,6 +31,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QPaintEvent>
 #include <QPainter>
 
+#include "wallpapermanager.h"
+
 namespace Ui {
     class properties;
 }
@@ -40,7 +42,7 @@ class Properties : public QDialog
     Q_OBJECT
 
 public:
-    explicit Properties(const QString &image, bool showNextPrevious, int currentIndex, QWidget *parent = 0);
+    explicit Properties(const QString &image, bool showNextPrevious, int currentIndex, WallpaperManager *wallpaperManager, QWidget *parent = 0);
     ~Properties();
 
 protected:
@@ -48,6 +50,7 @@ protected:
 
 private:
     Ui::properties *ui;
+    WallpaperManager *wallpaperManager_;
     QImage currentImage_;
     QGroupBox *optionsGroupBox_;
     QGridLayout *optionsGroupBoxLayout_;
@@ -61,7 +64,6 @@ private:
     int currentImageHeight_;
     float resizeFactorX_;
     float resizeFactorY_;
-    bool justOpened_=true;
     void updatePropertiesImageLabel(QImage image);
     void updatePropertiesImageLabel();
     QString sizeToNiceString(qint64 fsize);
