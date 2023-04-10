@@ -345,8 +345,8 @@ void ImageFetcher::writePotdDescription(const QString &description){
 
     QPainter painter(&image);
 
-    float divImageWidth = (float)image.width()/(float)gv.screenWidth;
-    float divImageHeight = (float)image.height()/(float)gv.screenHeight;
+    float divImageWidth = (float)image.width()/(float)gv.screenAvailableWidth;
+    float divImageHeight = (float)image.height()/(float)gv.screenAvailableHeight;
 
     QFont font;
     font.setFamily(gv.potdDescriptionFont);

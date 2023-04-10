@@ -118,12 +118,11 @@ void ColorManager::setPrimaryColor(const QString &colorName){
 #endif
 }
 
-#ifdef Q_OS_UNIX
+
 QString ColorManager::getSecondaryColor(){
-    QString secondaryColor;
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
-        secondaryColor=Global::gsettingsGet("org.gnome.desktop.background", "secondary-color");
-    }
+#ifdef Q_OS_UNIX
+    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate)
+        return Global::gsettingsGet("org.gnome.desktop.background", "secondary-color");
     else if(gv.currentDE == DesktopEnvironment::XFCE){
         Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
             if(entry.contains("color2")){
@@ -142,18 +141,21 @@ QString ColorManager::getSecondaryColor(){
                 }
                 QColor finalColor;
                 finalColor.setRgb(rgbColors.at(0), rgbColors.at(1), rgbColors.at(2));
-                secondaryColor = finalColor.name();
+                return finalColor.name();
                 break;
             }
         }
     }
-    return secondaryColor;
+#else
+    return settings->value("secondaryColor", "black").toString();
+#endif
 }
 
+
 void ColorManager::setSecondaryColor(const QString &colorName){
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome ||gv.currentDE == DesktopEnvironment::Mate){
+#ifdef Q_OS_UNIX
+    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome ||gv.currentDE == DesktopEnvironment::Mate)
         Global::gsettingsSet("org.gnome.desktop.background", "secondary-color", colorName);
-    }
     else if(gv.currentDE == DesktopEnvironment::XFCE){
         QStringList colorValues;
         QColor color=QColor(colorName);
@@ -171,8 +173,12 @@ void ColorManager::setSecondaryColor(const QString &colorName){
             }
         }
     }
+#else
+    settings->setValue("secondaryColor", colorName);
+#endif
 }
 
+#ifdef Q_OS_UNIX
 ColoringType::Value ColorManager::getColoringType(){
     ColoringType::Value coloringType = ColoringType::SolidColor;
     if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
@@ -213,3 +219,31 @@ ColoringType::Value ColorManager::getColoringType(){
     return coloringType;
 }
 #endif
+
+QImage ColorManager::createVerticalHorizontalImage(const QString &type, int width, int height)
+{
+    QImage image(width, height, QImage::Format_RGB32);
+
+    QLinearGradient gradient;
+    if(type == "horizontal"){
+        gradient.setStart(0, height / 2);
+        gradient.setFinalStop(width, height / 2);
+    }
+    else {
+        gradient.setStart(width / 2, 0);
+        gradient.setFinalStop(width / 2, height);
+    }
+    gradient.setColorAt(0, QColor(getPrimaryColor()));
+    gradient.setColorAt(1, QColor(getSecondaryColor()));
+
+    QPainter painter;
+    painter.begin(&image);
+    //painter.setCompositionMode(QPainter::CompositionMode_Source);
+    //painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    painter.setBrush(gradient);
+    painter.setPen(Qt::NoPen);
+    painter.drawRect(0, 0, width, height);
+    painter.drawImage(QRect(0, 0, width, height), image);
+
+    return image;
+}

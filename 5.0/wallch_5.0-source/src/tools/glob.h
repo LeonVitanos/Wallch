@@ -58,6 +58,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define POTD_ONLINE_URL_B "http://melloristudio.com/wallch/potd"
 #define LIVEARTH_ONLINE_URL_B "http://melloristudio.com/wallch/le"
 
+#define COLOR_IMAGE "color.png"
 #define LE_IMAGE "liveEarth"
 #define POTD_IMAGE "potd"
 #define LW_IMAGE "liveWebsite"
@@ -156,6 +157,8 @@ struct GlobalVar {
     int websiteInterval;
     int screenHeight;
     int screenWidth;
+    int screenAvailableHeight;
+    int screenAvailableWidth;
     int potdDescriptionLeftMargin;
     int potdDescriptionRightMargin;
     int potdDescriptionBottomTopMargin;

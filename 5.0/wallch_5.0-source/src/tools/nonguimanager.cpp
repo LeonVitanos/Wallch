@@ -508,7 +508,7 @@ void NonGuiManager::continueWithWebsite(){
     gv.websiteWebpageToLoad=settings->value("website", "http://google.com").toString();
     gv.websiteInterval=settings->value("website_interval", 6).toInt();
     gv.websiteCropEnabled=settings->value("website_crop", false).toBool();
-    gv.websiteCropArea=settings->value("website_crop_area", QRect(0, 0, gv.screenWidth, gv.screenHeight)).toRect();
+    gv.websiteCropArea=settings->value("website_crop_area", QRect(0, 0, gv.screenAvailableWidth, gv.screenAvailableHeight)).toRect();
     gv.websiteLoginEnabled=settings->value("website_login", false).toBool();
     gv.websiteLoginUsername=settings->value("website_username", "").toString();
     gv.websiteLoginPasswd=settings->value("website_password", "").toString();
@@ -530,7 +530,7 @@ void NonGuiManager::continueWithWebsite(){
     disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageReady(QImage*,short)));
     connect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageReady(QImage*,short)));
 
-    websiteSnapshot_->setParameters(QUrl(gv.websiteWebpageToLoad), gv.screenWidth, gv.screenHeight);
+    websiteSnapshot_->setParameters(QUrl(gv.websiteWebpageToLoad), gv.screenAvailableWidth, gv.screenAvailableHeight);
     websiteSnapshot_->setWaitAfterFinish(gv.websiteWaitAfterFinishSeconds);
     websiteSnapshot_->setJavascriptConfig(gv.websiteJavascriptEnabled, gv.websiteJavascriptCanReadClipboard);
     websiteSnapshot_->setJavaEnabled(gv.websiteJavaEnabled);
@@ -2065,7 +2065,7 @@ void NonGuiManager::viralSettingsOperations(){
     gv.wallchHomePath=gv.homePath+"/.wallch/";
     gv.cachePath=gv.homePath+"/.cache/wallch/thumbs/";
 #else
-    gv.wallchHomePath=QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)+"/Mellori Studio/Wallch/";
+    gv.wallchHomePath=QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)+"/Wallch/";
     gv.cachePath=gv.wallchHomePath+"/.cache/thumbs/";
 #endif
     if(!QDir(gv.wallchHomePath).exists()){

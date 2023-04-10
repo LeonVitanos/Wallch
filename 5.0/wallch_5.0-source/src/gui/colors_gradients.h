@@ -25,12 +25,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define QT_NO_KEYWORDS
 
 #include <QDialog>
-#include <QPainter>
 #include <QColorDialog>
 #include <QFile>
 #include <QIcon>
 #include "glob.h"
-#include "colormanager.h"
+#include "wallpapermanager.h"
 
 namespace Ui {
 class colors_gradients;
@@ -41,7 +40,7 @@ class ColorsGradients : public QDialog
     Q_OBJECT
     
 public:
-    explicit ColorsGradients(QWidget *parent = 0);
+    explicit ColorsGradients(WallpaperManager *wallpaperManager, QWidget *parent = 0);
     ~ColorsGradients();
     
 private Q_SLOTS:
@@ -50,23 +49,22 @@ private Q_SLOTS:
     void on_primary_color_button_clicked();
     void on_secondary_color_button_clicked();
     void on_change_order_clicked();
-    void on_remove_background_clicked();
     void on_solid_radioButton_clicked();
     void on_vertical_radioButton_clicked();
     void on_horizontal_radioButton_clicked();
+    void on_colorModeButton_clicked();
+    void on_wallpaperModeButton_clicked();
 
 private:
     Ui::colors_gradients *ui;
-    QString secondaryColor_;
-    QString primaryColor_;
-    QImage createVerticalHorizontalImage(const QString &type);
-    void actionForSecondaryButtons(bool action);
+    WallpaperManager *wallpaperManager_;
+    void actionForSecondaryButtons();
     void updateGradientsOnlyColors(bool updateLeftRightSolid);
 
 Q_SIGNALS:
-    void updateDesktopColor(QString colorName);
+    void updateDesktopColor();
     void updateTv();
-    void updateColorButtonSignal(QImage image);
+    void updateImageStyle();
 };
 
 #endif // COLORS_GRADIENTS_H

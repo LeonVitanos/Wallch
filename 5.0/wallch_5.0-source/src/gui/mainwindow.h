@@ -334,7 +334,6 @@ private Q_SLOTS:
     void findAvailableWallpaperStyles();
     void setWebsitePreviewImage(QImage *image);
     void setButtonColor();
-    void setButtonColor(const QString &colorName);
     void enterPressed();
     void openCloseAddLoginAnimationFinished();
     void updateSeconds();
@@ -369,7 +368,6 @@ private Q_SLOTS:
     void colorsGradientsDestroyed();
     void potdViewerDestroyed();
     void potdPreviewDestroyed();
-    void updateColorButton(QImage image);
     void delayed_pictures_location_change();
     void restartPotdIfRunningAfterSettingChange();
     void restartLeIfRunningAfterSettingChange();
@@ -440,7 +438,8 @@ private Q_SLOTS:
     void on_random_time_to_combobox_currentIndexChanged(int index);
     void on_edit_pushButton_clicked();
     void updateImageStyleCombo();
-    void getScreenResolution(QRect resolution);
+    void getScreenResolution(QRect geometry);
+    void getScreenAvailableResolution(QRect geometry);
 
 Q_SIGNALS:
      void fixLivewebsiteButtons();

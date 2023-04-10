@@ -53,9 +53,10 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     wallpaperManager_ = (wallpaperManager == NULL) ? new WallpaperManager() : wallpaperManager;
     websiteSnapshot_ = websiteSnapshot;
 
-    getScreenResolution(QGuiApplication::primaryScreen()->availableGeometry());
-    imagePreviewResizeFactorX_ = SCREEN_LABEL_SIZE_X*2.0/(gv.screenWidth*1.0);
-    imagePreviewResizeFactorY_ = SCREEN_LABEL_SIZE_Y*2.0/(gv.screenHeight*1.0);
+    getScreenResolution(QGuiApplication::primaryScreen()->geometry());
+    getScreenAvailableResolution(QGuiApplication::primaryScreen()->availableGeometry());
+    imagePreviewResizeFactorX_ = SCREEN_LABEL_SIZE_X*2.0/(gv.screenAvailableWidth*1.0);
+    imagePreviewResizeFactorY_ = SCREEN_LABEL_SIZE_Y*2.0/(gv.screenAvailableHeight*1.0);
 
     btn_group = new QButtonGroup(this);
     btn_group->addButton(ui->page_0_wallpapers, 0);
@@ -81,7 +82,7 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
         this->resize(QSize(settings->value("width").toInt(), settings->value("height").toInt()));
     }
     else
-        this->move(QPoint(gv.screenWidth/2, gv.screenHeight/2) - this->rect().center());
+        this->move(QPoint(gv.screenAvailableWidth/2, gv.screenAvailableHeight/2) - this->rect().center());
 
     //processing request (loading gif)
     processingOnlineRequest_ = false;
@@ -232,7 +233,8 @@ void MainWindow::connectSignalSlots(){
     connect(ui->seconds_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(btn_group, SIGNAL(buttonClicked(int)), this, SLOT(page_button_clicked(int)));
     connect(wallpaperManager_, SIGNAL(updateImageStyle()), this, SLOT(updateImageStyleCombo()));
-    connect(QGuiApplication::primaryScreen(), SIGNAL(availableGeometryChanged(QRect)), this, SLOT(getScreenResolution(QRect)));
+    connect(QGuiApplication::primaryScreen(), SIGNAL(geometryChanged(QRect)), this, SLOT(getScreenResolution(QRect)));
+    connect(QGuiApplication::primaryScreen(), SIGNAL(availableGeometryChanged(QRect)), this, SLOT(getScreenAvailableResolution(QRect)));
 
 #ifdef Q_OS_UNIX
     dconf = new QProcess(this);
@@ -758,62 +760,24 @@ void MainWindow::setPreviewImage(){
         }
         ColoringType::Value coloringType = ColorManager::getColoringType();
         if(previewColorsAndGradientsMeow || desktopStyle == NoneStyle){
-            if(desktopStyle == NoneStyle){
+            if(desktopStyle == NoneStyle)
                 image = QImage();
-            }
+
             QString primaryColor;
-            if(gv.setAverageColor)
-            {
+            if(gv.setAverageColor) //TODO: Shouldn't primary color been already be the average color?
                 primaryColor = WallpaperManager::getAverageColorOf(image).name();
-            }
             else
-            {
                 primaryColor = ColorManager::getPrimaryColor();
-            }
 
             colorsGradientsImage.fill(primaryColor);
 
-            if(coloringType != ColoringType::SolidColor && coloringType != ColoringType::NoneColor)
-            {
-                QString secondaryColor=ColorManager::getSecondaryColor();
-
-                short alpha=255;
-                short softness=0;
-
-                QPainter painter(&colorsGradientsImage);
-                QColor color(secondaryColor);
-
-                for(short i=75;i>0;i--){
-                    if(!softness){
-                        alpha-=1;
-                        if(alpha<=244){
-                            softness=1;
-                        }
-                    }
-                    else if(softness==1){
-                        alpha-=3;
-                        if(alpha<=205){
-                            softness=2;
-                        }
-                    }
-                    else if(softness==2){
-                        alpha-=4;
-                    }
-
-                    color.setAlpha(alpha);
-                    painter.fillRect(i-1, 0, 1, 75, QColor(color));
-                }
-                painter.end();
-
-                if(coloringType == ColoringType::VerticalColor){
-                    //just rotate the image
-                    colorsGradientsImage = colorsGradientsImage.transformed(QTransform().rotate(90), Qt::SmoothTransformation);
-                }
-            }
+            if(coloringType != ColoringType::SolidColor && coloringType != ColoringType::NoneColor) // TODO: NoneColor?
+                colorsGradientsImage = colorManager_->createVerticalHorizontalImage(ColoringType::VerticalColor ? "vertical" : "horizontal", 75, 75);
+            //TODO: createVerticalHorizontalImage should get horizontal/vertical from settings
         }
         QImage originalImage = image;
-        int vScreenWidth= int((float)imagePreviewResizeFactorX_*gv.screenWidth);
-        int vScreenHeight=int((float)imagePreviewResizeFactorY_*gv.screenHeight);
+        int vScreenWidth= int((float)imagePreviewResizeFactorX_*gv.screenAvailableWidth);
+        int vScreenHeight=int((float)imagePreviewResizeFactorY_*gv.screenAvailableHeight);
 
         //making the preview exactly like it will be shown at the desktop
         switch(desktopStyle){
@@ -845,7 +809,7 @@ void MainWindow::setPreviewImage(){
                     }
                 }
                 else if(timesX>1){
-                    //timesY equals 1, this means the image's height is greater or equal to gv.screenHeight. So, the image must be centered on the height.
+                    //timesY equals 1, this means the image's height is greater or equal to gv.screenAvailableHeight. So, the image must be centered on the height.
                     short yPos = 0-(originalImage.height()-vScreenHeight)/2.0;
                     for(short i=0; i<timesX; i++){
                         painter.drawPixmap(originalImage.width()*i, yPos, QPixmap::fromImage(originalImage));
@@ -853,7 +817,7 @@ void MainWindow::setPreviewImage(){
                 }
                 else
                 {
-                    //timesX equals 1, this means the image's width is greater or equal to gv.screenWidth. So, the image must be centered on the width.
+                    //timesX equals 1, this means the image's width is greater or equal to gv.screenAvailableWidth. So, the image must be centered on the width.
                     short xPos = 0-(originalImage.width()-vScreenWidth)/2.0;
                     for(short j=0; j<timesY; j++){
                         painter.drawPixmap(xPos, originalImage.height()*j, QPixmap::fromImage(originalImage));
@@ -1190,65 +1154,16 @@ void MainWindow::updateImageStyleCombo(){
         ui->image_style_combo->setCurrentIndex(index);
 }
 
-void MainWindow::setButtonColor()
-{
-    QString colorName = ColorManager::getPrimaryColor();
-    setButtonColor(colorName);
-}
+void MainWindow::setButtonColor(){
+    QImage image(40, 19, QImage::Format_RGB32);
 
-void MainWindow::setButtonColor(const QString &colorName){
-#ifdef Q_OS_WIN
-    QImage image(40, 19, QImage::Format_ARGB32_Premultiplied);
-    image.fill(colorName);
-    ui->set_desktop_color->setIcon(QIcon(QPixmap::fromImage(image)));
-#else
-    ColoringType::Value coloringType=ColorManager::getColoringType();
-    if(coloringType == ColoringType::SolidColor){
-        QImage image(40, 19, QImage::Format_ARGB32_Premultiplied);
-        image.fill(colorName);
-        ui->set_desktop_color->setIcon(QIcon(QPixmap::fromImage(image)));
-    }
+    if(settings->value("ShadingType" , "solid") == "solid")
+        image.fill(ColorManager::getPrimaryColor());
     else
-    {
-        QString secondaryColor=ColorManager::getSecondaryColor();
+        image = colorManager_->createVerticalHorizontalImage(settings->value("ShadingType" , "solid") == "vertical"
+                                                                 ? "vertical" : "horizontal", 40, 19);
 
-        QImage image(75, 75, QImage::Format_RGB32);
-        image.fill(Qt::white);
-        QColor color(colorName);
-        image.fill(color);
-        color.setNamedColor(secondaryColor);
-        short alpha=255;
-        short softness=0;
-        QPainter painter;
-        painter.begin(&image);
-        for(short i=75;i>0;i--){
-            if(!softness){
-                alpha-=1;
-                if(alpha<=244){
-                    softness=1;
-                }
-            }
-            else if(softness==1){
-                alpha-=3;
-                if(alpha<=205){
-                    softness=2;
-                }
-            }
-            else if(softness==2){
-                alpha-=4;
-            }
-
-            color.setAlpha(alpha);
-            painter.fillRect(i-1, 0, 1, 75, QColor(color));
-        }
-        painter.end();
-        if(coloringType == ColoringType::VerticalColor)
-        {
-            image = image.transformed(QTransform().rotate(+90), Qt::SmoothTransformation);
-        }
-        updateColorButton(image);
-    }
-#endif
+    ui->set_desktop_color->setIcon(QIcon(QPixmap::fromImage(image)));
 }
 
 void MainWindow::on_image_style_combo_currentIndexChanged(int index)
@@ -1614,7 +1529,8 @@ QString MainWindow::secondsToMh(int seconds)
 
 void MainWindow::setAverageColor(const QString &image){
     //sets the desktop background color, updates mainwindow's primary color box
-    setButtonColor(globalParser_->setAverageColor(image));
+    globalParser_->setAverageColor(image);
+    setButtonColor();
 }
 
 QString MainWindow::fixBasenameSize(const QString &basename){
@@ -1701,11 +1617,6 @@ void MainWindow::unityProgressbarSetEnabled(bool enabled){
 }
 
 #endif //#ifdef Q_OS_UNIX
-
-void MainWindow::updateColorButton(QImage image)
-{
-    ui->set_desktop_color->setIcon(QIcon(QPixmap::fromImage(image.scaled(40, 19, Qt::IgnoreAspectRatio, Qt::FastTransformation))));
-}
 
 //Wallpapers code
 
@@ -1886,9 +1797,8 @@ void MainWindow::on_stopButton_clicked(){
 
 void MainWindow::on_next_Button_clicked()
 {
-    if (!ui->next_Button->isEnabled() || !currentFolderExists()){
+    if (!ui->next_Button->isEnabled() || !currentFolderExists())
         return;
-    }
 
     updateSecondsTimer_->stop();
     secondsLeft_=0;
@@ -1897,21 +1807,17 @@ void MainWindow::on_next_Button_clicked()
 
 void MainWindow::on_previous_Button_clicked()
 {
-    if(!ui->previous_Button->isEnabled() || !currentFolderExists()){
+    if(!ui->previous_Button->isEnabled() || !currentFolderExists())
         return;
-    }
 
     updateSecondsTimer_->stop();
 
     wallpaperManager_->setBackground(wallpaperManager_->getPreviousWallpaper(), true, true, 1);
-    if(gv.setAverageColor){
+    if(gv.setAverageColor)
         setButtonColor();
-    }
 
-    if(gv.rotateImages && gv.iconMode){
+    if(gv.rotateImages && gv.iconMode)
         forceUpdateIconOf(wallpaperManager_->currentWallpaperIndex()-2);
-    }
-
 
     if(gv.typeOfInterval){
         srand(time(0));
@@ -1919,11 +1825,9 @@ void MainWindow::on_previous_Button_clicked()
         initialRandomSeconds_=secondsLeft_;
     }
     else
-    {
         findSeconds(true);
-    }
-    globalParser_->resetSleepProtection(secondsLeft_);
 
+    globalParser_->resetSleepProtection(secondsLeft_);
     startUpdateSeconds();
 }
 
@@ -2017,23 +1921,23 @@ void MainWindow::on_wallpapersList_itemDoubleClicked()
         return;
 
     int curRow = ui->wallpapersList->currentRow();
-    if(curRow < 0){
+    if(curRow < 0)
         return;
-    }
 
     QString picture = getPathOfListItem(curRow);
 
-    if(WallpaperManager::imageIsNull(picture)){
+    if(WallpaperManager::imageIsNull(picture))
         return;
-    }
+
     wallpaperManager_->addToPreviousWallpapers(picture);
     wallpaperManager_->setBackground(picture, true, true, 1);
-    if(gv.setAverageColor){
+
+    if(gv.setAverageColor)
         setButtonColor();
-    }
-    if(gv.rotateImages && gv.iconMode){
+
+    if(gv.rotateImages && gv.iconMode)
         forceUpdateIconOf(curRow);
-    }
+
 #ifdef Q_OS_UNIX
     if(gv.currentDE == DesktopEnvironment::LXDE){
         DesktopStyle desktopStyle = qvariant_cast<DesktopStyle>(ui->image_style_combo->currentData());
@@ -2278,12 +2182,11 @@ void MainWindow::changeImage(){
     wallpaperManager_->addToPreviousWallpapers(image);
 
     wallpaperManager_->setBackground(image, true, true, 1);
-    if(gv.setAverageColor){
+    if(gv.setAverageColor)
         setButtonColor();
-    }
-    if(gv.rotateImages && gv.iconMode){
+
+    if(gv.rotateImages && gv.iconMode)
         forceUpdateIconOf(wallpaperManager_->currentWallpaperIndex());
-    }
 }
 
 void MainWindow::searchFor(const QString &term){
@@ -3403,9 +3306,9 @@ void MainWindow::liveWebsiteImageCreated(QImage *image, short errorCode){
         delete image;
 
         wallpaperManager_->setBackground(filename, true, true, 5);
-        if(gv.setAverageColor){
+        if(gv.setAverageColor)
             setButtonColor();
-        }
+
         QFile::remove(gv.wallchHomePath+LW_PREVIEW_IMAGE);
         QFile(filename).link(gv.wallchHomePath+LW_PREVIEW_IMAGE);
         updateScreenLabel();
@@ -3438,7 +3341,7 @@ void MainWindow::prepareWebsiteSnapshot(){
      * the cropping that it has to do (for compatibility
      * with the crop_image and website_preview dialogs)
      */
-    /*websiteSnapshot_->setParameters(QUrl(ui->website->text()), gv.screenWidth, gv.screenHeight);
+    /*websiteSnapshot_->setParameters(QUrl(ui->website->text()), gv.screenAvailableWidth, gv.screenAvailableHeight);
 
     websiteSnapshot_->setWaitAfterFinish(gv.websiteWaitAfterFinishSeconds);
     websiteSnapshot_->setJavascriptConfig(gv.websiteJavascriptEnabled, gv.websiteJavascriptCanReadClipboard);
@@ -3772,7 +3675,7 @@ void MainWindow::loadLiveWebsitePage(){
     gv.websiteWebpageToLoad=settings->value("website", "http://google.com").toString();
     gv.websiteInterval=settings->value("website_interval", 6).toInt();
     gv.websiteCropEnabled=settings->value("website_crop", false).toBool();
-    gv.websiteCropArea=settings->value("website_crop_area", QRect(0, 0, gv.screenWidth, gv.screenHeight)).toRect();
+    gv.websiteCropArea=settings->value("website_crop_area", QRect(0, 0, gv.screenAvailableWidth, gv.screenAvailableHeight)).toRect();
     gv.websiteLoginEnabled=settings->value("website_login", false).toBool();
     gv.websiteLoginUsername=settings->value("website_username", "").toString();
     gv.websiteLoginPasswd=settings->value("website_password", "").toString();
@@ -4037,21 +3940,24 @@ void MainWindow::on_actionGet_Help_Online_triggered()
 
 void MainWindow::on_actionWhat_is_my_screen_resolution_triggered()
 {
-    QSize resolution = QGuiApplication::primaryScreen()->size();
-
     QMessageBox msgBox;msgBox.setWindowTitle(tr("What is my Screen Resolution"));
     msgBox.setText("<b>"+tr("Your screen resolution is")+" <span style=\" font-size:20pt;\">"+
-                   QString::number(resolution.width())+"</span><span style=\" font-size:15pt;\">x</span><span style=\" font-size:20pt;\">"+
-                   QString::number(resolution.height())+"</span>.</b><br>"+tr("The number above represents your screen/monitor resolution (In width and height)."));
+                   QString::number(gv.screenWidth)+"</span><span style=\" font-size:15pt;\">x</span><span style=\" font-size:20pt;\">"+
+                   QString::number(gv.screenHeight)+"</span>.</b><br>"+tr("The number above represents your screen/monitor resolution (In width and height)."));
     msgBox.setIconPixmap(QIcon(":/images/monitor.png").pixmap(QSize(100,100)));
     msgBox.setWindowIcon(QIcon(":/images/wallch.png"));
     msgBox.exec();
 }
 
-void MainWindow::getScreenResolution (QRect resolution){
-    availableGeometry_ = resolution;
-    gv.screenWidth = resolution.width();
-    gv.screenHeight = resolution.height();
+void MainWindow::getScreenResolution (QRect geometry){
+    gv.screenWidth = geometry.width();
+    gv.screenHeight = geometry.height();
+}
+
+void MainWindow::getScreenAvailableResolution (QRect geometry){
+    availableGeometry_ = geometry;
+    gv.screenAvailableWidth = geometry.width();
+    gv.screenAvailableHeight = geometry.height();
 }
 
 //Dialogs Code
@@ -4149,15 +4055,15 @@ void MainWindow::on_set_desktop_color_clicked()
         return;
     }
     colorsGradientsShown_=true;
-    colorsGradients_ = new ColorsGradients(this);
+    colorsGradients_ = new ColorsGradients(wallpaperManager_, this);
 
     colorsGradients_->setModal(true);
     colorsGradients_->setAttribute(Qt::WA_DeleteOnClose);
     colorsGradients_->setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowCloseButtonHint);
     connect(colorsGradients_, SIGNAL(destroyed()), this, SLOT(colorsGradientsDestroyed()));
     connect(colorsGradients_, SIGNAL(updateTv()), this, SLOT(updateScreenLabel()));
-    connect(colorsGradients_, SIGNAL(updateDesktopColor(QString)), this, SLOT(setButtonColor(const QString&)));
-    connect(colorsGradients_, SIGNAL(updateColorButtonSignal(QImage)), this, SLOT(updateColorButton(QImage)));
+    connect(colorsGradients_, SIGNAL(updateDesktopColor()), this, SLOT(setButtonColor()));
+    connect(colorsGradients_, SIGNAL(updateImageStyle()), this, SLOT(updateImageStyleCombo()));
     colorsGradients_->show();
     colorsGradients_->activateWindow();
 }

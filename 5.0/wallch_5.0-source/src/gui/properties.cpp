@@ -91,14 +91,14 @@ QImage Properties::resizePreview(){
         currentImageWidth_ = reader.size().width();
         currentImageHeight_ = reader.size().height();
 
-        if(currentImageWidth_>(gv.screenWidth) || currentImageHeight_>(gv.screenHeight)){
+        if(currentImageWidth_>(gv.screenAvailableWidth) || currentImageHeight_>(gv.screenAvailableHeight)){
             float scaleFactor;
-            if((currentImageWidth_-(gv.screenWidth)) > (currentImageHeight_-(gv.screenHeight))){
-                scaleFactor = (gv.screenWidth*1.0)/currentImageWidth_;
+            if((currentImageWidth_-(gv.screenAvailableWidth)) > (currentImageHeight_-(gv.screenAvailableHeight))){
+                scaleFactor = (gv.screenAvailableWidth*1.0)/currentImageWidth_;
             }
             else
             {
-                scaleFactor = (gv.screenHeight*1.0)/currentImageHeight_;
+                scaleFactor = (gv.screenAvailableHeight*1.0)/currentImageHeight_;
             }
             reader.setScaledSize(QSize(reader.size())*scaleFactor);
         }

@@ -410,7 +410,8 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
         return;
     }
 
-    bool update_image_style = currentBackgroundWallpaper() == "";
+    QString currentBackground = currentBackgroundWallpaper();
+    bool update_image_style = currentBackground == "" || currentBackground == gv.wallchHomePath+COLOR_IMAGE;
 
 #ifdef UNICODE
     result = (bool) SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, (PVOID) image.toLocal8Bit().data(), SPIF_UPDATEINIFILE);
@@ -510,7 +511,8 @@ short WallpaperManager::getCurrentFit(){
 #else
     QSettings desktop_settings("HKEY_CURRENT_USER\\Control Panel\\Desktop", QSettings::NativeFormat);
 
-    if(currentBackgroundWallpaper()=="")
+    QString currentBackground = currentBackgroundWallpaper();
+    if(currentBackground == "" || currentBackground == gv.wallchHomePath+COLOR_IMAGE)
         return 0;
 
     switch(desktop_settings.value("WallpaperStyle").toInt())
@@ -599,13 +601,24 @@ void WallpaperManager::setCurrentFit(short index){
         QProcess::startDetached("pcmanfm", QStringList() << "--wallpaper-mode="+style);
     }
 #else
+    QString currentBg = currentBackgroundWallpaper();
+
     if(index == 0){
-        settings->setValue("last_wallpaper", currentBackgroundWallpaper());
-        setBackground("", false, false, 0);
+        settings->setValue("ColorMode", true);
+        if(currentBg != gv.wallchHomePath+COLOR_IMAGE && !currentBg.isEmpty())
+            settings->setValue("last_wallpaper", currentBg);
+
+        if (settings->value("ShadingType", "solid") == "solid")
+            setBackground("", false, false, 0);
+        else
+            setBackground(gv.wallchHomePath+COLOR_IMAGE, false, false, 0);
         return;
     }
-    else if(index == getCurrentFit())
-        return;
+    else{
+        settings->setValue("ColorMode", false);
+        if(index == getCurrentFit())
+            return;
+    }
 
     /*
      * ---------- Reference: https://learn.microsoft.com/en-us/windows/win32/controls/themesfileformat-overview#control-paneldesktop-section ------------
@@ -689,11 +702,9 @@ void WallpaperManager::setCurrentFit(short index){
     }
 
     // Update desktop background with the style changed
-    if(currentBackgroundWallpaper()==""){
-        QString last_wallpaper = settings->value("last_wallpaper", getPreviousWallpaper()).toString();
-        setBackground(last_wallpaper, false, false, 0);
-    }
+    if(currentBg.isEmpty() || currentBg == gv.wallchHomePath+COLOR_IMAGE)
+        setBackground(settings->value("last_wallpaper", getPreviousWallpaper()).toString(), false, false, 0);
     else
-       setBackground(currentBackgroundWallpaper(), false, false, 0);
+       setBackground(currentBg, false, false, 0);
 #endif
 }
