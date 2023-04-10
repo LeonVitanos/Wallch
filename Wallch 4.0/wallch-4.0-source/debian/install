@@ -1,4 +1,0 @@
-wallch /usr/bin/
-data/bash_autocompletion/wallch /etc/bash_completion.d/
-data/man/wallch.1.gz /usr/share/man/man1/
-data/pixmap/wallch.png /usr/share/pixmaps/
