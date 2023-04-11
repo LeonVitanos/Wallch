@@ -91,15 +91,10 @@ Preferences::Preferences(QWidget *parent) :
     }
     listIsAlreadyIcons_=ui->icons_radioButton->isChecked();
 
-    if(settings->value("typeOfIntervals", 0).toInt()==0){
+    if(settings->value("typeOfIntervals", 0).toInt()==0)
         ui->intervalradioButton->setChecked(true);
-    }
-    else if(settings->value("typeOfIntervals").toInt()==1){
+    else
         ui->intervalradioButton_2->setChecked(true);
-    }
-    else{
-        ui->intervalradioButton_3->setChecked(true);
-    }
 
     //'Live Website' Page
     ui->simple_authentication->setChecked(settings->value("website_simple_auth", false).toBool());
@@ -304,10 +299,6 @@ void Preferences::on_saveButton_clicked()
     }
     else if(ui->intervalradioButton_2->isChecked() && settings->value("typeOfIntervals",0)!=1){
         settings->setValue("typeOfIntervals", 1);
-        Q_EMIT intervalTypeChanged();
-    }
-    else if(ui->intervalradioButton_3->isChecked() && settings->value("typeOfIntervals",0)!=2){
-        settings->setValue("typeOfIntervals", 2);
         Q_EMIT intervalTypeChanged();
     }
 

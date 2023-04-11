@@ -58,6 +58,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "cachemanager.h"
 #include "imagefetcher.h"
 #include "pictures_locations.h"
+#include "timermanager.h"
 
 #ifdef Q_OS_UNIX
 
@@ -106,7 +107,7 @@ class MainWindow : public QMainWindow {
 public:
     MainWindow(QSharedMemory *attachedMemory, Global *globalParser, ImageFetcher *imageFetcher_,
                WebsiteSnapshot *websiteSnapshot, WallpaperManager *wallpaperManager,
-               int timeoutCount, int lastRandomDelay, QWidget *parent = 0);
+               TimerManager *timerManager, QWidget *parent = 0);
     ~MainWindow();
     void click_shortcut_next();
     Ui::MainWindow *ui;
@@ -167,6 +168,7 @@ private:
     PotdPreview *potdPreview_;
     QTranslator *translator_;
     WebsitePreview *webPreview_;
+    TimerManager *timerManager_;
 
     QRegularExpression *match_;
     QMovie *processingRequestGif_;
@@ -186,11 +188,7 @@ private:
     bool processingOnlineRequest_;
     Global *globalParser_ = NULL;
     ImageFetcher *imageFetcher_ = NULL;
-    qint64 secondsLeft_ = 0;
-    int initialRandomSeconds_;
-    int totalSeconds_ = 0;
     int previouslyRunningFeature_ = 0;
-    int secondsInWallpapersSlider_;
     double imagePreviewResizeFactorX_;
     double imagePreviewResizeFactorY_;
     int currentSearchItemIndex;
@@ -247,7 +245,7 @@ private:
     void setupKeyboardShortcuts();
     void setupTimers();
     QPoint calculateSettingsMenuPos();
-    void continueAlreadyRunningFeature(int timeoutCount, int lastRandomDelay);
+    void continueAlreadyRunningFeature();
     void applySettings();
     void retrieveSettings();
     void initializePrivateVariables(Global *globalParser, ImageFetcher *imageFetcher);
@@ -259,7 +257,6 @@ private:
     void continueToNextMatch();
     void continueToPreviousMatch();
     void animateProgressbarOpacity(bool show);
-    void findSeconds(bool typeCountSeconds);
     void startPauseWallpaperChangingProcess();
     void animateScreenLabel(bool onlyHide);
     void loadWallpapersPage();
@@ -284,9 +281,6 @@ private:
     bool websiteConfiguredCorrectly();
     void updatePotdProgress();
     void currentFolderDoesNotExist();
-    QString secondsToMh(int seconds);
-    QString secondsToHms(int seconds);
-    QString secondsToHm(int seconds);
     QString fixBasenameSize(const QString &basename);
     void actionsOnWallpaperChange();
     void resetWatchFolders();
@@ -432,14 +426,14 @@ private Q_SLOTS:
     void on_edit_potd_clicked();
     void on_shuffle_images_checkbox_clicked();
     void on_stackedWidget_currentChanged(int page);
-    void on_random_from_valueChanged(int value);
-    void on_random_to_valueChanged(int value2);
-    void on_random_time_from_combobox_currentIndexChanged(int index);
-    void on_random_time_to_combobox_currentIndexChanged(int index);
     void on_edit_pushButton_clicked();
     void updateImageStyleCombo();
     void getScreenResolution(QRect geometry);
     void getScreenAvailableResolution(QRect geometry);
+    void on_days_spinBox_valueChanged(int arg1);
+    void on_hours_spinBox_valueChanged(int arg1);
+    void on_minutes_spinBox_valueChanged(int arg1);
+    void on_seconds_spinBox_valueChanged(int arg1);
 
 Q_SIGNALS:
      void fixLivewebsiteButtons();

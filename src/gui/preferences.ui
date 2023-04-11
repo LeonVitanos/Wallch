@@ -255,8 +255,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>598</width>
-              <height>550</height>
+              <width>601</width>
+              <height>604</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -757,8 +757,8 @@ picture and change the desktop background once at System Startup</string>
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>383</width>
-              <height>274</height>
+              <width>615</width>
+              <height>483</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_8">
@@ -899,16 +899,6 @@ picture and change the desktop background once at System Startup</string>
                  <widget class="QRadioButton" name="intervalradioButton_2">
                   <property name="text">
                    <string>Show spinboxes with adjustable interval</string>
-                  </property>
-                  <attribute name="buttonGroup">
-                   <string notr="true">buttonGroup_2</string>
-                  </attribute>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QRadioButton" name="intervalradioButton_3">
-                  <property name="text">
-                   <string>Show random time spinboxes</string>
                   </property>
                   <attribute name="buttonGroup">
                    <string notr="true">buttonGroup_2</string>
@@ -1443,8 +1433,8 @@ picture and change the desktop background once at System Startup</string>
   </connection>
  </connections>
  <buttongroups>
+  <buttongroup name="buttonGroup_2"/>
   <buttongroup name="listTypeButtonGroup"/>
   <buttongroup name="buttonGroup"/>
-  <buttongroup name="buttonGroup_2"/>
  </buttongroups>
 </ui>

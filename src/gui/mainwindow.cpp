@@ -39,7 +39,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 MainWindow *mainWindowInstance;
 
-MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, ImageFetcher *imageFetcher, WebsiteSnapshot *websiteSnapshot, WallpaperManager *wallpaperManager, int timeoutCount, int lastRandomDelay, QWidget *parent) :
+MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, ImageFetcher *imageFetcher,
+                       WebsiteSnapshot *websiteSnapshot, WallpaperManager *wallpaperManager,
+                       TimerManager *timerManager, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
@@ -51,6 +53,7 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
 
     initializePrivateVariables(globalParser, imageFetcher);
     wallpaperManager_ = (wallpaperManager == NULL) ? new WallpaperManager() : wallpaperManager;
+    timerManager_ = (timerManager == NULL) ? new TimerManager() : timerManager;
     websiteSnapshot_ = websiteSnapshot;
 
     getScreenResolution(QGuiApplication::primaryScreen()->geometry());
@@ -73,7 +76,7 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     setupTimers();
     setupKeyboardShortcuts();
     applySettings();
-    continueAlreadyRunningFeature(timeoutCount, lastRandomDelay);
+    continueAlreadyRunningFeature();
     setAcceptDrops(true);
 
     // Restore window's position and size
@@ -263,8 +266,6 @@ void MainWindow::retrieveSettings()
     gv.pauseOnBattery = settings->value("pause_on_battery", false).toBool();
     gv.setAverageColor = settings->value("average_color", false).toBool();
     gv.typeOfInterval = settings->value("typeOfIntervals", 0).toInt();
-    gv.randomTimeFrom = settings->value("random_time_from", 300).toInt();
-    gv.randomTimeTo = settings->value("random_time_to", 1200).toInt();
     gv.iconMode = settings->value("icon_style", true).toBool();
     gv.randomImagesEnabled = settings->value("random_images_enabled", true).toBool();
     gv.previewImagesOnScreen = settings->value("preview_images_on_screen", true).toBool();
@@ -457,7 +458,7 @@ void MainWindow::applySettings()
     }
 
     //setting the slider's value...
-    secondsInWallpapersSlider_ = settings->value("delay", DEFAULT_SLIDER_DELAY).toInt();
+    timerManager_->secondsInWallpapersSlider_ = settings->value("delay", DEFAULT_SLIDER_DELAY).toInt();
 
     if(!gv.previewImagesOnScreen)
     {
@@ -474,16 +475,6 @@ void MainWindow::applySettings()
         ui->widget_3->setMaximumHeight(0);
     }
 
-    if(gv.randomTimeFrom>gv.randomTimeTo-3){
-        //The randomness is misconfigured, apply default values
-        ui->random_from->setValue(10);
-        ui->random_to->setValue(20);
-        ui->random_time_from_combobox->setCurrentIndex(1);
-        ui->random_time_to_combobox->setCurrentIndex(1);
-        gv.randomTimeFrom=600;
-        gv.randomTimeTo=1200;
-    }
-
     if(gv.randomImagesEnabled){
         srand(time(0));
     }
@@ -497,8 +488,8 @@ void MainWindow::applySettings()
 #endif
 }
 
-void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomDelay)
-{
+void MainWindow::continueAlreadyRunningFeature()
+{   
     if(gv.wallpapersRunning)
     {
         loadWallpapersPage();
@@ -508,10 +499,9 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
             ui->startButton->setText(tr("&Start"));
             ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
             animateProgressbarOpacity(1);
-            findSeconds(true);
-            secondsLeft_=(timeoutCount+1);
-            initialRandomSeconds_=lastRandomDelay;
-            globalParser_->resetSleepProtection(secondsLeft_);
+            timerManager_->findSeconds(true);
+            timerManager_->secondsRemaining_ += 1;
+            globalParser_->resetSleepProtection(timerManager_->secondsRemaining_);
             updateSeconds();
             stopButtonsSetEnabled(true);
 #ifdef Q_OS_UNIX
@@ -529,10 +519,8 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
             ui->startButton->setText(tr("Pau&se"));
             ui->startButton->setIcon(QIcon::fromTheme("media-playback-pause", QIcon(":/images/media-playback-pause.png")));
             animateProgressbarOpacity(1);
-            findSeconds(true);
+            timerManager_->findSeconds(true);
             startWasJustClicked_=true;
-            secondsLeft_=timeoutCount;
-            initialRandomSeconds_=lastRandomDelay;
             startUpdateSeconds();
             stopButtonsSetEnabled(true);
             previousAndNextButtonsSetEnabled(true);
@@ -541,7 +529,6 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
     }
     else if(gv.liveEarthRunning)
     {
-        secondsLeft_=timeoutCount;
         ui->activate_livearth->setEnabled(false);
         ui->deactivate_livearth->setEnabled(true);
         startUpdateSeconds();
@@ -557,7 +544,6 @@ void MainWindow::continueAlreadyRunningFeature(int timeoutCount, int lastRandomD
     }
     else if(gv.liveWebsiteRunning)
     {
-        secondsLeft_=timeoutCount;
         ui->deactivate_website->setEnabled(true);
         ui->activate_website->setEnabled(false);
         startUpdateSeconds();
@@ -655,14 +641,10 @@ void MainWindow::startUpdateSeconds(){
 void MainWindow::updatePotdProgress(){
     int secsToPotd = globalParser_->getSecondsTillHour("00:00");
 
-    if(secsToPotd<=3600){
-        //less than one hour left
-        ui->timeForNext->setFormat(secondsToHms(secsToPotd));
-    }
+    if(secsToPotd<=3600)
+        ui->timeForNext->setFormat(timerManager_->secondsToHms(secsToPotd));
     else
-    {
-        ui->timeForNext->setFormat(secondsToHm(secsToPotd));
-    }
+        ui->timeForNext->setFormat(timerManager_->secondsToHm(secsToPotd));
 
     setProgressbarsValue(short(((float) (secsToPotd/86400.0)) * 100));
 }
@@ -1035,32 +1017,6 @@ void MainWindow::hideTimeForNext()
     setProgressbarsValue(100);
 }
 
-void MainWindow::findSeconds(bool typeCountSeconds)
-{
-    int count_seconds;
-    if(gv.typeOfInterval==0)
-    {
-        count_seconds=gv.defaultIntervals.at(ui->timerSlider->value()-1);
-    }
-    else
-    {
-        count_seconds=ui->days_spinBox->value()*86400+ui->hours_spinBox->value()*3600+ui->minutes_spinBox->value()*60+ui->seconds_spinBox->value();
-    }
-
-    if(typeCountSeconds)
-    {
-        //true,its time to change wallpaper and we want
-        //to change the seconds_left to the current value of slider and to temp save the current value of slider.
-        secondsLeft_=totalSeconds_=count_seconds;
-    }
-    else
-    {
-        //false, we just changed the value of the slider and we want the value to be converted
-        //in seconds BUT  we don't want seconds_left or tmp_slider to be changed.
-        secondsInWallpapersSlider_=count_seconds;
-    }
-}
-
 void MainWindow::processRequestStart(){
     if(processingOnlineRequest_){
         return;
@@ -1177,20 +1133,11 @@ void MainWindow::on_image_style_combo_currentIndexChanged(int index)
 void MainWindow::actionsOnWallpaperChange(){
     if(gv.wallpapersRunning)
     {
-        if(!currentFolderExists()){
+        if(!currentFolderExists())
             return;
-        }
-        if(gv.typeOfInterval==2)
-        {
-            //srand(time(0));
-            secondsLeft_=(rand()%(gv.randomTimeTo-gv.randomTimeFrom+1))+gv.randomTimeFrom;
-            initialRandomSeconds_=secondsLeft_;
-            totalSeconds_=secondsLeft_;
-        }
-        else
-        {
-            findSeconds(true);
-        }
+
+        timerManager_->findSeconds(true);
+
         if(startWasJustClicked_){
             startWasJustClicked_=false;
             if(!gv.firstTimeout){
@@ -1204,22 +1151,22 @@ void MainWindow::actionsOnWallpaperChange(){
             }
             changeImage();
         }
-        globalParser_->saveSecondsLeftNow(secondsLeft_, 0);
+        globalParser_->saveSecondsLeftNow(timerManager_->secondsRemaining_, 0);
     }
     else if(gv.liveWebsiteRunning){
         ui->timeout_text_label->show();
         ui->website_timeout_label->show();
         processRequestStart();
         //websiteSnapshot_->start();
-        secondsLeft_=globalParser_->websiteSliderValueToSeconds(ui->website_slider->value());
-        globalParser_->saveSecondsLeftNow(secondsLeft_, 2);
+        timerManager_->secondsRemaining_=globalParser_->websiteSliderValueToSeconds(ui->website_slider->value());
+        globalParser_->saveSecondsLeftNow(timerManager_->secondsRemaining_, 2);
     }
     else if(gv.liveEarthRunning){
         processRequestStart();
         imageFetcher_->setFetchType(FetchType::LE);
         imageFetcher_->fetch();
-        secondsLeft_=1800;
-        globalParser_->saveSecondsLeftNow(secondsLeft_, 1);
+        timerManager_->secondsRemaining_=1800;
+        globalParser_->saveSecondsLeftNow(timerManager_->secondsRemaining_, 1);
     }
     else if(gv.potdRunning){
         justUpdatedPotd_=true;
@@ -1234,10 +1181,8 @@ void MainWindow::actionsOnWallpaperChange(){
         }
         else
         {
-            /*
-             * The previous time was today, so the picture must be still there,
-             * so re-set it as background, no need to download anything!
-             */
+            //The previous time was today, so the picture must be still there,
+            //so re-set it as background, no need to download anything!
             QString filename = globalParser_->getFilename(gv.wallchHomePath+POTD_IMAGE+"*");
             globalParser_->debug("Picture of the day has already been downloaded.");
             if(filename.isEmpty()){
@@ -1306,52 +1251,38 @@ void MainWindow::updateSeconds(){
     else
     {
         gv.runningTimeOfProcess = QDateTime::currentDateTime();
-        if(secondsLeft_<=0){
+        if(timerManager_->secondsRemaining_<=0){
             actionsOnWallpaperChange();
-            gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsLeft_);
+            gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(timerManager_->secondsRemaining_);
         }
 
         //in case the computer went to hibernate/suspend take actions
         int secsToFinishInterval=gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval);
-        if(secondsLeft_<(secsToFinishInterval-1) || secondsLeft_>(secsToFinishInterval+1))
+        if(timerManager_->secondsRemaining_<(secsToFinishInterval-1) || timerManager_->secondsRemaining_>(secsToFinishInterval+1))
         {
             int secondsToChange = gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval);
             if(secondsToChange<=0)
             {
                 //the wallpaper should've already changed!
                 actionsOnWallpaperChange();
-                gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsLeft_);
+                gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(timerManager_->secondsRemaining_);
             }
-            else if (!(secondsLeft_-secondsToChange<-1 || secondsLeft_-secondsToChange>1)){
+            else if (!(timerManager_->secondsRemaining_-secondsToChange<-1 || timerManager_->secondsRemaining_-secondsToChange>1)){
                 //the time has yet to come, just update
-                if(abs(secondsLeft_-secondsToChange)>1){
-                    secondsLeft_=secondsToChange;
+                if(abs(timerManager_->secondsRemaining_-secondsToChange)>1){
+                    timerManager_->secondsRemaining_=secondsToChange;
                 }
             }
         }
 
-        ui->timeForNext->setFormat(secondsToHms(secondsLeft_));
+        ui->timeForNext->setFormat(timerManager_->secondsToHms(timerManager_->secondsRemaining_));
 
         if(gv.wallpapersRunning)
         {
-            if(gv.typeOfInterval==2){
-                if(initialRandomSeconds_==0){
-                    setProgressbarsValue(100);
-                }
-                else
-                {
-                    setProgressbarsValue((secondsLeft_*100)/initialRandomSeconds_);
-                }
-            }
-            else{
-                if(totalSeconds_==0){
-                    setProgressbarsValue(100);
-                }
-                else
-                {
-                    setProgressbarsValue((secondsLeft_*100)/(totalSeconds_));
-                }
-            }
+            if(timerManager_->totalSeconds_==0)
+                setProgressbarsValue(100);
+            else
+                setProgressbarsValue((timerManager_->secondsRemaining_*100)/(timerManager_->totalSeconds_));
         }
         else if(gv.liveWebsiteRunning){
             int totalSecs=globalParser_->websiteSliderValueToSeconds(ui->website_slider->value());
@@ -1360,17 +1291,17 @@ void MainWindow::updateSeconds(){
             }
             else
             {
-                setProgressbarsValue((secondsLeft_*100)/totalSecs);
+                setProgressbarsValue((timerManager_->secondsRemaining_*100)/totalSecs);
             }
             if(processingOnlineRequest_ && timePassedForLiveWebsiteRequest_<=WEBSITE_TIMEOUT){
                 ui->website_timeout_label->setText(QString::number(WEBSITE_TIMEOUT+1-(timePassedForLiveWebsiteRequest_++))+" "+tr("seconds")+"...");
             }
         }
         else if(gv.liveEarthRunning){
-            setProgressbarsValue(secondsLeft_*100/1800);
+            setProgressbarsValue(timerManager_->secondsRemaining_*100/1800);
         }
 
-        secondsLeft_--;
+        timerManager_->secondsRemaining_--;
     }
 }
 
@@ -1384,7 +1315,7 @@ void MainWindow::click_shortcut_next(){
 
 void MainWindow::on_website_slider_valueChanged(int value)
 {
-    ui->website_interval_slider_label->setText(secondsToMh(globalParser_->websiteSliderValueToSeconds(value)));
+    ui->website_interval_slider_label->setText(timerManager_->secondsToMh(globalParser_->websiteSliderValueToSeconds(value)));
 }
 
 void MainWindow::changeAppStyleSheetTo(const QString &styleSheetFile){
@@ -1431,96 +1362,6 @@ void MainWindow::pauseEverythingThatsRunning()
     else if(gv.liveWebsiteRunning){
         on_deactivate_website_clicked();
     }
-}
-
-QString MainWindow::secondsToHms(int seconds){
-    int minutes_left=0, hours_left=0, finalSeconds;
-    if(seconds>=60){
-        minutes_left=seconds/60;
-        if(minutes_left>=60){
-            hours_left=minutes_left/60;
-        }
-        minutes_left=minutes_left-hours_left*60;
-        finalSeconds=seconds-(hours_left*3600+minutes_left*60);
-    }
-    else{
-        finalSeconds=seconds;
-    }
-    if(!hours_left && !minutes_left){
-        return QString::number(finalSeconds)+tr("s");
-    }
-    else if(!hours_left){
-        if(finalSeconds){
-            return QString::number(minutes_left)+tr("m")+" " + QString::number(finalSeconds)+tr("s");
-        }
-        else{
-            return QString::number(minutes_left)+tr("m");
-        }
-    }
-    else if(!minutes_left){
-        if(finalSeconds){
-            return QString::number(hours_left) + tr("h")+" " + QString::number(finalSeconds)+tr("s");
-        }
-        else{
-            return QString::number(hours_left) + tr("h");
-        }
-    }
-    else
-    {
-        if(finalSeconds){
-            return QString::number(hours_left) + tr("h")+" " + QString::number(minutes_left)+tr("m")+" " + QString::number(finalSeconds)+tr("s");
-        }
-        else{
-            return QString::number(hours_left) + tr("h")+" " + QString::number(minutes_left)+tr("m");
-        }
-    }
-}
-
-QString MainWindow::secondsToHm(int seconds){
-    if(seconds<=60){
-        return QString("1"+tr("m"));
-    }
-    else if(seconds<=3600){
-        return QString::number(seconds/60)+QString(tr("m"));
-    }
-    else
-    {
-        int hours=seconds/3600;
-        seconds-=hours*3600;
-        int minutes=seconds/60;
-        if(minutes){
-            return QString::number(hours)+QString(tr("h")+" ")+QString::number(minutes)+QString(tr("m"));
-        }
-        else{
-            return QString::number(hours)+QString(tr("h"));
-        }
-    }
-}
-
-QString MainWindow::secondsToMh(int seconds)
-{
-    if (seconds<60){
-        return QString(QString::number(seconds) + " "+tr("seconds"));
-    }
-    else if(seconds==60){
-        return QString("1 "+tr("minute"));
-    }
-    else if(seconds<3600){
-        return QString(QString::number(seconds/60) + " "+tr("minutes"));
-    }
-    else if(seconds==3600){
-        return QString("1 "+tr("hour"));
-    }
-    else if(seconds<86400){
-        return QString(QString::number(seconds/3600) + " "+tr("hours"));
-    }
-    else if(seconds==86400){
-        return QString("1 "+tr("day"));
-    }
-    else if(seconds==604800){
-        return QString("1 "+tr("week"));
-    }
-    return QString("");
 }
 
 void MainWindow::setAverageColor(const QString &image){
@@ -1676,22 +1517,15 @@ void MainWindow::startPauseWallpaperChangingProcess(){
 
         if(gv.processPaused){
             //If the process was paused, then we need to continue from where it is left, not from the next second
-            secondsLeft_+=1;
+            timerManager_->secondsRemaining_+=1;
         }
 
-        globalParser_->resetSleepProtection(secondsLeft_);
+        globalParser_->resetSleepProtection(timerManager_->secondsRemaining_);
 
-        if(!gv.processPaused){
+        if(!gv.processPaused)
             //if the process wasn't paused, then the progressbar is hidden. Add an animation so as to show it
             animateProgressbarOpacity(1);
-            if(gv.typeOfInterval==2)
-            {
-                srand(time(0));
-                secondsLeft_=(rand()%(gv.randomTimeTo-gv.randomTimeFrom+1))+gv.randomTimeFrom;
-                initialRandomSeconds_=secondsLeft_;
-                totalSeconds_=secondsLeft_;
-            }
-        }
+
         gv.processPaused=false;
 
 #ifdef Q_OS_UNIX
@@ -1741,7 +1575,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
             ui->shuffle_images_checkbox->setEnabled(true);
         }
         if(gv.independentIntervalEnabled){
-            globalParser_->saveSecondsLeftNow(secondsLeft_, 0);
+            globalParser_->saveSecondsLeftNow(timerManager_->secondsRemaining_, 0);
         }
     }
 }
@@ -1761,7 +1595,7 @@ void MainWindow::on_stopButton_clicked(){
     animateProgressbarOpacity(0);
     gv.processPaused=false;
     firstRandomImageIsntRandom_=false;
-    secondsLeft_=0;
+    timerManager_->secondsRemaining_=0;
     if(updateSecondsTimer_->isActive()){
         updateSecondsTimer_->stop();
     }
@@ -1797,7 +1631,7 @@ void MainWindow::on_next_Button_clicked()
         return;
 
     updateSecondsTimer_->stop();
-    secondsLeft_=0;
+    timerManager_->secondsRemaining_=0;
     startUpdateSeconds();
 }
 
@@ -1815,15 +1649,9 @@ void MainWindow::on_previous_Button_clicked()
     if(gv.rotateImages && gv.iconMode)
         forceUpdateIconOf(wallpaperManager_->currentWallpaperIndex()-2);
 
-    if(gv.typeOfInterval){
-        srand(time(0));
-        secondsLeft_=(rand()%(gv.randomTimeTo-gv.randomTimeFrom+1))+gv.randomTimeFrom;
-        initialRandomSeconds_=secondsLeft_;
-    }
-    else
-        findSeconds(true);
+    timerManager_->findSeconds(true);
 
-    globalParser_->resetSleepProtection(secondsLeft_);
+    globalParser_->resetSleepProtection(timerManager_->secondsRemaining_);
     startUpdateSeconds();
 }
 
@@ -2319,29 +2147,27 @@ void MainWindow::openImageFolderMassive(){
 
 void MainWindow::on_timerSlider_valueChanged(int value)
 {
-    ui->wallpapers_slider_time->setText(globalParser_->secondsToMinutesHoursDays(gv.defaultIntervals.at(value-1)));
+    ui->wallpapers_slider_time->setText(timerManager_->secondsToMinutesHoursDays(timerManager_->defaultIntervals.at(value-1)));
 
-    if(!gv.mainwindowLoaded){
+    if(!gv.mainwindowLoaded)
         return;
-    }
 
-    findSeconds(false);
+    timerManager_->findSeconds(false);
     updateCheckTime_->start(3000);
-    settings->setValue("delay", secondsInWallpapersSlider_);
+    settings->setValue("delay", timerManager_->secondsInWallpapersSlider_);
     settings->setValue("timeSlider", ui->timerSlider->value());
     settings->sync();
 }
 
 void MainWindow::updateTiming(){
-    if(updateCheckTime_->isActive()){
+    if(updateCheckTime_->isActive())
         updateCheckTime_->stop();
-    }
 
     if(!loadedPages_[0])
         return;
 
     settings->setValue( "timeSlider", ui->timerSlider->value());
-    settings->setValue( "delay", secondsInWallpapersSlider_ );
+    settings->setValue( "delay", timerManager_->secondsInWallpapersSlider_ );
     settings->sync();
 }
 
@@ -2894,14 +2720,14 @@ void MainWindow::processRunningResetPictures(){
         else
         {
             //generate new random images
-            secondsLeft_=0;
+            timerManager_->secondsRemaining_=0;
             wallpaperManager_->startOver();
         }
     }
     else if(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START)
     {
         wallpaperManager_->startOver(); //start from the beginning of the new folder
-        secondsLeft_=0;
+        timerManager_->secondsRemaining_=0;
     }
     else
         on_stopButton_clicked();
@@ -3050,7 +2876,7 @@ void MainWindow::on_deactivate_livearth_clicked()
         return;
     }
 
-    secondsLeft_=0;
+    timerManager_->secondsRemaining_=0;
     imageFetcher_->abort();
     gv.liveEarthRunning=false;
     globalParser_->updateStartup();
@@ -3138,7 +2964,7 @@ void MainWindow::on_deactivate_potd_clicked()
         return;
     }
 
-    secondsLeft_=0;
+    timerManager_->secondsRemaining_=0;
     processRequestStop();
     imageFetcher_->abort();
     gv.potdRunning=false;
@@ -3234,7 +3060,7 @@ void MainWindow::on_deactivate_website_clicked()
     stoppedBecauseOnBattery_=false;
     gv.liveWebsiteRunning=false;
     globalParser_->updateStartup();
-    secondsLeft_=0;
+    timerManager_->secondsRemaining_=0;
     if(updateSecondsTimer_->isActive()){
         updateSecondsTimer_->stop();
     }
@@ -3578,35 +3404,10 @@ void MainWindow::loadWallpapersPage(){
     gv.typeOfInterval=settings->value("typeOfIntervals", 0).toInt();
     ui->stackedWidget_2->setCurrentIndex(gv.typeOfInterval);
 
-    if(settings->value("from_combo", 1).toInt()==0){
-        ui->random_from->setValue(settings->value("random_time_from", 10).toInt());
-    }
-    else if(settings->value("from_combo", 1).toInt()==1){
-        ui->random_from->setValue(settings->value("random_time_from", 10).toInt()/60);
-    }
-    else
-    {
-        ui->random_from->setValue(settings->value("random_time_from", 10).toInt()/3600);
-    }
-
-    if(settings->value("till_combo", 1).toInt()==0){
-        ui->random_to->setValue(settings->value("random_time_to", 20).toInt());
-    }
-    else if(settings->value("till_combo", 1).toInt()==1){
-        ui->random_to->setValue(settings->value("random_time_to", 20).toInt()/60);
-    }
-    else
-    {
-        ui->random_to->setValue(settings->value("random_time_to", 20).toInt()/3600);
-    }
-
     ui->days_spinBox->setValue(settings->value("days_box", 0).toInt());
     ui->hours_spinBox->setValue(settings->value("hours_box", 0).toInt());
     ui->minutes_spinBox->setValue(settings->value("minutes_box", 30).toInt());
     ui->seconds_spinBox->setValue(settings->value("seconds_box", 0).toInt());
-
-    ui->random_time_from_combobox->setCurrentIndex(settings->value("from_combo", 1).toInt());
-    ui->random_time_to_combobox->setCurrentIndex(settings->value("till_combo", 1).toInt());
 
     ui->timerSlider->setValue(settings->value("timeSlider", 7).toInt());
     if(ui->timerSlider->value()==7){
@@ -3891,21 +3692,6 @@ void MainWindow::on_actionDelete_triggered()
     }
 }
 
-void MainWindow::on_actionProperties_triggered()
-{   
-    if(propertiesShown_ || !WallpaperManager::currentBackgroundExists()){
-        return;
-    }
-    QString imageFilename=WallpaperManager::currentBackgroundWallpaper();
-
-    propertiesShown_=true;
-    properties_ = new Properties(imageFilename, false, 0, 0);
-    properties_->setModal(true);
-    properties_->setAttribute(Qt::WA_DeleteOnClose);
-    connect(properties_, SIGNAL(destroyed()), this, SLOT(propertiesDestroyed()));
-    properties_->show();
-}
-
 void MainWindow::doQuit()
 {
     actionsOnClose();
@@ -3957,6 +3743,25 @@ void MainWindow::getScreenAvailableResolution (QRect geometry){
 }
 
 //Dialogs Code
+
+void MainWindow::on_actionProperties_triggered()
+{
+    if(propertiesShown_ || !WallpaperManager::currentBackgroundExists()){
+        return;
+    }
+    QString imageFilename=WallpaperManager::currentBackgroundWallpaper();
+
+    propertiesShown_=true;
+    properties_ = new Properties(imageFilename, false, 0, 0);
+    properties_->setModal(true);
+    properties_->setAttribute(Qt::WA_DeleteOnClose);
+    connect(properties_, SIGNAL(destroyed()), this, SLOT(propertiesDestroyed()));
+    properties_->show();
+}
+
+void MainWindow::propertiesDestroyed(){
+    propertiesShown_=false;
+}
 
 void MainWindow::on_actionStatistics_triggered()
 {
@@ -4014,6 +3819,26 @@ void MainWindow::on_action_About_triggered()
 
 void MainWindow::aboutDestroyed(){
     aboutShown_=false;
+}
+
+void MainWindow::on_edit_pushButton_clicked()
+{
+    if(locationsShown_){
+        return;
+    }
+    locationsShown_=true;
+    locations_ = new PicturesLocations(this);
+    locations_->setModal(true);
+    locations_->setAttribute(Qt::WA_DeleteOnClose);
+    connect(locations_, SIGNAL(destroyed()), this, SLOT(locationsDestroyed()));
+    connect(locations_, SIGNAL(picturesLocationsChanged()), this, SLOT(picturesLocationsChanged()));
+    locations_->setWindowFlags(Qt::Window);
+    locations_->show();
+    locations_->activateWindow();
+}
+
+void MainWindow::locationsDestroyed(){
+    locationsShown_=false;
 }
 
 void MainWindow::on_action_Preferences_triggered()
@@ -4117,10 +3942,6 @@ void MainWindow::showProperties()
         properties_->show();
         properties_->activateWindow();
     }
-}
-
-void MainWindow::propertiesDestroyed(){
-    propertiesShown_=false;
 }
 
 void MainWindow::sendPropertiesNext(int current){
@@ -4365,85 +4186,8 @@ void MainWindow::intervalTypeChanged()
 {
     gv.typeOfInterval=settings->value("typeOfIntervals", 0).toInt();
     ui->stackedWidget_2->setCurrentIndex(gv.typeOfInterval);
-    if(gv.wallpapersRunning && gv.randomImagesEnabled)
-    {
-        initialRandomSeconds_=totalSeconds_;
-    }
 }
 
-void MainWindow::on_random_from_valueChanged(int value)
-{
-    if(!loadedPages_[0])
-        return;
-
-    short combo_from=ui->random_time_from_combobox->currentIndex();
-    short combo_till=ui->random_time_to_combobox->currentIndex();
-    short value2=ui->random_to->value();
-
-    if(combo_from==0 && value==0)
-    {
-        ui->random_from->setValue(1);
-    }
-
-    if(combo_from==0 && combo_till==0 && value>=value2-2){
-        ui->random_to->setValue(value+3);
-    }
-    else if(((combo_from==1 && combo_till==1) || (combo_from==2 && combo_till==2)) && value>=value2){
-        ui->random_to->setValue(value+1);
-    }
-
-    gv.randomTimeFrom = ui->random_from->value() * pow(60, ui->random_time_from_combobox->currentIndex());
-    settings->setValue("random_time_from", gv.randomTimeFrom);
-    settings->sync();
-}
-
-void MainWindow::on_random_to_valueChanged(int value2)
-{
-    if(!loadedPages_[0])
-        return;
-
-    short combo_from=ui->random_time_from_combobox->currentIndex();
-    short combo_till=ui->random_time_to_combobox->currentIndex();
-    short value=ui->random_from->value();
-
-    if(combo_from==0 && combo_till==0 && value>=value2-2){
-        if(value==1){
-            ui->random_to->setValue(4);
-            return;
-        }
-        ui->random_from->setValue(value2-3);
-    }
-    else if(((combo_from==1 && combo_till==1) || (combo_from==2 && combo_till==2)) && value>=value2){
-        ui->random_from->setValue(value2-1);
-    }
-    gv.randomTimeTo=ui->random_to->value() * pow(60, ui->random_time_to_combobox->currentIndex());
-    settings->setValue("random_time_to", gv.randomTimeTo);
-    settings->sync();
-}
-
-void MainWindow::on_random_time_from_combobox_currentIndexChanged(int index)
-{
-    if(!loadedPages_[0])
-        return;
-
-    if(ui->random_time_to_combobox->currentIndex()<index){
-        ui->random_time_to_combobox->setCurrentIndex(index);
-    }
-    settings->setValue("from_combo", ui->random_time_from_combobox->currentIndex());
-    on_random_from_valueChanged(ui->random_from->value());
-}
-
-void MainWindow::on_random_time_to_combobox_currentIndexChanged(int index)
-{
-    if(!loadedPages_[0])
-        return;
-
-    if(ui->random_time_from_combobox->currentIndex()>index){
-        ui->random_time_from_combobox->setCurrentIndex(index);
-    }
-    settings->setValue("till_combo", ui->random_time_to_combobox->currentIndex());
-    on_random_to_valueChanged(ui->random_to->value());
-}
 
 void MainWindow::timeSpinboxChanged()
 {
@@ -4453,28 +4197,33 @@ void MainWindow::timeSpinboxChanged()
         delay=1;
         ui->seconds_spinBox->setValue(1);
     }
-    findSeconds(false);
+    timerManager_->findSeconds(false);
     updateCheckTime_->start(3000);
+
     settings->setValue("delay", delay);
     settings->sync();
 }
 
-void MainWindow::on_edit_pushButton_clicked()
+void MainWindow::on_days_spinBox_valueChanged(int arg1)
 {
-    if(locationsShown_){
-        return;
-    }
-    locationsShown_=true;
-    locations_ = new PicturesLocations(this);
-    locations_->setModal(true);
-    locations_->setAttribute(Qt::WA_DeleteOnClose);
-    connect(locations_, SIGNAL(destroyed()), this, SLOT(locationsDestroyed()));
-    connect(locations_, SIGNAL(picturesLocationsChanged()), this, SLOT(picturesLocationsChanged()));
-    locations_->setWindowFlags(Qt::Window);
-    locations_->show();
-    locations_->activateWindow();
+    settings->setValue("days_box", arg1);
 }
 
-void MainWindow::locationsDestroyed(){
-    locationsShown_=false;
+
+void MainWindow::on_hours_spinBox_valueChanged(int arg1)
+{
+    settings->setValue("hours_box", arg1);
 }
+
+
+void MainWindow::on_minutes_spinBox_valueChanged(int arg1)
+{
+    settings->setValue("minutes_box", arg1);
+}
+
+
+void MainWindow::on_seconds_spinBox_valueChanged(int arg1)
+{
+    settings->setValue("seconds_box", arg1);
+}
+

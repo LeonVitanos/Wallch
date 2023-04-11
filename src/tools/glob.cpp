@@ -698,44 +698,6 @@ void Global::debug(const QString &message){
     cout << message.toLocal8Bit().data() << endl;
 }
 
-QString Global::secondsToMinutesHoursDays(int seconds)
-{
-    if(seconds%86400 == 0)
-    {
-        if(seconds/86400 == 1){
-            return QString(QString::number(1)+" "+tr("day"));
-        }
-        else{
-            return QString(QString::number(seconds/86400)+" "+tr("days"));
-        }
-    }
-    else if(seconds%3600 == 0)
-    {
-        if(seconds/3600 == 1){
-            return QString(QString::number(seconds/3600)+" "+tr("hour"));
-        }
-        else{
-            return QString(QString::number(seconds/3600)+" "+tr("hours"));
-        }
-    }
-    else if(seconds%60 == 0)
-    {
-        if(seconds/60 == 1){
-            return QString(QString::number(seconds/60)+" "+tr("minute"));
-        }
-        else{
-            return QString(QString::number(seconds/60)+" "+tr("minutes"));
-        }
-    }
-    else if(seconds == 1){
-        return QString(QString::number(1)+" "+tr("second"));
-    }
-    else
-    {
-        return QString(QString::number(seconds)+" "+tr("seconds"));
-    }
-}
-
 bool Global::foldersAreSame(QString folder1, QString folder2){
     if(!folder1.endsWith('/')){
         folder1+='/';

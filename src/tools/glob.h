@@ -169,7 +169,6 @@ struct GlobalVar {
     QString potdDescriptionFont;
     QString potdDescriptionColor;
     QString potdDescriptionBackgroundColor;
-    QList<int> defaultIntervals;
 
     QStringList websiteExtraUsernames;
     QStringList websiteExtraPasswords;
@@ -206,8 +205,7 @@ struct GlobalVar {
         iconMode(true), rotateImages(false), potdIncludeDescription(true), leEnableTag(false), potdDescriptionBottom(true), refreshhourinterval(0), websiteWaitAfterFinishSeconds(3),
         websiteLoadImages(true), websiteJavaEnabled(false), websiteJavascriptCanReadClipboard(false), websiteJavascriptEnabled(true), websiteSimpleAuthEnabled(false),
         websiteInterval(6), screenHeight(0), screenWidth(0), potdDescriptionLeftMargin(100), potdDescriptionRightMargin(0), potdDescriptionBottomTopMargin(0), appStartTime(QDateTime::currentDateTime()),
-        websiteWebpageToLoad("http://google.com"), defaultPicturesLocation(homePath+"/"+QStandardPaths::displayName(QStandardPaths::PicturesLocation)), potdDescriptionFont("Ubuntu"),
-        defaultIntervals(QList<int>() << 10 << 30 << 60 << 180 << 300 << 600 << 900 << 1200 << 1800 << 2700 << 3600 << 7200 << 10800 << 14400 << 21600 << 43200 << 86400)
+        websiteWebpageToLoad("http://google.com"), defaultPicturesLocation(homePath+"/"+QStandardPaths::displayName(QStandardPaths::PicturesLocation)), potdDescriptionFont("Ubuntu")
         {}
 };
 
@@ -230,7 +228,6 @@ public:
     static QString dirnameOf(const QString &path);
     static QString suffixOf(const QString &path);
     static QString timeNowToString();
-    static QString secondsToMinutesHoursDays(int seconds);
     static int websiteSliderValueToSeconds(short value);
     static bool remove(const QString &files);
     static QString getFilename(const QString &file);

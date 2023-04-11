@@ -55,7 +55,7 @@ bool NonGuiManager::alreadyRuns(){
 }
 
 void NonGuiManager::getDelay(){
-    totalSeconds_=settings->value("delay", DEFAULT_SLIDER_DELAY).toInt();
+    timerManager_->totalSeconds_=settings->value("delay", DEFAULT_SLIDER_DELAY).toInt();
 }
 
 void NonGuiManager::dirChanged(){
@@ -334,7 +334,7 @@ void NonGuiManager::waitForInternetConnection(){
         continueWithPotd();
     }
     else if(gv.liveEarthRunning){
-        secondsLeft_=LIVEARTH_INTERVAL;
+        timerManager_->secondsRemaining_=LIVEARTH_INTERVAL;
         continueWithLiveEarth();
     }
     else if(gv.liveWebsiteRunning){
@@ -346,33 +346,26 @@ void NonGuiManager::actionsOnWallpaperChange(){
     if(gv.wallpapersRunning)
     {
         changeWallpaperNow();
-        if(gv.typeOfInterval==2){
-            srand(time(0));
-            totalSeconds_=secondsLeft_=(rand()%(gv.randomTimeTo-gv.randomTimeFrom+1))+gv.randomTimeFrom;
-        }
-        else if(secondsLeft_<=0)
-        {
-            secondsLeft_=totalSeconds_;
-        }
-        if(gv.independentIntervalEnabled){
-            Global::saveSecondsLeftNow(secondsLeft_, 0);
-        }
+        if(timerManager_->secondsRemaining_<=0)
+            timerManager_->secondsRemaining_=timerManager_->totalSeconds_;
+        if(gv.independentIntervalEnabled)
+            Global::saveSecondsLeftNow(timerManager_->secondsRemaining_, 0);
     }
     else if(gv.liveEarthRunning)
     {
         imageFetcher_->setFetchType(FetchType::LE);
         imageFetcher_->fetch();
-        secondsLeft_ = totalSeconds_;
+        timerManager_->secondsRemaining_ = timerManager_->totalSeconds_;
         if(gv.independentIntervalEnabled){
-            Global::saveSecondsLeftNow(secondsLeft_, 1);
+            Global::saveSecondsLeftNow(timerManager_->secondsRemaining_, 1);
         }
     }
     else if(gv.liveWebsiteRunning)
     {
         //websiteSnapshot_->start();
-        secondsLeft_ = totalSeconds_;
+        timerManager_->secondsRemaining_ = timerManager_->totalSeconds_;
         if(gv.independentIntervalEnabled){
-            Global::saveSecondsLeftNow(secondsLeft_, 2);
+            Global::saveSecondsLeftNow(timerManager_->secondsRemaining_, 2);
         }
     }
 }
@@ -384,33 +377,33 @@ void NonGuiManager::updateSeconds(){
      * the desktop background...
      */
     gv.runningTimeOfProcess = QDateTime::currentDateTime();
-    if(secondsLeft_ <= 0){
+    if(timerManager_->secondsRemaining_ <= 0){
         actionsOnWallpaperChange();
 
-        gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsLeft_);
+        gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(timerManager_->secondsRemaining_);
     }
     else
     {
-        if(secondsLeft_ != gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval))
+        if(timerManager_->secondsRemaining_ != gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval))
         {
             int secondsToChangingTime = gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval);
             if(secondsToChangingTime < 0)
             {
                 actionsOnWallpaperChange();
 
-                gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsLeft_);
+                gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(timerManager_->secondsRemaining_);
             }
-            else if (!(secondsLeft_-secondsToChangingTime < -1 || secondsLeft_-secondsToChangingTime > 1)){
-                secondsLeft_ = secondsToChangingTime;
+            else if (!(timerManager_->secondsRemaining_-secondsToChangingTime < -1 || timerManager_->secondsRemaining_-secondsToChangingTime > 1)){
+                timerManager_->secondsRemaining_ = secondsToChangingTime;
             }
         }
     }
 #ifdef Q_OS_UNIX
     if(gv.unityProgressbarEnabled && gv.currentDE == DesktopEnvironment::UnityGnome){
-        Global::setUnityProgressbarValue((float) secondsLeft_/totalSeconds_);
+        Global::setUnityProgressbarValue((float) timerManager_->secondsRemaining_/timerManager_->totalSeconds_);
     }
 #endif
-    secondsLeft_--;
+    timerManager_->secondsRemaining_--;
 }
 
 void NonGuiManager::checkPicOfDay(){
@@ -487,13 +480,13 @@ void NonGuiManager::continueWithLiveEarth(){
     this->disconnectFromSlot();
     this->connectToUpdateSecondsSlot();
     this->connectToServer();
-    totalSeconds_=LIVEARTH_INTERVAL;
+    timerManager_->totalSeconds_=LIVEARTH_INTERVAL;
     if(!gv.firstTimeout){
         imageFetcher_->setFetchType(FetchType::LE);
         imageFetcher_->fetch();
     }
     if(gv.independentIntervalEnabled){
-        Global::saveSecondsLeftNow(totalSeconds_, 1);
+        Global::saveSecondsLeftNow(timerManager_->totalSeconds_, 1);
     }
     generalTimer_->start(1000);
 }
@@ -563,16 +556,16 @@ void NonGuiManager::continueWithWebsite(){
 
     websiteSnapshot_->setTimeout(WEBSITE_TIMEOUT);
 
-    totalSeconds_=Global::websiteSliderValueToSeconds(gv.websiteInterval);
+    timerManager_->totalSeconds_=Global::websiteSliderValueToSeconds(gv.websiteInterval);
     if(!gv.firstTimeout){
         websiteSnapshot_->start();
     }
-    if(!secondsLeft_){
-        secondsLeft_=totalSeconds_;
+    if(!timerManager_->secondsRemaining_){
+        timerManager_->secondsRemaining_=timerManager_->totalSeconds_;
     }
-    Global::resetSleepProtection(secondsLeft_);
+    Global::resetSleepProtection(timerManager_->secondsRemaining_);
     if(gv.independentIntervalEnabled){
-        Global::saveSecondsLeftNow(secondsLeft_, 2);
+        Global::saveSecondsLeftNow(timerManager_->secondsRemaining_, 2);
     }
     generalTimer_->start(1000);*/
 }
@@ -1174,14 +1167,17 @@ void NonGuiManager::doAction(const QString &message){
         MainWindow *w;
 
         if(gv.wallpapersRunning){
-            w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_, secondsLeft_, totalSeconds_);
+            w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_,
+                               wallpaperManager_, timerManager_);
         }
         else if(gv.liveWebsiteRunning || gv.liveEarthRunning){
-            w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_, secondsLeft_, 0);
+            w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_,
+                               timerManager_);
         }
         else
         {
-            w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_, 0, 0);
+            w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_,
+                               timerManager_);
         }
 
         connectMainwindowWithExternalActions(w);
@@ -1227,8 +1223,8 @@ void NonGuiManager::doAction(const QString &message){
         this->connectToUpdateSecondsSlot();
         imageFetcher_->setFetchType(FetchType::LE);
         imageFetcher_->fetch();
-        secondsLeft_=totalSeconds_=LIVEARTH_INTERVAL;
-        Global::resetSleepProtection(secondsLeft_);
+        timerManager_->secondsRemaining_=timerManager_->totalSeconds_=LIVEARTH_INTERVAL;
+        Global::resetSleepProtection(timerManager_->secondsRemaining_);
         generalTimer_->start(1000);
 #ifdef Q_OS_UNIX
         if(gv.currentDE == DesktopEnvironment::UnityGnome){
@@ -1318,7 +1314,7 @@ void NonGuiManager::doAction(const QString &message){
             generalTimer_->stop();
         }
         this->disconnectFromSlot();
-        secondsLeft_=0;
+        timerManager_->secondsRemaining_=0;
         this->continueWithWebsite();
 #ifdef Q_OS_UNIX
         if(gv.currentDE == DesktopEnvironment::UnityGnome){
@@ -1378,8 +1374,8 @@ void NonGuiManager::doAction(const QString &message){
             this->connectToUpdateSecondsSlot();
 
             getDelay();
-            secondsLeft_=0;
-            Global::resetSleepProtection(secondsLeft_);
+            timerManager_->secondsRemaining_=0;
+            Global::resetSleepProtection(timerManager_->secondsRemaining_);
             generalTimer_->start(1000);
 #ifdef Q_OS_UNIX
             if(gv.currentDE == DesktopEnvironment::UnityGnome){
@@ -1439,7 +1435,7 @@ void NonGuiManager::doAction(const QString &message){
         }
         else
         {
-            Global::resetSleepProtection(secondsLeft_);
+            Global::resetSleepProtection(timerManager_->secondsRemaining_);
             Global::debug("Continuing from the pause...");
             gv.processPaused=false;
 #ifdef Q_OS_UNIX
@@ -1473,21 +1469,15 @@ void NonGuiManager::doAction(const QString &message){
 
             gv.processPaused=false;
 
-            if(gv.typeOfInterval==2){
-                srand(time(0));
-                totalSeconds_=secondsLeft_=(rand()%(gv.randomTimeTo-gv.randomTimeFrom+1))+gv.randomTimeFrom;
-            }
-            else
-            {
-                secondsLeft_=totalSeconds_;
-            }
+            timerManager_->secondsRemaining_=timerManager_->totalSeconds_;
+
             if(gv.independentIntervalEnabled){
                 //resetting the configuration!
                 Global::saveSecondsLeftNow(-1, 0);
             }
         }
         else if(gv.liveEarthRunning || gv.liveWebsiteRunning){
-            secondsLeft_=totalSeconds_;
+            timerManager_->secondsRemaining_=timerManager_->totalSeconds_;
         }
 
         if(gv.liveEarthRunning || gv.potdRunning){
@@ -1514,7 +1504,7 @@ void NonGuiManager::doAction(const QString &message){
 
             if(generalTimer_->isActive()){
                 generalTimer_->stop();
-                secondsLeft_=0;
+                timerManager_->secondsRemaining_=0;
                 updateSeconds();
                 generalTimer_->start(1000);
             }
@@ -1534,7 +1524,7 @@ void NonGuiManager::doAction(const QString &message){
             if(generalTimer_->isActive()){
                 if(gv.wallpapersRunning){
                     generalTimer_->stop();
-                    secondsLeft_=0;
+                    timerManager_->secondsRemaining_=0;
                     previousWasClicked_=true;
                     updateSeconds();
                     generalTimer_->start(1000);
@@ -1732,7 +1722,7 @@ void NonGuiManager::setIndependentInterval(const QString &independentInterval){
     }
     if(independence_change_seconds_left>0){
         Global::debug("Interval independence is enabled ("+QString::number(independence_change_seconds_left)+" seconds)");
-        secondsLeft_=independence_change_seconds_left;
+        timerManager_->secondsRemaining_=independence_change_seconds_left;
     }
 }
 
@@ -1770,7 +1760,7 @@ void NonGuiManager::checkSettings(bool allSettings){
         gv.potdDescriptionBottomTopMargin = settings->value("potd_description_bottom_top_margin", 0).toInt();
 
         gv.typeOfInterval=settings->value("typeOfIntervals", 0).toInt();
-        if(startedWithLiveEarth_ || startedWithWebsite_ || (!startedWithPotd_ && gv.typeOfInterval!=2)){
+        if(startedWithLiveEarth_ || startedWithWebsite_ || !startedWithPotd_){
             gv.independentIntervalEnabled = settings->value("independent_interval_enabled", true).toBool();
             if(gv.independentIntervalEnabled){
                 //check if there is an interval to follow
@@ -1789,24 +1779,7 @@ void NonGuiManager::checkSettings(bool allSettings){
         }
 
         gv.firstTimeout=settings->value("first_timeout", false).toBool();
-        if(gv.typeOfInterval==2){
-            gv.randomTimeFrom=settings->value("random_time_from", 300).toInt();
-            gv.randomTimeTo=settings->value("random_time_to", 1200).toInt();
-            if(gv.randomTimeFrom>gv.randomTimeTo-3){
-                Global::error("The random time is misconfigured, reseted to default values!");
-                gv.randomTimeFrom=600;
-                gv.randomTimeTo=1200;
-                settings->setValue("till_combo", 1);
-                settings->setValue("from_combo", 1);
-                settings->setValue("random_time_to", gv.randomTimeTo);
-                settings->setValue("random_time_from", gv.randomTimeFrom);
-                settings->sync();
-            }
-            else
-            {
-                totalSeconds_=secondsLeft_=(rand()%(gv.randomTimeTo-gv.randomTimeFrom+1))+gv.randomTimeFrom;
-            }
-        }
+
         if(gv.randomImagesEnabled){
             srand(QDateTime::currentMSecsSinceEpoch());
         }
@@ -2107,16 +2080,10 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
 
         bool gotPicLocation = getPicturesLocation(true);
 
-        Global::resetSleepProtection(secondsLeft_);
+        Global::resetSleepProtection(timerManager_->secondsRemaining_);
         if(gotPicLocation){
-            if(gv.typeOfInterval!=2){
-                getDelay();
-                Global::debug("Your Desktop Background will change every "+QString::number(totalSeconds_)+" seconds.");
-            }
-            else
-            {
-                Global::debug("Your Desktop Background will change every ["+QString::number(gv.randomTimeFrom)+"-"+QString::number(gv.randomTimeTo)+"] seconds.");
-            }
+            getDelay();
+            Global::debug("Your Desktop Background will change every "+QString::number(timerManager_->totalSeconds_)+" seconds.");
 
             if(wallpaperManager_->wallpapersCount()<LEAST_WALLPAPERS_FOR_START){
                 Global::error("Too few pictures for image changing. You need at least "+QString(LEAST_WALLPAPERS_FOR_START)+".");
@@ -2165,9 +2132,9 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         }
         startedWithLiveEarth_=gv.liveEarthRunning=true;
         Global::updateStartup();
-        secondsLeft_ = LIVEARTH_INTERVAL;
+        timerManager_->secondsRemaining_ = LIVEARTH_INTERVAL;
         checkSettings(true);
-        Global::resetSleepProtection(secondsLeft_);
+        Global::resetSleepProtection(timerManager_->secondsRemaining_);
 
         connectToServer();
         setupTray();
@@ -2223,9 +2190,9 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         }
         gv.liveWebsiteRunning=startedWithWebsite_=true;
         Global::updateStartup();
-        secondsLeft_=0;
+        timerManager_->secondsRemaining_=0;
         checkSettings(true);
-        Global::resetSleepProtection(secondsLeft_);
+        Global::resetSleepProtection(timerManager_->secondsRemaining_);
 
         connectToServer();
         setupTray();

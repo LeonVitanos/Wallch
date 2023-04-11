@@ -44,6 +44,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "websitesnapshot.h"
 #include "wallpapermanager.h"
 #include "imagefetcher.h"
+#include "timermanager.h"
 
 #define SOCKET_SERVER_NAME "Wallch Local Socket Server"
 
@@ -61,6 +62,7 @@ protected:
 
 private:
     WallpaperManager *wallpaperManager_ = NULL;
+    TimerManager *timerManager_ = NULL;
     QFileSystemWatcher *watchFoldersMain_ = NULL;
     Preferences *preferences_;
     QTimer researchFoldersTimerMain_;
@@ -77,8 +79,6 @@ private:
     bool quitAfterMessagingMainApplication_;
     Global *globalParser_ = NULL;
     ImageFetcher *imageFetcher_ = NULL;
-    int totalSeconds_;
-    int secondsLeft_;
     bool mainWindowLaunched_ = false;
     bool startedWithNone_ = false;
     bool startedWithJustChange_ = false;

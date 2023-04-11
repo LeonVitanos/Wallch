@@ -4,6 +4,7 @@ DEPENDPATH += $$PWD
 HEADERS += $$PWD/glob.h \
            $$PWD/colormanager.h \
            $$PWD/nonguimanager.h \
+           $$PWD/timermanager.h \
            $$PWD/websitesnapshot.h \
            $$PWD/customwebpage.h \
            $$PWD/wallpapermanager.h \
@@ -15,6 +16,7 @@ HEADERS += $$PWD/glob.h \
 SOURCES += $$PWD/glob.cpp \
            $$PWD/colormanager.cpp \
            $$PWD/nonguimanager.cpp \
+           $$PWD/timermanager.cpp \
            $$PWD/websitesnapshot.cpp \
            $$PWD/wallpapermanager.cpp \
            $$PWD/cachemanager.cpp \
