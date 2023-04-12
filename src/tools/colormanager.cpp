@@ -38,25 +38,20 @@ QString ColorManager::getPrimaryColor(){
 #else
     QSettings collorSetting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
     if(collorSetting.value("Background").isValid()){
-        primaryColor = collorSetting.value("Background").toString();
+        QString primaryColor = collorSetting.value("Background").toString();
         QList<int> rgb;
         QString temp;
-        for(short i=0; primaryColor.size() > i; i++)
-        {
-            if(i==primaryColor.size()-1)
-            {
+        for(short i=0; primaryColor.size() > i; i++){
+            if(i==primaryColor.size()-1){
                 temp.append(primaryColor.at(i));
                 rgb.append(temp.toInt());
             }
-            else if(primaryColor.at(i)==' ')
-            {
+            else if(primaryColor.at(i)==' '){
                 rgb.append(temp.toInt());
                 temp.clear();
             }
             else
-            {
                 temp.append(primaryColor.at(i));
-            }
         }
         return QColor(rgb.at(0), rgb.at(1), rgb.at(2)).name();
     }
