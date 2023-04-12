@@ -7,10 +7,10 @@ ColoringType::Value currentShading = ColoringType::Solid;
 ColorManager::ColorManager(){}
 
 QString ColorManager::getPrimaryColor(){
-    QString primaryColor;
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate)
-        primaryColor = Global::gsettingsGet("org.gnome.desktop.background", "primary-color");
+    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
+        return Global::gsettingsGet("org.gnome.desktop.background", "primary-color");
+    }
     else if(gv.currentDE == DesktopEnvironment::XFCE){
         Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
             if(entry.contains("color1")){
@@ -29,13 +29,12 @@ QString ColorManager::getPrimaryColor(){
                 }
                 QColor finalColor;
                 finalColor.setRgb(rgbColors.at(0), rgbColors.at(1), rgbColors.at(2));
-                primaryColor = finalColor.name();
-                break;
+                return finalColor.name();
             }
         }
     }
     else if(gv.currentDE == DesktopEnvironment::LXDE)
-        primaryColor = Global::getPcManFmValue("desktop_bg");
+        return Global::getPcManFmValue("desktop_bg");
 #else
     QSettings collorSetting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
     if(collorSetting.value("Background").isValid()){
@@ -59,16 +58,16 @@ QString ColorManager::getPrimaryColor(){
                 temp.append(primaryColor.at(i));
             }
         }
-        primaryColor = QColor(rgb.at(0), rgb.at(1), rgb.at(2)).name();
+        return QColor(rgb.at(0), rgb.at(1), rgb.at(2)).name();
     }
     else{
         int Elements[1] = {COLOR_BACKGROUND};
         DWORD currentColors[1];
         currentColors[0] = GetSysColor(Elements[0]);
-        primaryColor = QColor(GetRValue(currentColors[0]), GetGValue(currentColors[0]), GetBValue(currentColors[0])).name();
+        return QColor(GetRValue(currentColors[0]), GetGValue(currentColors[0]), GetBValue(currentColors[0])).name();
     }
 #endif
-    return primaryColor;
+    return "black";
 }
 
 void ColorManager::setPrimaryColor(const QString &colorName){
@@ -145,13 +144,13 @@ QString ColorManager::getSecondaryColor(){
                 QColor finalColor;
                 finalColor.setRgb(rgbColors.at(0), rgbColors.at(1), rgbColors.at(2));
                 return finalColor.name();
-                break;
             }
         }
     }
 #else
     return settings->value("secondaryColor", "black").toString();
 #endif
+    return "black";
 }
 
 

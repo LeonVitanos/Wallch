@@ -53,7 +53,7 @@ QSettings *settings = new QSettings("wallch", "Settings");
 Global::Global(){}
 Global::~Global(){}
 
-#ifdef Q_OS_UNIX
+#ifdef UNITY
 void Global::setUnityProgressBarEnabled(bool state){
     if(!gv.unityLauncherEntry){
         gv.unityLauncherEntry = unity_launcher_entry_get_for_desktop_id(APP_DESKTOP_NAME);
@@ -68,7 +68,7 @@ void Global::setUnityProgressbarValue(float percent){
     }
     unity_launcher_entry_set_progress(gv.unityLauncherEntry, percent);
 }
-#endif //#ifdef Q_OS_UNIX
+#endif
 
 bool Global::runsOnBattery(){
 #ifdef Q_OS_UNIX

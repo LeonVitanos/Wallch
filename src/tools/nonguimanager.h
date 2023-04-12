@@ -89,9 +89,9 @@ private:
     bool propertiesShown_ = false;
     bool justUpdatedPotd_ = false;
     bool currentFolderIsAList_ = false;
-#ifdef Q_OS_UNIX
+#ifdef UNITY
     DbusmenuMenuitem *unityMenu_;
-#endif //#ifdef Q_OS_UNIX
+#endif
 
     QSystemTrayIcon *trayIcon_;
     QMenu *trayIconMenu_;
@@ -118,7 +118,7 @@ private:
     QTimer *doubleClick_;
     void setupTray();
 
-#ifdef Q_OS_UNIX
+#ifdef UNITY
     void updatePotdProgressMain();
     void setUnityShortcutsState(bool stopState, bool pauseState, bool nextState, bool previousState);
     void setupUnityShortcuts();
@@ -159,7 +159,7 @@ private Q_SLOTS:
     void dirChanged();
     void researchDirs();
     void onlineBackgroundReady(QString image);
-#ifdef Q_OS_UNIX
+#ifdef UNITY
     void unityProgressbarSetEnabled(bool enabled);
 #endif //#ifdef Q_OS_UNIX
 

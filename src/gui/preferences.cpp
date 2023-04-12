@@ -62,13 +62,15 @@ Preferences::Preferences(QWidget *parent) :
     ui->startup_timeout_spinbox->setValue(settings->value("startup_timeout", 3).toInt());
 
 #ifdef Q_OS_UNIX
-    ui->unity_prog_checkbox->setChecked(settings->value("unity_progressbar_enabled", false).toBool());
     short curDe = settings->value("de", 0).toInt();
     if(curDe>=ui->de_combo->count()){
         curDe=0;
     }
     ui->de_combo->setCurrentIndex(curDe);
     on_de_combo_currentIndexChanged(curDe);
+    #ifdef UNITY
+        ui->unity_prog_checkbox->setChecked(settings->value("unity_progressbar_enabled", false).toBool());
+    #endif //ifdef UNITY
 #else
     ui->integrationgroupBox->hide();
 #endif
@@ -266,7 +268,7 @@ void Preferences::on_saveButton_clicked()
         Q_EMIT previewChanged();
     }
 
-#ifdef Q_OS_UNIX
+#ifdef UNITY
     if(gv.unityProgressbarEnabled!=ui->unity_prog_checkbox->isChecked()){
         gv.unityProgressbarEnabled=ui->unity_prog_checkbox->isChecked();
         Q_EMIT unityProgressbarChanged(gv.unityProgressbarEnabled);
@@ -368,7 +370,7 @@ void Preferences::on_reset_clicked()
         //Integration
         ui->theme_combo->setCurrentIndex(2);
         ui->de_combo->setCurrentIndex(0);
-#ifdef Q_OS_UNIX
+#ifdef UNITY
         if(gv.currentDE == DesktopEnvironment::UnityGnome){
             ui->unity_prog_checkbox->setChecked(false);
         }
@@ -472,13 +474,10 @@ QString Preferences::dataToNiceString(qint64 data){
 void Preferences::on_de_combo_currentIndexChanged(int index)
 {
     DesktopEnvironment::Value curEnv = static_cast<DesktopEnvironment::Value>(index);
-    if(curEnv != DesktopEnvironment::UnityGnome){
+    if(curEnv != DesktopEnvironment::UnityGnome)
         ui->unity_prog_checkbox->hide();
-    }
     else
-    {
         ui->unity_prog_checkbox->show();
-    }
 }
 #endif
 

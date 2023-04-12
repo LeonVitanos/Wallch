@@ -37,10 +37,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QSettings>
 
 #include "time.h"
+#include "math.h"
 
-#ifdef Q_OS_UNIX
+#ifdef UNITY
 #include "unity/unity/unity.h"
-#endif //#ifdef Q_OS_UNIX
+#endif
 
 #define HELP_URL "http://melloristudio.com/wallch/help"
 #define DONATE_URL "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Z34FXUH6M4G9S"
@@ -120,10 +121,14 @@ struct GlobalVar {
     bool symlinks;
     bool processPaused;
 #ifdef Q_OS_UNIX
-    bool unityProgressbarEnabled;
     DesktopEnvironment::Value currentDE;
     QStringList unacceptedDesktopValues;
-#endif //#ifdef Q_OS_UNIX
+    #ifdef UNITY
+        bool unityProgressbarEnabled;
+        UnityLauncherEntry *unityLauncherEntry;
+        DbusmenuMenuitem *unityStopAction, *unityNextAction, *unityPreviousAction, *unityPauseAction;
+    #endif //#ifdef UNITY
+#endif
     bool saveHistory;
     int randomTimeFrom;
     int randomTimeTo;
@@ -169,7 +174,6 @@ struct GlobalVar {
     QString potdDescriptionFont;
     QString potdDescriptionColor;
     QString potdDescriptionBackgroundColor;
-
     QStringList websiteExtraUsernames;
     QStringList websiteExtraPasswords;
     QString nextShortcut;
@@ -186,18 +190,15 @@ struct GlobalVar {
     QDateTime runningTimeOfProcess;
     QDateTime timeToFinishProcessInterval;   
 
-#ifdef Q_OS_UNIX
-    //unity launcher shortcuts
-    UnityLauncherEntry *unityLauncherEntry;
-    DbusmenuMenuitem *unityStopAction, *unityNextAction, *unityPreviousAction, *unityPauseAction;
-#endif //#ifdef Q_OS_UNIX
-
     //variable initialization
 
     GlobalVar() : homePath(QDir::homePath()), currentTheme("ambiance"), preferencesDialogShown(false), independentIntervalEnabled(true),
         typeOfInterval(0), randomImagesEnabled(false), firstTimeout(false), symlinks(false), processPaused(false),
 #ifdef Q_OS_UNIX
-        unityProgressbarEnabled(false), currentDE(DesktopEnvironment::UnityGnome), unacceptedDesktopValues(QStringList() << "" << "default.desktop" << "X-Cinnamon" << "default"),
+    currentDE(DesktopEnvironment::UnityGnome), unacceptedDesktopValues(QStringList() << "" << "default.desktop" << "X-Cinnamon" << "default"),
+    #ifdef UNITY
+            unityProgressbarEnabled(false),
+    #endif //#ifdef UNITY
 #endif
         saveHistory(true), randomTimeFrom(300), randomTimeTo(1200), doNotToggleRadiobuttonFallback(false), previewImagesOnScreen(true), pauseOnBattery(false), amPmEnabled(false),
         mainwindowLoaded(false), setAverageColor(false), websiteLoginEnabled(false), websiteCropEnabled(false), wallpapersChangedCurrentSession(0), timeLaunched(QDateTime::currentDateTime()),
@@ -241,16 +242,18 @@ public:
     static void error(const QString &message);
     static void debug(const QString &message);
 #ifdef Q_OS_UNIX
-    static void setUnityProgressBarEnabled(bool state);
-    static void setUnityProgressbarValue(float percent);
     static QString gsettingsGet(const QString &schema, const QString &key);
     static QString getPcManFmValue(const QString &key);
     static void gsettingsSet(const QString &schema, const QString &key, const QString &value);
     static void changeIndicatorIcon(const QString &icon);
     static void changeIndicatorSelection(const QString &status);
     static void showWallpapersIndicatorControls(bool show, bool pauseText);
-#endif //#ifdef Q_OS_UNIX
-    static int getSecondsTillHour(const QString &hour);
+    #ifdef UNITY
+        static void setUnityProgressBarEnabled(bool state);
+        static void setUnityProgressbarValue(float percent);
+    #endif //#ifdef UNITY
+#endif
+        static int getSecondsTillHour(const QString &hour);
     static QString getOutputOfCommand(QString command, QStringList parameters);
     static void setPcManFmValue(const QString &key, const QString &value);
     static void openUrl(const QString &url);

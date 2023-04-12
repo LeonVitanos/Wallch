@@ -2522,7 +2522,7 @@ background-color:#ce0018;
                 <enum>Qt::Horizontal</enum>
                </property>
                <property name="sizeType">
-                <enum>QSizePolicy::Ignored</enum>
+                <enum>QSizePolicy::Expanding</enum>
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
@@ -2534,6 +2534,9 @@ background-color:#ce0018;
              </item>
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_preview_on">
+               <property name="sizeConstraint">
+                <enum>QLayout::SetMinimumSize</enum>
+               </property>
                <item>
                 <widget class="QPushButton" name="set_desktop_color">
                  <property name="minimumSize">
@@ -2570,10 +2573,16 @@ background-color:#ce0018;
                <item>
                 <widget class="QComboBox" name="image_style_combo">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Fixed" vsizetype="MinimumExpanding">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>31</height>
+                  </size>
                  </property>
                  <property name="focusPolicy">
                   <enum>Qt::ClickFocus</enum>
@@ -2588,7 +2597,7 @@ background-color:#ce0018;
                 <enum>Qt::Horizontal</enum>
                </property>
                <property name="sizeType">
-                <enum>QSizePolicy::Ignored</enum>
+                <enum>QSizePolicy::Expanding</enum>
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
