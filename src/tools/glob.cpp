@@ -39,7 +39,6 @@ using namespace std;
 
 #ifdef Q_OS_UNIX
     #include <libnotify/notify.h>
-    #include <gio/gio.h>
     #include <libexif/exif-data.h>
 #else
     #include <windows.h>
@@ -126,42 +125,6 @@ QString Global::searchForFileInDir(QString folder, QString file){
     }
 
     return QString();
-}
-
-QString Global::getPcManFmValue(const QString &key){
-    QString result;
-    if(QDir(gv.homePath+"/.config/pcmanfm/lubuntu").exists()){
-        QSettings settings("pcmanfm", "lubuntu/pcmanfm");
-        settings.beginGroup("desktop");
-        result=settings.value(key, "").toString();
-        settings.endGroup();
-    }
-    else
-    {
-        QSettings settings("pcmanfm", "default/pcmanfm");
-        settings.beginGroup("desktop");
-        result=settings.value(key, "").toString();
-        settings.endGroup();
-    }
-    return result;
-}
-
-void Global::setPcManFmValue(const QString &key, const QString &value){
-    if(QDir(gv.homePath+"/.config/pcmanfm/lubuntu").exists()){
-        QSettings settings("pcmanfm", "lubuntu/pcmanfm");
-        settings.beginGroup("desktop");
-        settings.setValue(key, value);
-        settings.endGroup();
-        settings.sync();
-    }
-    else
-    {
-        QSettings settings("pcmanfm", "default/pcmanfm");
-        settings.beginGroup("desktop");
-        settings.setValue(key, value);
-        settings.endGroup();
-        settings.sync();
-    }
 }
 
 void Global::rotateImageBasedOnExif(const QString &image)
@@ -643,34 +606,6 @@ void Global::saveSecondsLeftNow(int secondsLeft, short forType){
     settings->sync();
 }
 
-#ifdef Q_OS_UNIX
-void Global::gsettingsSet(const QString &schema, const QString &key, const QString &value){
-    GSettings *settings = g_settings_new(schema.toLocal8Bit().data());
-    gboolean result = g_settings_set_string (settings, key.toLocal8Bit().data(), value.toLocal8Bit().data());
-    if(!result)
-        QMessageBox::warning(0, QObject::tr("Error"), QObject::tr("Could not apply change. If your Desktop Environment is not listed at \"Preferences->Integration->Current Desktop Environment\", then it is not supported."));
-
-    g_settings_sync ();
-
-    if (settings != NULL){
-        g_object_unref (settings);
-    }
-}
-
-QString Global::gsettingsGet(const QString &schema, const QString &key){
-    GSettings *settings = g_settings_new(schema.toLocal8Bit().data());
-    gchar *printed = g_settings_get_string (settings, key.toLocal8Bit().data());
-    QString finalSetting = QString(printed);
-    g_free (printed);
-
-    if (settings != NULL){
-        g_object_unref (settings);
-    }
-
-    return finalSetting;
-}
-#endif //#ifdef Q_OS_UNIX
-
 QString Global::base64Decode(const QString &string){
     return QByteArray::fromBase64(QByteArray().append(string));
 }
@@ -731,23 +666,6 @@ bool Global::isSubfolder(QString &subFolder, QString &parentFolder){
         parentFolder+='/';
     }
     return subFolder.startsWith(parentFolder);
-}
-
-QString Global::getOutputOfCommand(QString command, QStringList parameters){
-    QProcess process;
-    process.setProcessChannelMode(QProcess::MergedChannels);
-    process.start(command, parameters,QIODevice::ReadWrite);
-
-    if(!process.waitForStarted())
-        return QString();
-
-    QByteArray data;
-
-    while(process.waitForReadyRead()){
-        data.append(process.readAll());
-    }
-
-    return data.data();
 }
 
 void Global::openUrl(const QString &url){
@@ -877,31 +795,4 @@ QPixmap Global::roundedCorners(const QImage &image, const int radius){
     painter.end();
 
     return roundedPixmap;
-}
-
-short Global::autodetectTheme(){
-    QString theme;
-#ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome)
-        theme=Global::gsettingsGet("org.gnome.desktop.interface", "gtk-theme");
-    else
-    {
-        if(gv.currentTheme=="radiance")
-            theme="Radiance";
-        else
-            theme="Ambiance";
-    }
-#else
-    QSettings appsUseLightTheme("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", QSettings::NativeFormat);
-    if(appsUseLightTheme.value("AppsUseLightTheme").isValid())
-        return appsUseLightTheme.value("AppsUseLightTheme").toInt();
-    else{
-        QSettings currentTheme("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes", QSettings::NativeFormat);
-        if(currentTheme.value("CurrentTheme").isValid())
-            theme = currentTheme.value("CurrentTheme").toString();
-        else
-            return 1;
-    }
-#endif
-    return !(theme.contains("dark", Qt::CaseInsensitive) || theme.contains("ambiance", Qt::CaseInsensitive));
 }

@@ -2,39 +2,20 @@
 #include "colormanager.h"
 #include <QPainter>
 
+#ifdef Q_OS_UNIX
+#include "desktopenvironment.h"
+#endif
+
 ColoringType::Value currentShading = ColoringType::Solid;
 
 ColorManager::ColorManager(){}
 
 QString ColorManager::getPrimaryColor(){
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
-        return Global::gsettingsGet("org.gnome.desktop.background", "primary-color");
-    }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("color1")){
-                QStringList colors=Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry).split("\n");
-                QList<int> rgbColors;
-                Q_FOREACH(QString color, colors){
-                    bool ok=false;
-                    int currentColor=color.toInt(&ok);
-                    if(!ok){
-                        continue;
-                    }
-                    rgbColors.append(int((256.0*currentColor)/65535.0));
-                }
-                if(rgbColors.count()!=4){
-                    continue;
-                }
-                QColor finalColor;
-                finalColor.setRgb(rgbColors.at(0), rgbColors.at(1), rgbColors.at(2));
-                return finalColor.name();
-            }
-        }
-    }
-    else if(gv.currentDE == DesktopEnvironment::LXDE)
-        return Global::getPcManFmValue("desktop_bg");
+    if(currentDE == DE::LXDE)
+        return DesktopEnvironment::getPcManFmValue("desktop_bg");
+    else
+        return getColor(1);
 #else
     QSettings collorSetting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
     if(collorSetting.value("Background").isValid()){
@@ -62,48 +43,14 @@ QString ColorManager::getPrimaryColor(){
         return QColor(GetRValue(currentColors[0]), GetGValue(currentColors[0]), GetBValue(currentColors[0])).name();
     }
 #endif
-    return "black";
 }
 
 void ColorManager::setPrimaryColor(const QString &colorName){
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
-        Global::gsettingsSet("org.gnome.desktop.background", "primary-color", colorName);
-    }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        QStringList colorValues;
-        QColor color=QColor(colorName);
-        colorValues.append(QString::number(int((65535.0/256.0)*color.red())));
-        colorValues.append(QString::number(int((65535.0/256.0)*color.green())));
-        colorValues.append(QString::number(int((65535.0/256.0)*color.blue())));
-        colorValues.append("65535");
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("color1")){
-                QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry
-                                                                      << "-t" << "uint" << "-s" << colorValues.at(0)
-                                                                      << "-t" << "uint" << "-s" << colorValues.at(1)
-                                                                      << "-t" << "uint" << "-s" << colorValues.at(2)
-                                                                      << "-t" << "uint" << "-s" << colorValues.at(3));
-            }
-        }
-    }
-    else if(gv.currentDE == DesktopEnvironment::LXDE){
-        Global::setPcManFmValue("desktop_bg", colorName);
-        QStringList pids=Global::getOutputOfCommand("pidof", QStringList() << "pcmanfm").replace("\n", "").split(" ");
-        Q_FOREACH(QString pid, pids){
-            QString output=Global::getOutputOfCommand("ps", QStringList() << "-fp" << pid);
-            if(output.contains("--desktop")){
-                QProcess::startDetached("kill", QStringList() << "-9" << pid);
-            }
-        }
-        if(QDir(gv.homePath+"/.config/pcmanfm/lubuntu").exists()){
-            QProcess::startDetached("pcmanfm", QStringList() << "--desktop" << "-p" << "lubuntu");
-        }
-        else
-        {
-            QProcess::startDetached("pcmanfm", QStringList() << "--desktop");
-        }
-    }
+    if(currentDE == DE::LXDE)
+        DesktopEnvironment::setPcManFmValue("desktop_bg", colorName);
+    else
+        setColor(1, colorName);
 #else
     QColor color = colorName;
     QSettings color_setting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
@@ -118,68 +65,74 @@ void ColorManager::setPrimaryColor(const QString &colorName){
 
 QString ColorManager::getSecondaryColor(){
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate)
-        return Global::gsettingsGet("org.gnome.desktop.background", "secondary-color");
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("color2")){
-                QStringList colors=Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry).split("\n");
+    return getColor(2);
+#else
+    return settings->value("secondaryColor", "black").toString();
+#endif
+}
+
+
+void ColorManager::setSecondaryColor(const QString &colorName){
+#ifdef Q_OS_UNIX
+    setColor(2, colorName);
+#else
+    settings->setValue("secondaryColor", colorName);
+#endif
+}
+
+#ifdef Q_OS_UNIX
+QString ColorManager::getColor(short num){
+    if(currentDE == DE::UnityGnome || currentDE == DE::Gnome || currentDE == DE::Mate)
+        return DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", num == 1 ? "primary-color" : "secondary-color");
+    else if(currentDE == DE::XFCE){
+        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
+            if(entry.contains("color"+QString(num))){
+                QStringList colors = DesktopEnvironment::runCommand("xfconf-query", false, QStringList() << entry);
                 QList<int> rgbColors;
                 Q_FOREACH(QString color, colors){
                     bool ok=false;
                     int currentColor=color.toInt(&ok);
-                    if(!ok){
+                    if(!ok)
                         continue;
-                    }
                     rgbColors.append(int((256.0*currentColor)/65535.0));
                 }
-                if(rgbColors.count()!=4){
+                if(rgbColors.count()!=4)
                     continue;
-                }
                 QColor finalColor;
                 finalColor.setRgb(rgbColors.at(0), rgbColors.at(1), rgbColors.at(2));
                 return finalColor.name();
             }
         }
     }
-#else
-    return settings->value("secondaryColor", "black").toString();
-#endif
+
     return "black";
 }
 
-
-void ColorManager::setSecondaryColor(const QString &colorName){
-#ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome ||gv.currentDE == DesktopEnvironment::Mate)
-        Global::gsettingsSet("org.gnome.desktop.background", "secondary-color", colorName);
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
+void ColorManager::setColor(short num, QString colorName){
+    if(currentDE == DE::UnityGnome || currentDE == DE::Gnome ||currentDE == DE::Mate)
+        DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", num == 1 ? "primary-color" : "secondary-color", colorName);
+    else if(currentDE == DE::XFCE){
         QStringList colorValues;
         QColor color=QColor(colorName);
         colorValues.append(QString::number(int((65535.0/256.0)*color.red())));
         colorValues.append(QString::number(int((65535.0/256.0)*color.green())));
         colorValues.append(QString::number(int((65535.0/256.0)*color.blue())));
         colorValues.append("65535");
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("color2")){
-                QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry
-                                                                      << "-t" << "uint" << "-s" << colorValues.at(0)
-                                                                      << "-t" << "uint" << "-s" << colorValues.at(1)
-                                                                      << "-t" << "uint" << "-s" << colorValues.at(2)
-                                                                      << "-t" << "uint" << "-s" << colorValues.at(3));
-            }
+        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
+            if(entry.contains("color"+QString(num)))
+                DesktopEnvironment::runXfconf(QStringList() << entry << "-t" << "uint" << "-s" << colorValues.at(0)
+                                                            << "-t" << "uint" << "-s" << colorValues.at(1)
+                                                            << "-t" << "uint" << "-s" << colorValues.at(2)
+                                                            << "-t" << "uint" << "-s" << colorValues.at(3));
         }
     }
-#else
-    settings->setValue("secondaryColor", colorName);
-#endif
 }
-
+#endif
 
 ColoringType::Value ColorManager::getColoringType(){
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
-        QString colorStyle=Global::gsettingsGet("org.gnome.desktop.background", "color-shading-type");
+    if(currentDE == DE::Gnome || currentDE == DE::UnityGnome || currentDE == DE::Mate){
+        QString colorStyle=DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", "color-shading-type");
         if(colorStyle.contains("solid"))
             return ColoringType::Solid;
         else if(colorStyle.contains("vertical"))
@@ -187,10 +140,10 @@ ColoringType::Value ColorManager::getColoringType(){
         else if(colorStyle.contains("horizontal"))
             return ColoringType::Horizontal;
     }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
+    else if(currentDE == DE::XFCE){
+        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
             if(entry.contains("color-style")){
-                QString colorStyle=Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry).replace("\n", "");
+                QString colorStyle=DesktopEnvironment::runCommand("xfconf-query", false, QStringList() << entry, true).at(0);
                 if(colorStyle=="0" || colorStyle=="3")
                     return ColoringType::Solid;
                 else if(colorStyle=="1")
@@ -200,7 +153,7 @@ ColoringType::Value ColorManager::getColoringType(){
             }
         }
     }
-    else if(gv.currentDE == DesktopEnvironment::LXDE)
+    else if(currentDE == DE::LXDE)
         return ColoringType::Solid;
 #else
     QString res = settings->value("ShadingType", "solid").toString();
@@ -246,4 +199,31 @@ QImage ColorManager::createVerticalHorizontalImage(int width, int height)
     painter.drawImage(QRect(0, 0, width, height), image);
 
     return image;
+}
+
+short ColorManager::getCurrentTheme(){
+    QString theme;
+    if(settings->value("theme") != "autodetect")
+        theme = settings->value("theme").toString();
+    else{
+#ifdef Q_OS_UNIX
+        if(currentDE == DE::Gnome || currentDE == DE::UnityGnome)
+            theme = DesktopEnvironment::gsettingsGet("org.gnome.desktop.interface", "gtk-theme");
+        else
+            return 1;
+#else
+        QSettings appsUseLightTheme("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", QSettings::NativeFormat);
+        if(appsUseLightTheme.value("AppsUseLightTheme").isValid())
+            return appsUseLightTheme.value("AppsUseLightTheme").toInt();
+        else{
+            QSettings currentTheme("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes", QSettings::NativeFormat);
+            if(currentTheme.value("CurrentTheme").isValid())
+                theme = currentTheme.value("CurrentTheme").toString();
+            else
+                return 1;
+        }
+#endif
+    }
+
+    return !(theme.contains("dark", Qt::CaseInsensitive) || theme.contains("ambiance", Qt::CaseInsensitive));
 }

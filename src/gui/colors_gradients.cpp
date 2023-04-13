@@ -31,6 +31,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <stdio.h>
 #include <windows.h>
 #include <shlobj.h>
+#else
+#include "desktopenvironment.h"
 #endif
 
 ColorsGradients::ColorsGradients(WallpaperManager *wallpaperManager, QWidget *parent) :
@@ -203,14 +205,13 @@ void ColorsGradients::on_solid_radioButton_clicked()
         return;
 
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
-        Global::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "solid");
+    if(currentDE == DE::Gnome || currentDE == DE::UnityGnome || currentDE == DE::Mate){
+        DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "solid");
     }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("color-style")){
-                QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry << "-s" << "0");
-            }
+    else if(currentDE == DE::XFCE){
+        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
+            if(entry.contains("color-style"))
+                DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << "0");
         }
     }
 #else
@@ -230,14 +231,13 @@ void ColorsGradients::on_horizontal_radioButton_clicked()
         return;
 
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
-        Global::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "horizontal");
+    if(currentDE == DE::Gnome || currentDE == DE::UnityGnome || currentDE == DE::Mate){
+        DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "horizontal");
     }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("color-style")){
-                QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry << "-s" << "1");
-            }
+    else if(currentDE == DE::XFCE){
+        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
+            if(entry.contains("color-style"))
+                DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << "1");
         }
     }
 #else
@@ -258,13 +258,12 @@ void ColorsGradients::on_vertical_radioButton_clicked()
         return;
 
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate)
-        Global::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "vertical");
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("color-style")){
-                QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry << "-s" << "2");
-            }
+    if(currentDE == DE::Gnome || currentDE == DE::UnityGnome || currentDE == DE::Mate)
+        DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "vertical");
+    else if(currentDE == DE::XFCE){
+        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
+            if(entry.contains("color-style"))
+                DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << "2");
         }
     }
 #else

@@ -3,6 +3,7 @@ DEPENDPATH += $$PWD
 
 HEADERS += $$PWD/glob.h \
            $$PWD/colormanager.h \
+           $$PWD/desktopenvironment.h \
            $$PWD/nonguimanager.h \
            $$PWD/timermanager.h \
            $$PWD/websitesnapshot.h \
@@ -15,6 +16,7 @@ HEADERS += $$PWD/glob.h \
 
 SOURCES += $$PWD/glob.cpp \
            $$PWD/colormanager.cpp \
+           $$PWD/desktopenvironment.cpp \
            $$PWD/nonguimanager.cpp \
            $$PWD/timermanager.cpp \
            $$PWD/websitesnapshot.cpp \

@@ -99,18 +99,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 extern QSettings *settings;
 
-#ifdef Q_OS_UNIX
-struct DesktopEnvironment {
-  enum Value {
-    UnityGnome, Gnome, XFCE, LXDE, Mate
-  };
-};
-#endif
-
 struct GlobalVar {
     QString homePath;
     QString wallchHomePath;
-    QString currentTheme;
     QString currentDeDefaultWallpapersPath;
     QString currentOSName;
     bool preferencesDialogShown;
@@ -121,7 +112,6 @@ struct GlobalVar {
     bool symlinks;
     bool processPaused;
 #ifdef Q_OS_UNIX
-    DesktopEnvironment::Value currentDE;
     QStringList unacceptedDesktopValues;
     #ifdef UNITY
         bool unityProgressbarEnabled;
@@ -192,10 +182,10 @@ struct GlobalVar {
 
     //variable initialization
 
-    GlobalVar() : homePath(QDir::homePath()), currentTheme("ambiance"), preferencesDialogShown(false), independentIntervalEnabled(true),
+    GlobalVar() : homePath(QDir::homePath()), preferencesDialogShown(false), independentIntervalEnabled(true),
         typeOfInterval(0), randomImagesEnabled(false), firstTimeout(false), symlinks(false), processPaused(false),
 #ifdef Q_OS_UNIX
-    currentDE(DesktopEnvironment::UnityGnome), unacceptedDesktopValues(QStringList() << "" << "default.desktop" << "X-Cinnamon" << "default"),
+    unacceptedDesktopValues(QStringList() << "" << "default.desktop" << "X-Cinnamon" << "default"),
     #ifdef UNITY
             unityProgressbarEnabled(false),
     #endif //#ifdef UNITY
@@ -242,9 +232,6 @@ public:
     static void error(const QString &message);
     static void debug(const QString &message);
 #ifdef Q_OS_UNIX
-    static QString gsettingsGet(const QString &schema, const QString &key);
-    static QString getPcManFmValue(const QString &key);
-    static void gsettingsSet(const QString &schema, const QString &key, const QString &value);
     static void changeIndicatorIcon(const QString &icon);
     static void changeIndicatorSelection(const QString &status);
     static void showWallpapersIndicatorControls(bool show, bool pauseText);
@@ -254,15 +241,12 @@ public:
     #endif //#ifdef UNITY
 #endif
         static int getSecondsTillHour(const QString &hour);
-    static QString getOutputOfCommand(QString command, QStringList parameters);
-    static void setPcManFmValue(const QString &key, const QString &value);
     static void openUrl(const QString &url);
     static QString monthInEnglish(short month);
     static void updateStartup();
     static bool createDesktopFile(const QString &path, const QString &command, const QString &comment);
     static bool isSubfolder(QString &subfolder, QString &parentFolder);
     static QPixmap roundedCorners(const QImage &image, const int radius);
-    static short autodetectTheme();
     bool runsOnBattery();
 
 private:

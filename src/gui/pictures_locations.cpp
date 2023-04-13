@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "pictures_locations.h"
 #include "ui_pictures_locations.h"
 #include "glob.h"
+#include "desktopenvironment.h"
 
 PicturesLocations::PicturesLocations(QWidget *parent) :
     QDialog(parent),
@@ -133,7 +134,7 @@ void PicturesLocations::on_reset_pushButton_clicked()
     settings->beginWriteArray("pictures_locations");
     settings->remove("");
     settings->setArrayIndex(0);
-    settings->setValue("item", gv.currentDeDefaultWallpapersPath);
+    settings->setValue("item", DesktopEnvironment::getOSWallpaperPath());
     settings->setArrayIndex(1);
     settings->setValue("item", gv.defaultPicturesLocation);
     settings->endArray();
@@ -148,8 +149,8 @@ TreeWidgetDrop::TreeWidgetDrop(QWidget *parent) :
     setColumnWidth(0, 220);
 
     deBackgrounds_item = new QTreeWidgetItem;
-    deBackgrounds_item->setText(0, gv.currentOSName+" "+tr("Desktop Backgrounds"));
-    deBackgrounds_item->setText(1, gv.currentDeDefaultWallpapersPath);
+    deBackgrounds_item->setText(0, DesktopEnvironment::getOSprettyName() + " " + tr("Desktop Backgrounds"));
+    deBackgrounds_item->setText(1, DesktopEnvironment::getOSWallpaperPath());
     addTopLevelItem(deBackgrounds_item);
 
     pictures_item = new QTreeWidgetItem;
@@ -203,7 +204,7 @@ void TreeWidgetDrop::fixPositions()
 {
     //1. We want to make sure System Desktop Backgrounds and Pictures Items remain the first two
     short count=topLevelItemCount();
-    if(topLevelItem(0)->text(1)!=gv.currentDeDefaultWallpapersPath)
+    if(topLevelItem(0)->text(1)!=DesktopEnvironment::getOSWallpaperPath())
     {
         for(short i=0; i<count; i++)
         {

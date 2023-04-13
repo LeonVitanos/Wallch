@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <iostream>
 #include <getopt.h>
+#include "desktopenvironment.h"
 
 #ifdef Q_OS_WIN
     #include <cmath>
@@ -323,7 +324,7 @@ void NonGuiManager::setUnityShortcutsState(bool stopState, bool pauseState, bool
 void NonGuiManager::waitForInternetConnection(){
     Global::debug("Checking for internet connection...");
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome){
+    if(currentDE == DE::UnityGnome){
         setupUnityShortcuts();
         setUnityShortcutsState(true, false, false, false);
     }
@@ -397,9 +398,8 @@ void NonGuiManager::updateSeconds(){
         }
     }
 #ifdef UNITY
-    if(gv.unityProgressbarEnabled && gv.currentDE == DesktopEnvironment::UnityGnome){
+    if(gv.unityProgressbarEnabled)
         Global::setUnityProgressbarValue((float) timerManager_->secondsRemaining_/timerManager_->totalSeconds_);
-    }
 #endif
     timerManager_->secondsRemaining_--;
 }
@@ -442,9 +442,8 @@ void NonGuiManager::checkPicOfDay(){
 
 #ifdef UNITY
 void NonGuiManager::updatePotdProgressMain(){
-    if(gv.currentDE == DesktopEnvironment::UnityGnome && gv.unityProgressbarEnabled){
+    if(gv.unityProgressbarEnabled)
         Global::setUnityProgressbarValue((float) (Global::getSecondsTillHour("00:00")/86400.0));
-    }
 }
 #endif
 
@@ -460,9 +459,8 @@ void NonGuiManager::connectToUpdateSecondsSlot(){
         connect(generalTimer_, SIGNAL(timeout()), this, SLOT(updateSeconds()));
     }
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome && gv.unityProgressbarEnabled){
+    if(gv.unityProgressbarEnabled)
         Global::setUnityProgressBarEnabled(true);
-    }
 #endif
 }
 
@@ -1228,12 +1226,9 @@ void NonGuiManager::doAction(const QString &message){
         Global::resetSleepProtection(timerManager_->secondsRemaining_);
         generalTimer_->start(1000);
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
-            if(gv.unityProgressbarEnabled){
-                Global::setUnityProgressBarEnabled(true);
-            }
-            setUnityShortcutsState(true, false, false, false);
-        }
+        if(gv.unityProgressbarEnabled)
+            Global::setUnityProgressBarEnabled(true);
+        setUnityShortcutsState(true, false, false, false);
 #endif
     }
     else if(message == "--potd"){
@@ -1275,9 +1270,7 @@ void NonGuiManager::doAction(const QString &message){
         this->disconnectFromSlot();
         this->continueWithPotd();
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
-            setUnityShortcutsState(true, false, false, false);
-        }
+        setUnityShortcutsState(true, false, false, false);
 #endif
     }
     else if(message == "--website"){
@@ -1318,12 +1311,9 @@ void NonGuiManager::doAction(const QString &message){
         timerManager_->secondsRemaining_=0;
         this->continueWithWebsite();
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
-            if(gv.unityProgressbarEnabled){
-                Global::setUnityProgressBarEnabled(true);
-            }
-            setUnityShortcutsState(true, false, false, false);
-        }
+        if(gv.unityProgressbarEnabled)
+            Global::setUnityProgressBarEnabled(true);
+        setUnityShortcutsState(true, false, false, false);
 #endif
     }
     else if(message == "--start"){
@@ -1379,13 +1369,9 @@ void NonGuiManager::doAction(const QString &message){
             Global::resetSleepProtection(timerManager_->secondsRemaining_);
             generalTimer_->start(1000);
 #ifdef UNITY
-            if(gv.currentDE == DesktopEnvironment::UnityGnome){
-                if(gv.unityProgressbarEnabled){
-                    Global::setUnityProgressBarEnabled(true);
-                }
-
-                setUnityShortcutsState(true, true, true, true);
-            }
+            if(gv.unityProgressbarEnabled)
+                Global::setUnityProgressBarEnabled(true);
+            setUnityShortcutsState(true, true, true, true);
 #endif
         }
     }
@@ -1429,9 +1415,7 @@ void NonGuiManager::doAction(const QString &message){
             generalTimer_->stop();
             gv.processPaused=true;
 #ifdef UNITY
-            if(gv.currentDE == DesktopEnvironment::UnityGnome){
-                setUnityShortcutsState(true, false, false, false);
-            }
+        setUnityShortcutsState(true, false, false, false);
 #endif
         }
         else
@@ -1440,9 +1424,7 @@ void NonGuiManager::doAction(const QString &message){
             Global::debug("Continuing from the pause...");
             gv.processPaused=false;
 #ifdef UNITY
-            if(gv.currentDE == DesktopEnvironment::UnityGnome){
-                setUnityShortcutsState(true, true, true, true);
-            }
+            setUnityShortcutsState(true, true, true, true);
 #endif
             generalTimer_->start(1000);
         }
@@ -1454,9 +1436,8 @@ void NonGuiManager::doAction(const QString &message){
         }
 
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome && gv.unityProgressbarEnabled){
-            Global::setUnityProgressBarEnabled(false);
-        }
+        //TODO: check this:  if(gv.unityProgressbarEnabled)
+        Global::setUnityProgressBarEnabled(false);
 #endif
 
         if(generalTimer_->isActive()){
@@ -1487,9 +1468,7 @@ void NonGuiManager::doAction(const QString &message){
         gv.wallpapersRunning=gv.liveEarthRunning=gv.potdRunning=gv.liveWebsiteRunning=false;
         Global::updateStartup();
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
-            setUnityShortcutsState(false, false, false, false);
-        }
+        setUnityShortcutsState(false, false, false, false);
 #endif
 
     }
@@ -1630,7 +1609,7 @@ QString NonGuiManager::getCurrentWallpapersFolder(){
     short currentFolderIndex=settings->value("currentFolder_index", 0).toInt();
     settings->beginReadArray("pictures_locations");
     settings->setArrayIndex(currentFolderIndex);
-    QString parentFolder = settings->value("item", gv.currentDeDefaultWallpapersPath).toString();
+    QString parentFolder = settings->value("item", DesktopEnvironment::getOSWallpaperPath()).toString();
     settings->endArray();
     return parentFolder;
 }
@@ -1732,18 +1711,13 @@ void NonGuiManager::checkSettings(bool allSettings){
     gv.setAverageColor = settings->value("average_color", false).toBool();
     gv.showNotification=settings->value("notification", false).toBool();
     gv.saveHistory=settings->value("history", true).toBool();
-#ifdef Q_OS_UNIX
-    gv.currentDE=static_cast<DesktopEnvironment::Value>(settings->value("de", 0).toInt());
-#endif
     gv.symlinks=settings->value("symlinks", false).toBool();
 
     if(allSettings){
         //checks all needed settings
         gv.pauseOnBattery=settings->value("pause_on_battery", false).toBool();
 
-#ifdef UNITY
-        gv.unityProgressbarEnabled=settings->value("unity_progressbar_enabled", false).toBool();
-#endif
+
 
         gv.potdIncludeDescription = settings->value("potd_include_description", true).toBool();
         gv.leEnableTag = settings->value("le_enable_tag", false).toBool();
@@ -1752,7 +1726,10 @@ void NonGuiManager::checkSettings(bool allSettings){
         gv.potdDescriptionColor = settings->value("potd_text_color", "#FFFFFF").toString();
         gv.potdDescriptionBackgroundColor = settings->value("potd_background_color", "#000000").toString();
 #ifdef Q_OS_UNIX
-        gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (gv.currentDE == DesktopEnvironment::UnityGnome ? 60 : 0)).toInt();
+        gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (currentDE == DE::UnityGnome ? 60 : 0)).toInt();
+    #ifdef UNITY
+        gv.unityProgressbarEnabled=settings->value("unity_progressbar_enabled", false).toBool();
+    #endif
 #else
         gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (0)).toInt();
 #endif
@@ -1902,139 +1879,25 @@ void NonGuiManager::viralSettingsOperations(){
 
     if(settings->value("first-run", true).toBool()){
         settings->setValue("first-run", false);
-#ifdef Q_OS_UNIX
-        if(!QDir(gv.homePath+"/.config/Wallch/").removeRecursively()){
+    #ifdef Q_OS_UNIX
+        if(!QDir(gv.homePath+"/.config/Wallch/").removeRecursively())
             Global::error("I probably could not remove previous Wallch configurations!");
-        }
-
-        //doing DE detection
-        if(QDir("/etc/xdg/lubuntu").exists()){
-            gv.currentDE = DesktopEnvironment::LXDE;
-        }
-        else if(QFile::exists("/usr/bin/xfconf-query")){
-            gv.currentDE = DesktopEnvironment::XFCE;
-        }
-        else if(QFile::exists("/usr/bin/mate-help")){
-            gv.currentDE = DesktopEnvironment::Mate;
-        }
-        else if(QFile::exists("/usr/bin/unity"))
-        {
-            gv.currentDE = DesktopEnvironment::UnityGnome;
-        }
-        else
-        {
-            gv.currentDE = DesktopEnvironment::Gnome;
-        }
-
-        settings->setValue("de", gv.currentDE);
-
-        //doing OS name detection
-        QString osName;
-        QFile osDetectionFile("/etc/lsb-release");
-        if(osDetectionFile.exists() && osDetectionFile.open(QIODevice::ReadOnly | QIODevice::Text)){
-            QTextStream in(&osDetectionFile);
-            QString prettyName;
-            bool found=false;
-            while(!in.atEnd()){
-                prettyName=in.readLine();
-                if(prettyName.startsWith("DISTRIB_DESCRIPTION=")){
-                    found = true;
-                    prettyName = prettyName.split('=').at(1);
-                    prettyName = prettyName.replace('"', "").trimmed();
-                    break;
-                }
-            }
-            if(found && !prettyName.isEmpty()){
-                osName=prettyName;
-            }
-        }
-        else
-        {
-            osDetectionFile.setFileName("/etc/os-release");
-            if(osDetectionFile.exists() && osDetectionFile.open(QIODevice::ReadOnly | QIODevice::Text)){
-                QTextStream in(&osDetectionFile);
-                QString curLine;
-                QString prettyName;
-                while(!in.atEnd()){
-                    curLine=in.readLine();
-                    if(curLine.startsWith("PRETTY_NAME=") || curLine.startsWith("NAME=")){
-                        prettyName = curLine.split("=").at(1);
-                        prettyName = prettyName.replace('"', "").trimmed();
-                        break;
-                    }
-                }
-                if(!prettyName.isEmpty()){
-                    if(prettyName.contains(" ")){
-                        prettyName=prettyName.split(" ")[0];
-                    }
-                    osName=prettyName;
-                }
-            }
-        }
-
-        if(osDetectionFile.isOpen()){
-            osDetectionFile.close();
-        }
-
-        settings->setValue("osname", osName);
-
-#else
-        OSVERSIONINFO osvi;
-        ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
-        osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-        GetVersionEx(&osvi);
-
-        settings->setValue("windows_major_version", QString::number(osvi.dwMajorVersion));
-        settings->setValue("windows_minor_version", QString::number(osvi.dwMinorVersion));
-
-        if(!QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)+"/Mellori Studio/Wallch/").removeRecursively()){
+    #else
+        if(!QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)+"/Wallch/").removeRecursively())
             Global::error("I probably could not remove previous Wallch configurations!");
-        }
 
         QSettings settings2("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\wallch.exe", QSettings::NativeFormat);
         settings2.setValue("Default", QDir::currentPath()+"/wallch.exe");
         settings2.setValue("Path", QDir::currentPath()+"/Wallch");
         settings2.sync();
-
-#endif //#ifdef Q_OS_UNIX
-
+    #endif
     }
 
-#ifdef Q_OS_UNIX
-    else
-    {
-        //this is not a first-run
-        gv.currentDE = static_cast<DesktopEnvironment::Value>(settings->value("de", 0).toInt());
-    }
-#endif
     settings->setValue("times_launched", settings->value("times_launched", 0).toUInt()+1); //adding one to times launched
     settings->sync();
 
-    //store the current os name and the current os default wallpapers path so we don't check everytime
-#ifdef Q_OS_WIN
-    gv.currentOSName="Windows";
-    gv.currentDeDefaultWallpapersPath="C:\\Windows\\Web\\Wallpaper";
-#else
-    gv.currentOSName = settings->value("osname", "Linux").toString();
-    if(gv.currentDE == DesktopEnvironment::LXDE && QDir("/usr/share/lubuntu/wallpapers").exists()){
-        gv.currentDeDefaultWallpapersPath = "/usr/share/lubuntu/wallpapers";
-    }
-    if(gv.currentDE == DesktopEnvironment::XFCE && QDir("usr/share/xfce4/backdrops").exists()){
-        gv.currentDeDefaultWallpapersPath = "usr/share/xfce4/backdrops";
-    }
-    else if(QDir("/usr/share/backgrounds").exists())
-    {
-        gv.currentDeDefaultWallpapersPath = "/usr/share/backgrounds";
-    }
-    else
-    {
-        gv.currentDeDefaultWallpapersPath = "/usr/share/wallpapers";
-    }
-
-    //enlightenment(when supported) usr/share/enlightenment/data/backgrounds
-#endif
-
 #ifdef Q_OS_UNIX
+    DesktopEnvironment::setCurrentDE();
     gv.wallchHomePath=gv.homePath+"/.wallch/";
     gv.cachePath=gv.homePath+"/.cache/wallch/thumbs/";
 #else
@@ -2055,7 +1918,7 @@ void NonGuiManager::startProgramNormalGui(){
 
     setupTray();
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome){
+    if(currentDE == DE::UnityGnome){
         setupUnityShortcuts();
     }
 #endif
@@ -2069,6 +1932,10 @@ void NonGuiManager::startProgramNormalGui(){
 int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
     //getting custom argc and not the original in case processArguments is not called with the original process arguments
     int argc = arguments.count();
+
+#ifdef UNITY
+    setupUnityShortcuts();
+#endif
 
     if(arguments.contains("--start")){
         if(alreadyRuns()){
@@ -2102,16 +1969,10 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         connectToServer();
         setupTray();
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
-            setupUnityShortcuts();
-            if(gotPicLocation){
-                setUnityShortcutsState(true, true, true, true);
-            }
-            else
-            {
-                setUnityShortcutsState(false, false, false, false);
-            }
-        }
+        if(gotPicLocation)
+            setUnityShortcutsState(true, true, true, true);
+        else
+            setUnityShortcutsState(false, false, false, false);
 #endif
         if(gotPicLocation){
             generalTimer_->start(1000);
@@ -2140,10 +2001,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         setupTray();
 
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
-            setupUnityShortcuts();
-            setUnityShortcutsState(true, false, false, false);
-        }
+        setUnityShortcutsState(true, false, false, false);
 #endif
         continueWithLiveEarth();
 
@@ -2168,10 +2026,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         checkSettings(true);
 
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
-            setupUnityShortcuts();
-            setUnityShortcutsState(true, false, false, false);
-        }
+        setUnityShortcutsState(true, false, false, false);
 #endif
         continueWithPotd();
 
@@ -2200,10 +2055,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         websiteSnapshot_ = new WebsiteSnapshot();
 
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
-            setupUnityShortcuts();
-            setUnityShortcutsState(true, false, false, false);
-        }
+        setUnityShortcutsState(true, false, false, false);
 #endif
         continueWithWebsite();
         startStatisticsTimer();

@@ -28,9 +28,14 @@ public:
     static void setPrimaryColor(const QString &colorName);
     static QString getSecondaryColor();
     static void setSecondaryColor(const QString &colorName);
+#ifdef Q_OS_UNIX
+    static QString getColor(short num);
+    static void setColor(short num, QString colorName);
+#endif
     static ColoringType::Value getColoringType();
     static void changeCurrentShading();
     static QImage createVerticalHorizontalImage(int width, int height);
+    static short getCurrentTheme();
 };
 
 #endif // COLORMANAGER_H

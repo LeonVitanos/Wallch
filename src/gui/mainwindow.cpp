@@ -32,10 +32,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QStandardItem>
 #include <QColorDialog>
 #include <QShortcut>
-#include <QSysInfo>
 
 #include "mainwindow.h"
 #include "math.h"
+#include "desktopenvironment.h"
 
 MainWindow *mainWindowInstance;
 
@@ -345,29 +345,21 @@ void MainWindow::dconfChanges(){
 }
 #endif
 
-void MainWindow::changeCurrentTheme()
-{
-    gv.currentTheme = settings->value("theme", "autodetect").toString();
+void MainWindow::changeCurrentTheme(){
+    int theme = colorManager_->getCurrentTheme();
 
-    int theme;
-    if(gv.currentTheme == "autodetect")
-        theme = globalParser_->autodetectTheme();
-    else
-        theme = gv.currentTheme == "radiance";
-
-    if(theme == 0){
-        changeAppStyleSheetTo(":/themes/ambiance.qss");
-        Q_FOREACH(QLabel *separator, menuSeparators_){
-            separator->show();
-            separator->setPixmap(AMBIANCE_SEPARATOR);
-        }
+    QFile file(QString(":/themes/") + (theme == 0 ? "ambiance" : "radiance") + ".qss");
+    if(!file.open(QIODevice::ReadOnly)){
+        Global::error("Could not load the current theme file.");
+        return;
     }
-    else{
-        changeAppStyleSheetTo(":/themes/radiance.qss");
-        Q_FOREACH(QLabel *separator, menuSeparators_){
-            separator->show();
-            separator->setPixmap(RADIANCE_SEPARATOR);
-        }
+
+    qApp->setStyleSheet(QString::fromLatin1(file.readAll()));
+    file.close();
+
+    Q_FOREACH(QLabel *separator, menuSeparators_){
+        separator->show();
+        separator->setPixmap(theme == 0 ? AMBIANCE_SEPARATOR : RADIANCE_SEPARATOR);
     }
 }
 
@@ -482,7 +474,7 @@ void MainWindow::applySettings()
     ui->shuffle_images_checkbox->setChecked(gv.randomImagesEnabled);
 
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::LXDE){
+    if(currentDE == DE::LXDE){
         ui->set_desktop_color->hide();
     }
 #endif
@@ -505,7 +497,7 @@ void MainWindow::continueAlreadyRunningFeature()
             updateSeconds();
             stopButtonsSetEnabled(true);
 #ifdef UNITY
-            if(gv.currentDE == DesktopEnvironment::UnityGnome){
+            if(currentDE == DE::UnityGnome){
                 dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
             }
 #endif
@@ -631,7 +623,7 @@ void MainWindow::startUpdateSeconds(){
     if(ui->timeForNext->isHidden()){
         ui->timeForNext->show();
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome && gv.unityProgressbarEnabled){
+        if(currentDE == DE::UnityGnome && gv.unityProgressbarEnabled){
             globalParser_->setUnityProgressBarEnabled(true);
         }
 #endif
@@ -652,7 +644,7 @@ void MainWindow::updatePotdProgress(){
 void MainWindow::setProgressbarsValue(short value){
     ui->timeForNext->setValue(value);
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome && gv.unityProgressbarEnabled){
+    if(currentDE == DE::UnityGnome && gv.unityProgressbarEnabled){
         globalParser_->setUnityProgressbarValue((float)(value/100.0));
     }
 #endif
@@ -807,7 +799,7 @@ void MainWindow::setPreviewImage(){
             else
             {
                 previewColorsAndGradientsMeow=false;
-                if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome){
+                if(currentDE == DE::UnityGnome || currentDE == DE::Gnome){
                     //both dimensions are bigger than the screen's. Center both dimensions.
 
                     image = QImage(image.copy(0, 0, vScreenWidth, vScreenHeight));
@@ -994,7 +986,7 @@ void MainWindow::animateProgressbarOpacity(bool show){
     }
 
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome && gv.unityProgressbarEnabled){
+    if(currentDE == DE::UnityGnome && gv.unityProgressbarEnabled){
         globalParser_->setUnityProgressBarEnabled(show);
     }
 #endif
@@ -1050,7 +1042,7 @@ void MainWindow::processRequestStop(){
 
 void MainWindow::findAvailableWallpaperStyles(){
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
+    if(currentDE == DE::UnityGnome || currentDE == DE::Gnome || currentDE == DE::Mate){
         ui->image_style_combo->addItem(tr("Color"), NoneStyle);
         ui->image_style_combo->addItem(tr("Tile"), Tile);
         ui->image_style_combo->addItem(tr("Zoom"), Zoom);
@@ -1059,7 +1051,7 @@ void MainWindow::findAvailableWallpaperStyles(){
         ui->image_style_combo->addItem(tr("Fill"), Stretch);
         ui->image_style_combo->addItem(tr("Span"), Span);
     }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
+    else if(currentDE == DE::XFCE){
         ui->image_style_combo->addItem(tr("None"), NoneStyle);
         ui->image_style_combo->addItem(tr("Centered"), Center);
         ui->image_style_combo->addItem(tr("Tiled"), Tile);
@@ -1067,7 +1059,7 @@ void MainWindow::findAvailableWallpaperStyles(){
         ui->image_style_combo->addItem(tr("Scaled"), Scale);
         ui->image_style_combo->addItem(tr("Zoomed"), Zoom);
     }
-    else if(gv.currentDE == DesktopEnvironment::LXDE){
+    else if(currentDE == DE::LXDE){
         ui->image_style_combo->addItem(tr("Empty"), NoneStyle);
         ui->image_style_combo->addItem(tr("Fill"), Stretch);
         ui->image_style_combo->addItem(tr("Fit"), Scale);
@@ -1081,13 +1073,13 @@ void MainWindow::findAvailableWallpaperStyles(){
     ui->image_style_combo->addItem(tr("Stretch"), Stretch);
 
     // Windows 7 and above
-    if(QSysInfo::productVersion().toInt()>=6.1)
+    if(DesktopEnvironment::getOSproductVersion()>=6.1)
     {
         //Scale,Zoom
         ui->image_style_combo->addItem(tr("Fit"), Scale);
         ui->image_style_combo->addItem(tr("Fill"), Zoom);
         // Windows 8 and above
-        if(QSysInfo::productVersion().toInt()>=6.2)
+        if(DesktopEnvironment::getOSproductVersion()>=6.2)
             ui->image_style_combo->addItem(tr("Span"), Span);
     }
 #endif
@@ -1318,17 +1310,6 @@ void MainWindow::on_website_slider_valueChanged(int value)
     ui->website_interval_slider_label->setText(timerManager_->secondsToMh(globalParser_->websiteSliderValueToSeconds(value)));
 }
 
-void MainWindow::changeAppStyleSheetTo(const QString &styleSheetFile){
-    QFile file(styleSheetFile);
-    if(!file.open(QIODevice::ReadOnly)){
-        Global::error("Could not load the current theme file.");
-        return;
-    }
-
-    qApp->setStyleSheet(QString::fromLatin1(file.readAll()));
-    file.close();
-}
-
 void MainWindow::stopEverythingThatsRunning(short excludingFeature)
 {
     if(excludingFeature!=1 && gv.wallpapersRunning){
@@ -1529,7 +1510,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
         gv.processPaused=false;
 
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome && gv.unityProgressbarEnabled){
+        if(currentDE == DE::UnityGnome && gv.unityProgressbarEnabled){
             dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, true);
             globalParser_->setUnityProgressBarEnabled(true);
         }
@@ -1563,7 +1544,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
         ui->startButton->setText(tr("&Start"));
         ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
+        if(currentDE == DE::UnityGnome){
             dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
         }
 #endif
@@ -1613,10 +1594,10 @@ void MainWindow::on_stopButton_clicked(){
         }
     }
     #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome && gv.unityLauncherEntry){
+        if(currentDE == DE::UnityGnome && gv.unityLauncherEntry){
             dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
         }
-        if(gv.currentDE == DesktopEnvironment::UnityGnome && gv.unityProgressbarEnabled){
+        if(currentDE == DE::UnityGnome && gv.unityProgressbarEnabled){
             globalParser_->setUnityProgressBarEnabled(false);
         }
     #endif #ifdef UNITY
@@ -1765,7 +1746,7 @@ void MainWindow::on_wallpapersList_itemDoubleClicked()
         forceUpdateIconOf(curRow);
 
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::LXDE){
+    if(currentDE == DE::LXDE){
         DesktopStyle desktopStyle = qvariant_cast<DesktopStyle>(ui->image_style_combo->currentData());
         if(desktopStyle == NoneStyle){
             ui->image_style_combo->setCurrentIndex(2);
@@ -2203,7 +2184,7 @@ void MainWindow::startButtonsSetEnabled(bool enabled)
 {
     ui->startButton->setEnabled(enabled);
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome && gv.unityLauncherEntry){
+    if(currentDE == DE::UnityGnome && gv.unityLauncherEntry){
         dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, !enabled);
     }
 #endif
@@ -2214,7 +2195,7 @@ void MainWindow::stopButtonsSetEnabled(bool enabled)
     ui->stopButton->setEnabled(enabled);
 
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome && gv.unityLauncherEntry){
+    if(currentDE == DE::UnityGnome && gv.unityLauncherEntry){
         dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, enabled && !gv.wallpapersRunning);
         dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, enabled);
     }
@@ -2225,7 +2206,7 @@ void MainWindow::previousAndNextButtonsSetEnabled(bool enabled){
     ui->next_Button->setEnabled(enabled); ui->previous_Button->setEnabled(enabled);
 
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome && gv.unityLauncherEntry){
+    if(currentDE == DE::UnityGnome && gv.unityLauncherEntry){
         dbusmenu_menuitem_property_set_bool(gv.unityNextAction, DBUSMENU_MENUITEM_PROP_VISIBLE, enabled);
         dbusmenu_menuitem_property_set_bool(gv.unityPreviousAction, DBUSMENU_MENUITEM_PROP_VISIBLE, enabled);
     }
@@ -2261,32 +2242,30 @@ void MainWindow::monitor(const QStringList &finalListOfPaths){
      */
 
     int itemCount = 0;
-    Q_FOREACH(QString path, finalListOfPaths){
+    Q_FOREACH(QString path, finalListOfPaths)
         monitor(path, itemCount);
-    }
 
     startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
 
-    if(gv.iconMode){
+    if(gv.iconMode)
         launchTimerToUpdateIcons();
-    }
 
     switch(ui->pictures_location_comboBox->currentIndex()){
     case 0:
-        ui->pictures_location_comboBox->setItemText(0, gv.currentOSName+" "+tr("Desktop Backgrounds")+" ("+QString::number(itemCount)+")");
+        ui->pictures_location_comboBox->setItemText(0, DesktopEnvironment::getOSprettyName() + " "  + tr("Desktop Backgrounds")
+                                                           + " (" + QString::number(itemCount) + ")");
         break;
     case 1:
-        ui->pictures_location_comboBox->setItemText(1,tr("My Pictures")+" ("+QString::number(itemCount)+ ")");
+        ui->pictures_location_comboBox->setItemText(1,tr("My Pictures") + " (" + QString::number(itemCount) + ")");
         break;
     default:
         short index=ui->pictures_location_comboBox->currentIndex();
-        if(currentFolderIsAList_){
-            ui->pictures_location_comboBox->setItemText(index, ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString()+" ("+QString::number(itemCount)+ ")");
-        }
+        if(currentFolderIsAList_)
+            ui->pictures_location_comboBox->setItemText(index, ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString()
+                                                                   + " (" + QString::number(itemCount) + ")");
         else
-        {
-            ui->pictures_location_comboBox->setItemText(index, globalParser_->basenameOf(ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString())+" ("+QString::number(itemCount)+ ")");
-        }
+            ui->pictures_location_comboBox->setItemText(index, globalParser_->basenameOf(ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString())
+                                                                   + " (" + QString::number(itemCount) + ")");
         break;
     }
 }
@@ -2862,7 +2841,7 @@ void MainWindow::on_activate_livearth_clicked()
     gv.liveEarthRunning=true;
     globalParser_->updateStartup();
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome){
+    if(currentDE == DE::UnityGnome){
         dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, true);
     }
 #endif
@@ -2896,7 +2875,7 @@ void MainWindow::on_deactivate_livearth_clicked()
     stoppedBecauseOnBattery_=false;
 
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome){
+    if(currentDE == DE::UnityGnome){
         dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
     }
 #endif
@@ -2951,7 +2930,7 @@ void MainWindow::startPotd(bool launchNow){
     animateProgressbarOpacity(1);
 
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome){
+    if(currentDE == DE::UnityGnome){
         dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, true);
     }
 #endif
@@ -2980,7 +2959,7 @@ void MainWindow::on_deactivate_potd_clicked()
     stoppedBecauseOnBattery_=false;
 
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome){
+    if(currentDE == DE::UnityGnome){
         dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
     }
 #endif
@@ -3038,7 +3017,7 @@ void MainWindow::on_activate_website_clicked()
     gv.liveWebsiteRunning=true;
     globalParser_->updateStartup();
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome){
+    if(currentDE == DE::UnityGnome){
         dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, true);
     }
 #endif
@@ -3072,7 +3051,7 @@ void MainWindow::on_deactivate_website_clicked()
     ui->live_website_login_widget->setEnabled(true);
     animateProgressbarOpacity(0);
 #ifdef UNITY
-    if(gv.currentDE == DesktopEnvironment::UnityGnome){
+    if(currentDE == DE::UnityGnome){
         dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
     }
 #endif
@@ -3338,8 +3317,8 @@ void MainWindow::loadWallpapersPage(){
     ui->wallpapersList->setDragDropMode(QAbstractItemView::NoDragDrop);
     imageLoading_=QIcon::fromTheme("image-loading", QIcon(":/images/loading.png"));
 
-    ui->pictures_location_comboBox->setItemText(0, gv.currentOSName+" "+tr("Desktop Backgrounds"));
-    ui->pictures_location_comboBox->setItemData(0, gv.currentDeDefaultWallpapersPath, Qt::UserRole);
+    ui->pictures_location_comboBox->setItemText(0, DesktopEnvironment::getOSprettyName() + " " + tr("Desktop Backgrounds"));
+    ui->pictures_location_comboBox->setItemData(0, DesktopEnvironment::getOSWallpaperPath(), Qt::UserRole);
     ui->pictures_location_comboBox->setItemText(1, tr("My Pictures"));
     ui->pictures_location_comboBox->setItemData(1, gv.defaultPicturesLocation, Qt::UserRole);
 
@@ -3447,7 +3426,7 @@ void MainWindow::loadPotdPage(){
     gv.potdDescriptionRightMargin = settings->value("potd_description_right_margin", 0).toInt();
     gv.potdDescriptionBottomTopMargin = settings->value("potd_description_bottom_top_margin", 0).toInt();
 #ifdef Q_OS_UNIX
-    gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (gv.currentDE == DesktopEnvironment::UnityGnome ? 125 : 0)).toInt();
+    gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (currentDE == DE::UnityGnome ? 125 : 0)).toInt();
 #else
     gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (0)).toInt();
 #endif

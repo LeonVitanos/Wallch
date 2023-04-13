@@ -264,7 +264,6 @@ private:
     void savePicturesLocations();
     void processRequestStart();
     void processRequestStop();
-    void changeAppStyleSheetTo(const QString &styleSheetFile);
     void doesMatch();
     void doesntMatch();
     void setProgressbarsValue(short value);

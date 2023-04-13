@@ -35,6 +35,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QProcess>
 #include <QKeyEvent>
 
+#ifdef Q_OS_UNIX
+#include "desktopenvironment.h"
+#endif
+
 Preferences::Preferences(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::preferences)
@@ -62,12 +66,8 @@ Preferences::Preferences(QWidget *parent) :
     ui->startup_timeout_spinbox->setValue(settings->value("startup_timeout", 3).toInt());
 
 #ifdef Q_OS_UNIX
-    short curDe = settings->value("de", 0).toInt();
-    if(curDe>=ui->de_combo->count()){
-        curDe=0;
-    }
-    ui->de_combo->setCurrentIndex(curDe);
-    on_de_combo_currentIndexChanged(curDe);
+    ui->de_combo->setCurrentIndex(currentDE);
+    on_de_combo_currentIndexChanged(currentDE);
     #ifdef UNITY
         ui->unity_prog_checkbox->setChecked(settings->value("unity_progressbar_enabled", false).toBool());
     #endif //ifdef UNITY
@@ -274,7 +274,6 @@ void Preferences::on_saveButton_clicked()
         Q_EMIT unityProgressbarChanged(gv.unityProgressbarEnabled);
     }
     settings->setValue("unity_progressbar_enabled", gv.unityProgressbarEnabled);
-    settings->setValue("de", ui->de_combo->currentIndex());
 
 #endif
     oldTheme = ui->theme_combo->currentIndex();
@@ -371,7 +370,7 @@ void Preferences::on_reset_clicked()
         ui->theme_combo->setCurrentIndex(2);
         ui->de_combo->setCurrentIndex(0);
 #ifdef UNITY
-        if(gv.currentDE == DesktopEnvironment::UnityGnome){
+        if(currentDE == DE::UnityGnome){
             ui->unity_prog_checkbox->setChecked(false);
         }
 #endif
@@ -474,7 +473,7 @@ QString Preferences::dataToNiceString(qint64 data){
 void Preferences::on_de_combo_currentIndexChanged(int index)
 {
     DesktopEnvironment::Value curEnv = static_cast<DesktopEnvironment::Value>(index);
-    if(curEnv != DesktopEnvironment::UnityGnome)
+    if(curEnv != DE::UnityGnome)
         ui->unity_prog_checkbox->hide();
     else
         ui->unity_prog_checkbox->show();

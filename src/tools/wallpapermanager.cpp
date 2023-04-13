@@ -25,9 +25,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "glob.h"
 
 #ifdef Q_OS_WIN
-
 #include "windows.h"
-
+#else
+#include "desktopenvironment.h"
 #endif
 
 #include <QMessageBox>
@@ -277,21 +277,21 @@ QString WallpaperManager::currentBackgroundWallpaper(){
     //returns the image currently set as desktop background
     QString currentImage;
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
-        currentImage=Global::gsettingsGet("org.gnome.desktop.background", "picture-uri");
+    if(currentDE == DE::UnityGnome || currentDE == DE::Gnome || currentDE == DE::Mate){
+        currentImage = DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", DesktopEnvironment::getPictureUriName());
         if(currentImage.startsWith("file://")){
             currentImage=currentImage.right(currentImage.count()-7);
         }
     }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
+    else if(currentDE == DE::XFCE){
+        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
             if(entry.contains("image-path") || entry.contains("last-image")){
-                currentImage=Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry).replace("\n", "");
+                currentImage=DesktopEnvironment::runCommand("xfconf-query", false, QStringList() << entry, true).at(0);
             }
         }
     }
-    else if(gv.currentDE == DesktopEnvironment::LXDE){
-        currentImage=Global::getPcManFmValue("wallpaper");
+    else if(currentDE == DE::LXDE){
+        currentImage=DesktopEnvironment::getPcManFmValue("wallpaper");
     }
 #else
     char *current_image = (char*) malloc(MAX_PATH*sizeof(char));
@@ -377,29 +377,24 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
         Global::rotateImageBasedOnExif(image);
     }
 
-    switch(gv.currentDE){
-    case DesktopEnvironment::Gnome:
-    case DesktopEnvironment::UnityGnome:
-    case DesktopEnvironment::Mate:{
-        // From Ubuntu 22.04, there is a different setting for light and dark theme
-        QString picture_uri = "picture-uri";
-        if(QSysInfo::productType().toLower() == "ubuntu" && QSysInfo::productVersion().toDouble()>=22.04 && Global::gsettingsGet("org.gnome.desktop.interface", "color-scheme") == "prefer-dark")
-            picture_uri = "picture-uri-dark";
-        Global::gsettingsSet("org.gnome.desktop.background", picture_uri, "file://"+image);
-        if(Global::gsettingsGet("org.gnome.desktop.background", "picture-options") == "none"){
-            Global::gsettingsSet("org.gnome.desktop.background", "picture-options", "zoom");
+    switch(currentDE){
+    case DE::Gnome:
+    case DE::UnityGnome:
+    case DE::Mate:{
+        DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", DesktopEnvironment::getPictureUriName(), "file://"+image);
+        if(DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", "picture-options") == "none"){
+            DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "picture-options", "zoom");
             Q_EMIT updateImageStyle();
         }
         break;
     }
-    case DesktopEnvironment::LXDE:
-        QProcess::startDetached("pcmanfm", QStringList() << "-w" << image);
+    case DE::LXDE:
+        DesktopEnvironment::runPcManFm(QStringList() << "-w" << image);
         break;
-    case DesktopEnvironment::XFCE:
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("image-path") || entry.contains("last-image")){
-                QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry << "-s" << image);
-            }
+    case DE::XFCE:
+        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
+            if(entry.contains("image-path") || entry.contains("last-image"))
+                DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << image);
         }
         break;
     default:
@@ -487,8 +482,8 @@ QImage WallpaperManager::indexed8ToARGB32(const QImage &image){
 
 short WallpaperManager::getCurrentFit(){
 #ifdef Q_OS_UNIX
-    if(gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::Mate){
-        QString style=Global::gsettingsGet("org.gnome.desktop.background", "picture-options");
+    if(currentDE == DE::UnityGnome || currentDE == DE::Gnome || currentDE == DE::Mate){
+        QString style=DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", "picture-options");
         if(style=="none")
             return 0;
         else if (style=="wallpaper")
@@ -504,16 +499,16 @@ short WallpaperManager::getCurrentFit(){
         else if (style=="spanned")
             return 6;
     }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
+    else if(currentDE == DE::XFCE){
+        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
             if(entry.contains("image-style")){
-                QString imageStyle=Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry);
+                QString imageStyle = DesktopEnvironment::runCommand("xfconf-query", false, QStringList() << entry).at(0);
                 return imageStyle.toInt();
             }
         }
     }
-    else if(gv.currentDE == DesktopEnvironment::LXDE)
-        return Global::getPcManFmValue("wallpaper_mode").toInt();
+    else if(currentDE == DE::LXDE)
+        return DesktopEnvironment::getPcManFmValue("wallpaper_mode").toInt();
 #else
     QSettings desktop_settings("HKEY_CURRENT_USER\\Control Panel\\Desktop", QSettings::NativeFormat);
 
@@ -547,7 +542,7 @@ void WallpaperManager::setCurrentFit(short index){
     if(index == getCurrentFit())
         return;
 
-    if(gv.currentDE == DesktopEnvironment::Gnome || gv.currentDE == DesktopEnvironment::UnityGnome || gv.currentDE == DesktopEnvironment::Mate){
+    if(currentDE == DE::Gnome || currentDE == DE::UnityGnome || currentDE == DE::Mate){
         QString type;
         switch(index){
         case 0:
@@ -574,16 +569,15 @@ void WallpaperManager::setCurrentFit(short index){
         default:
             type="wallpaper";
         }
-        Global::gsettingsSet("org.gnome.desktop.background", "picture-options", type);
+        DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "picture-options", type);
     }
-    else if(gv.currentDE == DesktopEnvironment::XFCE){
-        Q_FOREACH(QString entry, Global::getOutputOfCommand("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << "/backdrop" << "-l").split("\n")){
-            if(entry.contains("image-style")){
-                QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << entry << "-s" << QString::number(index));
-            }
+    else if(currentDE == DE::XFCE){
+        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
+            if(entry.contains("image-style"))
+                DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << QString::number(index));
         }
     }
-    else if(gv.currentDE == DesktopEnvironment::LXDE){
+    else if(currentDE == DE::LXDE){
         QString style;
         switch(index){
         default:
@@ -604,7 +598,7 @@ void WallpaperManager::setCurrentFit(short index){
             break;
         }
 
-        QProcess::startDetached("pcmanfm", QStringList() << "--wallpaper-mode="+style);
+        DesktopEnvironment::runPcManFm(QStringList() << "--wallpaper-mode=" + style);
     }
 #else
     QString currentBg = currentBackgroundWallpaper();
