@@ -20,11 +20,6 @@ win32 {
 } else {
     CONFIG += link_pkgconfig
     PKGCONFIG += libnotify libexif gtk+-3.0
-        UNAME = $$system(echo $XDG_CURRENT_DESKTOP)
-            contains(UNAME, "unity"): {
-                    PKGCONFIG += unity
-                    DEFINES += "UNITY=1"
-            }
 }
 
 isEmpty(PREFIX) {

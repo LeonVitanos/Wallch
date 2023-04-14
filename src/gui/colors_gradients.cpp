@@ -205,7 +205,7 @@ void ColorsGradients::on_solid_radioButton_clicked()
         return;
 
 #ifdef Q_OS_UNIX
-    if(currentDE == DE::Gnome || currentDE == DE::UnityGnome || currentDE == DE::Mate){
+    if(currentDE == DE::Gnome || currentDE == DE::Mate){
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "solid");
     }
     else if(currentDE == DE::XFCE){
@@ -231,7 +231,7 @@ void ColorsGradients::on_horizontal_radioButton_clicked()
         return;
 
 #ifdef Q_OS_UNIX
-    if(currentDE == DE::Gnome || currentDE == DE::UnityGnome || currentDE == DE::Mate){
+    if(currentDE == DE::Gnome || currentDE == DE::Mate){
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "horizontal");
     }
     else if(currentDE == DE::XFCE){
@@ -258,7 +258,7 @@ void ColorsGradients::on_vertical_radioButton_clicked()
         return;
 
 #ifdef Q_OS_UNIX
-    if(currentDE == DE::Gnome || currentDE == DE::UnityGnome || currentDE == DE::Mate)
+    if(currentDE == DE::Gnome || currentDE == DE::Mate)
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "vertical");
     else if(currentDE == DE::XFCE){
         Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){

@@ -262,73 +262,9 @@ void showUsage(short exitCode){
     exit(exitCode);
 }
 
-#ifdef UNITY
-static void stop_fake_callback_main(DbusmenuMenuitem *, guint, gpointer){
-    nongui->doAction("--stop");
-}
-
-static void pause_fake_callback_main(DbusmenuMenuitem *, guint, gpointer){
-    nongui->doAction("--pause");
-}
-
-static void next_fake_callback_main(DbusmenuMenuitem *, guint, gpointer){
-    nongui->doAction("--next");
-}
-
-static void previous_fake_callback_main(DbusmenuMenuitem *, guint, gpointer){
-    nongui->doAction("--previous");
-}
-
-void NonGuiManager::setupUnityShortcuts(){
-    unityMenu_ = dbusmenu_menuitem_new();
-    gv.unityStopAction = dbusmenu_menuitem_new();
-    gv.unityNextAction = dbusmenu_menuitem_new();
-    gv.unityPreviousAction = dbusmenu_menuitem_new();
-    gv.unityPauseAction = dbusmenu_menuitem_new();
-
-    dbusmenu_menuitem_property_set(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_LABEL, "Stop");
-    dbusmenu_menuitem_property_set(gv.unityNextAction, DBUSMENU_MENUITEM_PROP_LABEL, "Next");
-    dbusmenu_menuitem_property_set(gv.unityPreviousAction, DBUSMENU_MENUITEM_PROP_LABEL, "Previous");
-    dbusmenu_menuitem_property_set(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_LABEL, "Pause");
-
-    dbusmenu_menuitem_child_append (unityMenu_, gv.unityStopAction);
-    dbusmenu_menuitem_child_append (unityMenu_, gv.unityNextAction);
-    dbusmenu_menuitem_child_append (unityMenu_, gv.unityPreviousAction);
-    dbusmenu_menuitem_child_append (unityMenu_, gv.unityPauseAction);
-
-
-    g_signal_connect (gv.unityStopAction, DBUSMENU_MENUITEM_SIGNAL_ITEM_ACTIVATED, G_CALLBACK(&stop_fake_callback_main), (gpointer)this);
-    g_signal_connect (gv.unityNextAction, DBUSMENU_MENUITEM_SIGNAL_ITEM_ACTIVATED, G_CALLBACK(&next_fake_callback_main), (gpointer)this);
-    g_signal_connect (gv.unityPreviousAction, DBUSMENU_MENUITEM_SIGNAL_ITEM_ACTIVATED, G_CALLBACK(&previous_fake_callback_main), (gpointer)this);
-    g_signal_connect (gv.unityPauseAction, DBUSMENU_MENUITEM_SIGNAL_ITEM_ACTIVATED, G_CALLBACK(&pause_fake_callback_main), (gpointer)this);
-
-    if(!gv.unityLauncherEntry){
-        gv.unityLauncherEntry = unity_launcher_entry_get_for_desktop_id(APP_DESKTOP_NAME);
-    }
-
-    unity_launcher_entry_set_quicklist(gv.unityLauncherEntry, unityMenu_);
-
-    dbusmenu_menuitem_property_set_bool(unityMenu_, DBUSMENU_MENUITEM_PROP_VISIBLE, true);
-}
-
-void NonGuiManager::setUnityShortcutsState(bool stopState, bool pauseState, bool nextState, bool previousState){
-    if(gv.unityStopAction){
-        dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, stopState && !gv.wallpapersRunning);
-        dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, pauseState);
-        dbusmenu_menuitem_property_set_bool(gv.unityNextAction, DBUSMENU_MENUITEM_PROP_VISIBLE, nextState);
-        dbusmenu_menuitem_property_set_bool(gv.unityPreviousAction, DBUSMENU_MENUITEM_PROP_VISIBLE, previousState);
-    }
-}
-#endif
-
 void NonGuiManager::waitForInternetConnection(){
     Global::debug("Checking for internet connection...");
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome){
-        setupUnityShortcuts();
-        setUnityShortcutsState(true, false, false, false);
-    }
-#endif
+
     if(gv.potdRunning){
         continueWithPotd();
     }
@@ -397,10 +333,7 @@ void NonGuiManager::updateSeconds(){
             }
         }
     }
-#ifdef UNITY
-    if(gv.unityProgressbarEnabled)
-        Global::setUnityProgressbarValue((float) timerManager_->secondsRemaining_/timerManager_->totalSeconds_);
-#endif
+
     timerManager_->secondsRemaining_--;
 }
 
@@ -435,17 +368,7 @@ void NonGuiManager::checkPicOfDay(){
             generalTimer_->start(59500);
         }
     }
-#ifdef UNITY
-    updatePotdProgressMain();
-#endif
 }
-
-#ifdef UNITY
-void NonGuiManager::updatePotdProgressMain(){
-    if(gv.unityProgressbarEnabled)
-        Global::setUnityProgressbarValue((float) (Global::getSecondsTillHour("00:00")/86400.0));
-}
-#endif
 
 void NonGuiManager::connectToUpdateSecondsSlot(){
     if(generalTimer_ == NULL){
@@ -458,10 +381,6 @@ void NonGuiManager::connectToUpdateSecondsSlot(){
     {
         connect(generalTimer_, SIGNAL(timeout()), this, SLOT(updateSeconds()));
     }
-#ifdef UNITY
-    if(gv.unityProgressbarEnabled)
-        Global::setUnityProgressBarEnabled(true);
-#endif
 }
 
 void NonGuiManager::disconnectFromSlot(){
@@ -584,9 +503,7 @@ void NonGuiManager::continueWithPotd(){
         potdSetSameImage();
     }
     gv.doNotToggleRadiobuttonFallback=false;
-#ifdef UNITY
-    updatePotdProgressMain();
-#endif
+
     generalTimer_->start(59500);
 }
 
@@ -809,18 +726,6 @@ void activatelivewebsite_callback(GtkCheckMenuItem *checkmenuitem, gpointer){
 void deactivatelivewebsite_main(guint, gpointer *){
     nongui->doAction("--stop");
 }
-
-#ifdef UNITY
-void NonGuiManager::unityProgressbarSetEnabled(bool enabled){
-    if(generalTimer_->isActive()){
-        Global::setUnityProgressBarEnabled(enabled);
-        if(enabled){
-            Global::setUnityProgressbarValue(0);
-        }
-    }
-}
-#endif //#ifdef UNITY
-
 #endif
 
 //System tray icon Code
@@ -1135,7 +1040,7 @@ void NonGuiManager::preferencesDestroyed(){
 void NonGuiManager::doAction(const QString &message){
     /*
      * This function controls messages coming from external sources,
-     * like from the tray and the unity launcher.
+     * like from the tray
      */
 
     if(message == "--focus"){
@@ -1225,11 +1130,6 @@ void NonGuiManager::doAction(const QString &message){
         timerManager_->secondsRemaining_=timerManager_->totalSeconds_=LIVEARTH_INTERVAL;
         Global::resetSleepProtection(timerManager_->secondsRemaining_);
         generalTimer_->start(1000);
-#ifdef UNITY
-        if(gv.unityProgressbarEnabled)
-            Global::setUnityProgressBarEnabled(true);
-        setUnityShortcutsState(true, false, false, false);
-#endif
     }
     else if(message == "--potd"){
         if(mainWindowLaunched_){
@@ -1269,9 +1169,6 @@ void NonGuiManager::doAction(const QString &message){
         }
         this->disconnectFromSlot();
         this->continueWithPotd();
-#ifdef UNITY
-        setUnityShortcutsState(true, false, false, false);
-#endif
     }
     else if(message == "--website"){
         if(mainWindowLaunched_){
@@ -1310,11 +1207,6 @@ void NonGuiManager::doAction(const QString &message){
         this->disconnectFromSlot();
         timerManager_->secondsRemaining_=0;
         this->continueWithWebsite();
-#ifdef UNITY
-        if(gv.unityProgressbarEnabled)
-            Global::setUnityProgressBarEnabled(true);
-        setUnityShortcutsState(true, false, false, false);
-#endif
     }
     else if(message == "--start"){
 
@@ -1368,11 +1260,6 @@ void NonGuiManager::doAction(const QString &message){
             timerManager_->secondsRemaining_=0;
             Global::resetSleepProtection(timerManager_->secondsRemaining_);
             generalTimer_->start(1000);
-#ifdef UNITY
-            if(gv.unityProgressbarEnabled)
-                Global::setUnityProgressBarEnabled(true);
-            setUnityShortcutsState(true, true, true, true);
-#endif
         }
     }
     else if(message == "--change"){
@@ -1414,18 +1301,12 @@ void NonGuiManager::doAction(const QString &message){
             Global::debug("Pausing the Wallpapers process.");
             generalTimer_->stop();
             gv.processPaused=true;
-#ifdef UNITY
-        setUnityShortcutsState(true, false, false, false);
-#endif
         }
         else
         {
             Global::resetSleepProtection(timerManager_->secondsRemaining_);
             Global::debug("Continuing from the pause...");
             gv.processPaused=false;
-#ifdef UNITY
-            setUnityShortcutsState(true, true, true, true);
-#endif
             generalTimer_->start(1000);
         }
     }
@@ -1434,11 +1315,6 @@ void NonGuiManager::doAction(const QString &message){
             Q_EMIT closeWhatsRunning();
             return;
         }
-
-#ifdef UNITY
-        //TODO: check this:  if(gv.unityProgressbarEnabled)
-        Global::setUnityProgressBarEnabled(false);
-#endif
 
         if(generalTimer_->isActive()){
             generalTimer_->stop();
@@ -1467,10 +1343,6 @@ void NonGuiManager::doAction(const QString &message){
 
         gv.wallpapersRunning=gv.liveEarthRunning=gv.potdRunning=gv.liveWebsiteRunning=false;
         Global::updateStartup();
-#ifdef UNITY
-        setUnityShortcutsState(false, false, false, false);
-#endif
-
     }
     else if(message == "--next"){
 
@@ -1533,9 +1405,6 @@ void NonGuiManager::doAction(const QString &message){
         preferences_->setModal(true);
         preferences_->setAttribute(Qt::WA_DeleteOnClose);
         connect(preferences_, SIGNAL(destroyed()), this, SLOT(preferencesDestroyed()));
-#ifdef UNITY
-        connect(preferences_, SIGNAL(unityProgressbarChanged(bool)), this, SLOT(unityProgressbarSetEnabled(bool)));
-#endif
         preferences_->show();
     }
     else if(message == "--properties"){
@@ -1725,14 +1594,7 @@ void NonGuiManager::checkSettings(bool allSettings){
         gv.potdDescriptionFont = settings->value("potd_description_font", "Ubuntu").toString();
         gv.potdDescriptionColor = settings->value("potd_text_color", "#FFFFFF").toString();
         gv.potdDescriptionBackgroundColor = settings->value("potd_background_color", "#000000").toString();
-#ifdef Q_OS_UNIX
-        gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (currentDE == DE::UnityGnome ? 60 : 0)).toInt();
-    #ifdef UNITY
-        gv.unityProgressbarEnabled=settings->value("unity_progressbar_enabled", false).toBool();
-    #endif
-#else
         gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (0)).toInt();
-#endif
         gv.potdDescriptionRightMargin = settings->value("potd_description_right_margin", 0).toInt();
         gv.potdDescriptionBottomTopMargin = settings->value("potd_description_bottom_top_margin", 0).toInt();
 
@@ -1769,7 +1631,7 @@ void NonGuiManager::checkSettings(bool allSettings){
 }
 
 void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
-    //connects MainWindow with unity and command line messages.
+    //connects MainWindow with command line messages.
     QObject::connect(nongui, SIGNAL(signalOnce()), w, SLOT(justChangeWallpaper()));
     QObject::connect(nongui, SIGNAL(signalPause()), w, SLOT(on_startButton_clicked()));
     QObject::connect(nongui, SIGNAL(signalPrevious()), w, SLOT(on_previous_Button_clicked()));
@@ -1917,11 +1779,6 @@ void NonGuiManager::startProgramNormalGui(){
     connectToServer();
 
     setupTray();
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome){
-        setupUnityShortcuts();
-    }
-#endif
     mainWindowLaunched_=true;
     MainWindow *mainWindow = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_, 0, 0);
     connectMainwindowWithExternalActions(mainWindow);
@@ -1932,10 +1789,6 @@ void NonGuiManager::startProgramNormalGui(){
 int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
     //getting custom argc and not the original in case processArguments is not called with the original process arguments
     int argc = arguments.count();
-
-#ifdef UNITY
-    setupUnityShortcuts();
-#endif
 
     if(arguments.contains("--start")){
         if(alreadyRuns()){
@@ -1968,12 +1821,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         }
         connectToServer();
         setupTray();
-#ifdef UNITY
-        if(gotPicLocation)
-            setUnityShortcutsState(true, true, true, true);
-        else
-            setUnityShortcutsState(false, false, false, false);
-#endif
+
         if(gotPicLocation){
             generalTimer_->start(1000);
         }
@@ -2000,9 +1848,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         connectToServer();
         setupTray();
 
-#ifdef UNITY
-        setUnityShortcutsState(true, false, false, false);
-#endif
         continueWithLiveEarth();
 
         startStatisticsTimer();
@@ -2025,9 +1870,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
 
         checkSettings(true);
 
-#ifdef UNITY
-        setUnityShortcutsState(true, false, false, false);
-#endif
         continueWithPotd();
 
         startStatisticsTimer();
@@ -2054,9 +1896,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
 
         websiteSnapshot_ = new WebsiteSnapshot();
 
-#ifdef UNITY
-        setUnityShortcutsState(true, false, false, false);
-#endif
         continueWithWebsite();
         startStatisticsTimer();
         return app == NULL ? 0 : app->exec();

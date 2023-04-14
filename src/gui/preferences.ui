@@ -254,9 +254,9 @@
             <property name="geometry">
              <rect>
               <x>0</x>
-              <y>-119</y>
-              <width>662</width>
-              <height>630</height>
+              <y>-86</y>
+              <width>601</width>
+              <height>604</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -680,11 +680,6 @@ picture and change the desktop background once at System Startup</string>
                     </item>
                     <item>
                      <property name="text">
-                      <string notr="true">Unity-Gnome</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
                       <string notr="true">Gnome</string>
                      </property>
                     </item>
@@ -733,21 +728,6 @@ picture and change the desktop background once at System Startup</string>
                   </property>
                   <property name="indent">
                    <number>15</number>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="unity_prog_checkbox">
-                  <property name="font">
-                   <font>
-                    <bold>false</bold>
-                   </font>
-                  </property>
-                  <property name="focusPolicy">
-                   <enum>Qt::NoFocus</enum>
-                  </property>
-                  <property name="text">
-                   <string>Enable Unity ProgressBar</string>
                   </property>
                  </widget>
                 </item>
@@ -804,7 +784,7 @@ picture and change the desktop background once at System Startup</string>
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>481</width>
+              <width>389</width>
               <height>274</height>
              </rect>
             </property>
@@ -1481,7 +1461,7 @@ picture and change the desktop background once at System Startup</string>
  </connections>
  <buttongroups>
   <buttongroup name="buttonGroup_2"/>
-  <buttongroup name="listTypeButtonGroup"/>
   <buttongroup name="buttonGroup"/>
+  <buttongroup name="listTypeButtonGroup"/>
  </buttongroups>
 </ui>

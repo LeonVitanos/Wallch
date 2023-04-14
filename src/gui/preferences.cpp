@@ -69,10 +69,6 @@ Preferences::Preferences(QWidget *parent) :
     ui->DEname->setText(DesktopEnvironment::getCurrentDEprettyName());
     ui->de_combo->setCurrentIndex(settings->value("desktopEnvironment", 0).toInt());
     on_de_combo_currentIndexChanged(ui->de_combo->currentIndex());
-
-    #ifdef UNITY
-        ui->unity_prog_checkbox->setChecked(settings->value("unity_progressbar_enabled", false).toBool());
-    #endif //ifdef UNITY
 #else
     ui->integrationgroupBox->hide();
 #endif
@@ -270,24 +266,17 @@ void Preferences::on_saveButton_clicked()
         Q_EMIT previewChanged();
     }
 
+#ifdef Q_OS_UNIX
     short index = ui->de_combo->currentIndex();
     int prIndex = settings->value("desktopEnvironment", 0).toInt();
     if(index != prIndex){
         settings->setValue("desktopEnvironment", ui->de_combo->currentIndex());
         DesktopEnvironment::setCurrentDE();
 
-        QList<int> unityGnomeMate = {1,2,5};
-        if(!(unityGnomeMate.contains(index) && unityGnomeMate.contains(prIndex)))
+        QList<int> GnomeMate = {1,4};
+        if(!(GnomeMate.contains(index) && GnomeMate.contains(prIndex)))
             Q_EMIT deManuallyChanged();
     }
-
-#ifdef UNITY
-    if(gv.unityProgressbarEnabled!=ui->unity_prog_checkbox->isChecked()){
-        gv.unityProgressbarEnabled=ui->unity_prog_checkbox->isChecked();
-        Q_EMIT unityProgressbarChanged(gv.unityProgressbarEnabled);
-    }
-    settings->setValue("unity_progressbar_enabled", gv.unityProgressbarEnabled);
-
 #endif
     oldTheme = ui->theme_combo->currentIndex();
 
@@ -382,9 +371,6 @@ void Preferences::on_reset_clicked()
         //Integration
         ui->theme_combo->setCurrentIndex(2);
         ui->de_combo->setCurrentIndex(0);
-#ifdef UNITY
-        ui->unity_prog_checkbox->setChecked(false);
-#endif
 
         //applying these settings and closing the dialog...
         on_saveButton_clicked();
@@ -479,16 +465,6 @@ QString Preferences::dataToNiceString(qint64 data){
     }
     return QString::number(niceData, 'f', 2)+" "+dataTypes.at(counter);
 }
-
-#ifdef Q_OS_UNIX
-void Preferences::on_de_combo_currentIndexChanged(int index)
-{
-    if(index - 1 == DE::UnityGnome || (index == 0 && currentDE == DE::UnityGnome))
-        ui->unity_prog_checkbox->show();
-    else
-        ui->unity_prog_checkbox->hide();
-}
-#endif
 
 void Preferences::on_startupCheckBox_clicked(bool checked)
 {

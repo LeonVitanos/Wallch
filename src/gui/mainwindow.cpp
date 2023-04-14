@@ -253,10 +253,6 @@ void MainWindow::retrieveSettings()
     gv.potdOnlineUrlB = settings->value("potd_online_urlB", POTD_ONLINE_URL_B).toString();
     gv.liveEarthOnlineUrl = settings->value("line_earth_online_url", LIVEARTH_ONLINE_URL).toString();
     gv.liveEarthOnlineUrlB = settings->value("live_earth_online_urlB", LIVEARTH_ONLINE_URL_B).toString();
-#ifdef UNITY
-    gv.unityProgressbarEnabled = settings->value("unity_progressbar_enabled", false).toBool();
-#endif
-
     gv.independentIntervalEnabled = settings->value("independent_interval_enabled", true).toBool();
     gv.rotateImages = settings->value("rotation", false).toBool();
     gv.firstTimeout = settings->value("first_timeout", false).toBool();
@@ -490,11 +486,6 @@ void MainWindow::continueAlreadyRunningFeature()
             globalParser_->resetSleepProtection(timerManager_->secondsRemaining_);
             updateSeconds();
             stopButtonsSetEnabled(true);
-#ifdef UNITY
-            if(currentDE == DE::UnityGnome){
-                dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
-            }
-#endif
             previousAndNextButtonsSetEnabled(false);
             ui->timeForNext->setFormat(ui->timeForNext->format()+" - Paused.");
         }
@@ -616,11 +607,6 @@ void MainWindow::startUpdateSeconds(){
     updateSecondsTimer_->start(1000);
     if(ui->timeForNext->isHidden()){
         ui->timeForNext->show();
-#ifdef UNITY
-        if(currentDE == DE::UnityGnome && gv.unityProgressbarEnabled){
-            globalParser_->setUnityProgressBarEnabled(true);
-        }
-#endif
     }
 }
 
@@ -637,11 +623,6 @@ void MainWindow::updatePotdProgress(){
 
 void MainWindow::setProgressbarsValue(short value){
     ui->timeForNext->setValue(value);
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome && gv.unityProgressbarEnabled){
-        globalParser_->setUnityProgressbarValue((float)(value/100.0));
-    }
-#endif
 }
 
 void MainWindow::imageTransition(const QString &filename /*=QString()*/)
@@ -751,7 +732,7 @@ void MainWindow::setPreviewImage(){
         {
             //Tile (or "wallpaper" picture-option)
             /*
-             *  How it works (in Unity-Gnome):
+             *  How it works (in Gnome):
              *  We have to repeat the image in case its width or height is less than the screen's
              *  If only one of the width or height are less then the screen's, then the one that
              *  is greater or equal is centered
@@ -793,7 +774,7 @@ void MainWindow::setPreviewImage(){
             else
             {
                 previewColorsAndGradientsMeow=false;
-                if(currentDE == DE::UnityGnome || currentDE == DE::Gnome){
+                if(currentDE == DE::Gnome){
                     //both dimensions are bigger than the screen's. Center both dimensions.
 
                     image = QImage(image.copy(0, 0, vScreenWidth, vScreenHeight));
@@ -979,12 +960,6 @@ void MainWindow::animateProgressbarOpacity(bool show){
         hideProgress_->start(400);
     }
 
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome && gv.unityProgressbarEnabled){
-        globalParser_->setUnityProgressBarEnabled(show);
-    }
-#endif
-
     ui->timeForNext->setGraphicsEffect(opacityEffect_);
     QPropertyAnimation* anim = new QPropertyAnimation(this);
     anim->setTargetObject(opacityEffect_);
@@ -1043,7 +1018,7 @@ void MainWindow::deChanged(){
 
 void MainWindow::findAvailableWallpaperStyles(){
 #ifdef Q_OS_UNIX
-    if(currentDE == DE::UnityGnome || currentDE == DE::Gnome || currentDE == DE::Mate){
+    if(currentDE == DE::Gnome || currentDE == DE::Mate){
         ui->image_style_combo->addItem(tr("Color"), NoneStyle);
         ui->image_style_combo->addItem(tr("Tile"), Tile);
         ui->image_style_combo->addItem(tr("Zoom"), Zoom);
@@ -1425,18 +1400,6 @@ void MainWindow::changeTextOfScreenLabelTo(const QString &text)
     ui->screen_label_text->setText(text);
 }
 
-#ifdef UNITY
-void MainWindow::unityProgressbarSetEnabled(bool enabled){
-    if(gv.wallpapersRunning || gv.liveEarthRunning || gv.potdRunning || gv.liveWebsiteRunning ){
-        globalParser_->setUnityProgressBarEnabled(enabled);
-        if(enabled){
-            globalParser_->setUnityProgressbarValue(0);
-        }
-    }
-}
-
-#endif
-
 //Wallpapers code
 
 void MainWindow::justChangeWallpaper(){
@@ -1510,12 +1473,6 @@ void MainWindow::startPauseWallpaperChangingProcess(){
 
         gv.processPaused=false;
 
-#ifdef UNITY
-        if(currentDE == DE::UnityGnome && gv.unityProgressbarEnabled){
-            dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, true);
-            globalParser_->setUnityProgressBarEnabled(true);
-        }
-#endif
         Q_EMIT signalRecreateTray();
 
         if(gv.pauseOnBattery){
@@ -1544,11 +1501,6 @@ void MainWindow::startPauseWallpaperChangingProcess(){
         stoppedBecauseOnBattery_=false;
         ui->startButton->setText(tr("&Start"));
         ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
-#ifdef UNITY
-        if(currentDE == DE::UnityGnome){
-            dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
-        }
-#endif
         Q_EMIT signalRecreateTray();
         updateSecondsTimer_->stop();
         ui->timeForNext->setFormat(ui->timeForNext->format()+" - Paused.");
@@ -1594,14 +1546,6 @@ void MainWindow::on_stopButton_clicked(){
             batteryStatusChecker_->stop();
         }
     }
-    #ifdef UNITY
-        if(currentDE == DE::UnityGnome && gv.unityLauncherEntry){
-            dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
-        }
-        if(currentDE == DE::UnityGnome && gv.unityProgressbarEnabled){
-            globalParser_->setUnityProgressBarEnabled(false);
-        }
-    #endif #ifdef UNITY
 #endif
     Q_EMIT signalRecreateTray();
     if(gv.independentIntervalEnabled){
@@ -2184,34 +2128,15 @@ void MainWindow::checkBatteryStatus(){
 void MainWindow::startButtonsSetEnabled(bool enabled)
 {
     ui->startButton->setEnabled(enabled);
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome && gv.unityLauncherEntry){
-        dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, !enabled);
-    }
-#endif
 }
 
 void MainWindow::stopButtonsSetEnabled(bool enabled)
 {
     ui->stopButton->setEnabled(enabled);
-
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome && gv.unityLauncherEntry){
-        dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, enabled && !gv.wallpapersRunning);
-        dbusmenu_menuitem_property_set_bool(gv.unityPauseAction, DBUSMENU_MENUITEM_PROP_VISIBLE, enabled);
-    }
-#endif
 }
 
 void MainWindow::previousAndNextButtonsSetEnabled(bool enabled){
     ui->next_Button->setEnabled(enabled); ui->previous_Button->setEnabled(enabled);
-
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome && gv.unityLauncherEntry){
-        dbusmenu_menuitem_property_set_bool(gv.unityNextAction, DBUSMENU_MENUITEM_PROP_VISIBLE, enabled);
-        dbusmenu_menuitem_property_set_bool(gv.unityPreviousAction, DBUSMENU_MENUITEM_PROP_VISIBLE, enabled);
-    }
-#endif
 }
 
 void MainWindow::monitor(const QStringList &finalListOfPaths){
@@ -2841,11 +2766,6 @@ void MainWindow::on_activate_livearth_clicked()
     ui->deactivate_livearth->setEnabled(true);
     gv.liveEarthRunning=true;
     globalParser_->updateStartup();
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome){
-        dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, true);
-    }
-#endif
     Q_EMIT signalRecreateTray();
     setProgressbarsValue(100);
     startUpdateSeconds();
@@ -2875,11 +2795,6 @@ void MainWindow::on_deactivate_livearth_clicked()
     ui->activate_livearth->setEnabled(true);
     stoppedBecauseOnBattery_=false;
 
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome){
-        dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
-    }
-#endif
     Q_EMIT signalUncheckRunningFeatureOnTray();
 }
 
@@ -2930,11 +2845,6 @@ void MainWindow::startPotd(bool launchNow){
     }
     animateProgressbarOpacity(1);
 
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome){
-        dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, true);
-    }
-#endif
     Q_EMIT signalRecreateTray();
     startUpdateSeconds();
     updatePotdProgress();
@@ -2959,11 +2869,6 @@ void MainWindow::on_deactivate_potd_clicked()
     ui->deactivate_potd->setEnabled(false);
     stoppedBecauseOnBattery_=false;
 
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome){
-        dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
-    }
-#endif
     Q_EMIT signalUncheckRunningFeatureOnTray();
 }
 
@@ -3017,11 +2922,7 @@ void MainWindow::on_activate_website_clicked()
 
     gv.liveWebsiteRunning=true;
     globalParser_->updateStartup();
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome){
-        dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, true);
-    }
-#endif
+
     Q_EMIT signalRecreateTray();
     setProgressbarsValue(100);
     animateProgressbarOpacity(1);
@@ -3051,11 +2952,7 @@ void MainWindow::on_deactivate_website_clicked()
     }
     ui->live_website_login_widget->setEnabled(true);
     animateProgressbarOpacity(0);
-#ifdef UNITY
-    if(currentDE == DE::UnityGnome){
-        dbusmenu_menuitem_property_set_bool(gv.unityStopAction, DBUSMENU_MENUITEM_PROP_VISIBLE, false);
-    }
-#endif
+
     Q_EMIT signalUncheckRunningFeatureOnTray();
     /*disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageCreated(QImage*,short)));
     ui->deactivate_website->setEnabled(false); ui->activate_website->setEnabled(true);
@@ -3426,11 +3323,7 @@ void MainWindow::loadPotdPage(){
     gv.potdDescriptionBackgroundColor = settings->value("potd_background_color", "#000000").toString();
     gv.potdDescriptionRightMargin = settings->value("potd_description_right_margin", 0).toInt();
     gv.potdDescriptionBottomTopMargin = settings->value("potd_description_bottom_top_margin", 0).toInt();
-#ifdef Q_OS_UNIX
-    gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (currentDE == DE::UnityGnome ? 125 : 0)).toInt();
-#else
     gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (0)).toInt();
-#endif
 
     ui->label_5->setText("<span style=\"font-style:italic;\">"+tr("Style")+"</span><span style=\" font-weight:600; font-style:italic;\"> "+tr("Scale")+"</span><span style=\" font-style:italic;\"> "+tr("is highly recommended for this feature")+"</span>");
     ui->include_description_checkBox->setChecked(gv.potdIncludeDescription);
@@ -3841,9 +3734,7 @@ void MainWindow::on_action_Preferences_triggered()
     connect(preferences_, SIGNAL(changeTheme()), this, SLOT(changeCurrentTheme()));
     connect(preferences_, SIGNAL(maxCacheChanged(qint64)), cacheManager_, SLOT(setMaxCache(qint64)));
     connect(preferences_, SIGNAL(deManuallyChanged()), this, SLOT(deChanged()));
-#ifdef UNITY
-    connect(preferences_, SIGNAL(unityProgressbarChanged(bool)), this, SLOT(unityProgressbarSetEnabled(bool)));
-#endif
+
     preferences_->setWindowFlags(Qt::Dialog | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint);
     preferences_->show();
     preferences_->activateWindow();

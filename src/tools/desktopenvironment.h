@@ -8,7 +8,7 @@
 #ifdef Q_OS_UNIX
 struct DE {
     enum Value {
-        UnityGnome, Gnome, XFCE, LXDE, Mate
+        Gnome, XFCE, LXDE, Mate
     };
 };
 
@@ -29,7 +29,7 @@ public:
     static DE::Value detectCurrentDe();
     static QString getCurrentDEprettyName();
 
-    // UnityGnome, Mate
+    // Gnome, Mate
     static QString gsettingsGet(const QString &schema, const QString &key);
     static void gsettingsSet(const QString &schema, const QString &key, const QString &value);
     static QString getPictureUriName();

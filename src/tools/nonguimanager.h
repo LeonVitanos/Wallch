@@ -89,10 +89,6 @@ private:
     bool propertiesShown_ = false;
     bool justUpdatedPotd_ = false;
     bool currentFolderIsAList_ = false;
-#ifdef UNITY
-    DbusmenuMenuitem *unityMenu_;
-#endif
-
     QSystemTrayIcon *trayIcon_;
     QMenu *trayIconMenu_;
     QMenu *currentImageMenu_;
@@ -117,12 +113,6 @@ private:
     QAction *quitAction_;
     QTimer *doubleClick_;
     void setupTray();
-
-#ifdef UNITY
-    void updatePotdProgressMain();
-    void setUnityShortcutsState(bool stopState, bool pauseState, bool nextState, bool previousState);
-    void setupUnityShortcuts();
-#endif
     bool currentSelectionIsASet();
     void viralSettingsOperations();
     bool getPicturesLocation(bool init);
@@ -159,10 +149,6 @@ private Q_SLOTS:
     void dirChanged();
     void researchDirs();
     void onlineBackgroundReady(QString image);
-#ifdef UNITY
-    void unityProgressbarSetEnabled(bool enabled);
-#endif //#ifdef Q_OS_UNIX
-
     void trayActionShowWindow();
     void trayActionCopyPath();
     void trayActionCopyImage();

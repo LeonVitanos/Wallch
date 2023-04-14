@@ -63,9 +63,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifdef Q_OS_UNIX
     #include <glib-object.h>
     #include <gtk/gtk.h>
-    #ifdef UNITY
-        #include <unity/unity/unity.h>
-    #endif //#ifdef UNITY
 #else
     #include <QSystemTrayIcon>
     #include "notification.h"
@@ -294,9 +291,6 @@ private:
 
 private Q_SLOTS:
 #ifdef Q_OS_UNIX
-    #ifdef UNITY
-        void unityProgressbarSetEnabled(bool enabled);
-    #endif //#ifdef UNITY
     void dconfChanges();
 #endif
     void timeSpinboxChanged();

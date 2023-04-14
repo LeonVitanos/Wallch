@@ -82,7 +82,7 @@ void ColorManager::setSecondaryColor(const QString &colorName){
 
 #ifdef Q_OS_UNIX
 QString ColorManager::getColor(short num){
-    if(currentDE == DE::UnityGnome || currentDE == DE::Gnome || currentDE == DE::Mate)
+    if(currentDE == DE::Gnome || currentDE == DE::Mate)
         return DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", num == 1 ? "primary-color" : "secondary-color");
     else if(currentDE == DE::XFCE){
         Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
@@ -109,7 +109,7 @@ QString ColorManager::getColor(short num){
 }
 
 void ColorManager::setColor(short num, QString colorName){
-    if(currentDE == DE::UnityGnome || currentDE == DE::Gnome ||currentDE == DE::Mate)
+    if(currentDE == DE::Gnome ||currentDE == DE::Mate)
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", num == 1 ? "primary-color" : "secondary-color", colorName);
     else if(currentDE == DE::XFCE){
         QStringList colorValues;
@@ -131,7 +131,7 @@ void ColorManager::setColor(short num, QString colorName){
 
 ColoringType::Value ColorManager::getColoringType(){
 #ifdef Q_OS_UNIX
-    if(currentDE == DE::Gnome || currentDE == DE::UnityGnome || currentDE == DE::Mate){
+    if(currentDE == DE::Gnome || currentDE == DE::Mate){
         QString colorStyle=DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", "color-shading-type");
         if(colorStyle.contains("solid"))
             return ColoringType::Solid;
@@ -207,7 +207,7 @@ short ColorManager::getCurrentTheme(){
         theme = settings->value("theme").toString();
     else{
 #ifdef Q_OS_UNIX
-        if(currentDE == DE::Gnome || currentDE == DE::UnityGnome)
+        if(currentDE == DE::Gnome)
             theme = DesktopEnvironment::gsettingsGet("org.gnome.desktop.interface", "gtk-theme");
         else
             return 1;

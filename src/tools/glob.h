@@ -39,10 +39,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "time.h"
 #include "math.h"
 
-#ifdef UNITY
-#include "unity/unity/unity.h"
-#endif
-
 #define HELP_URL "http://melloristudio.com/wallch/help"
 #define DONATE_URL "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Z34FXUH6M4G9S"
 
@@ -113,11 +109,6 @@ struct GlobalVar {
     bool processPaused;
 #ifdef Q_OS_UNIX
     QStringList unacceptedDesktopValues;
-    #ifdef UNITY
-        bool unityProgressbarEnabled;
-        UnityLauncherEntry *unityLauncherEntry;
-        DbusmenuMenuitem *unityStopAction, *unityNextAction, *unityPreviousAction, *unityPauseAction;
-    #endif //#ifdef UNITY
 #endif
     bool saveHistory;
     int randomTimeFrom;
@@ -186,9 +177,6 @@ struct GlobalVar {
         typeOfInterval(0), randomImagesEnabled(false), firstTimeout(false), symlinks(false), processPaused(false),
 #ifdef Q_OS_UNIX
     unacceptedDesktopValues(QStringList() << "" << "default.desktop" << "X-Cinnamon" << "default"),
-    #ifdef UNITY
-            unityProgressbarEnabled(false),
-    #endif //#ifdef UNITY
 #endif
         saveHistory(true), randomTimeFrom(300), randomTimeTo(1200), doNotToggleRadiobuttonFallback(false), previewImagesOnScreen(true), pauseOnBattery(false), amPmEnabled(false),
         mainwindowLoaded(false), setAverageColor(false), websiteLoginEnabled(false), websiteCropEnabled(false), wallpapersChangedCurrentSession(0), timeLaunched(QDateTime::currentDateTime()),
@@ -235,10 +223,6 @@ public:
     static void changeIndicatorIcon(const QString &icon);
     static void changeIndicatorSelection(const QString &status);
     static void showWallpapersIndicatorControls(bool show, bool pauseText);
-    #ifdef UNITY
-        static void setUnityProgressBarEnabled(bool state);
-        static void setUnityProgressbarValue(float percent);
-    #endif //#ifdef UNITY
 #endif
         static int getSecondsTillHour(const QString &hour);
     static void openUrl(const QString &url);

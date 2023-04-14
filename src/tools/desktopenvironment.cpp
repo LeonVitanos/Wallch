@@ -6,7 +6,7 @@
 
 #ifdef Q_OS_UNIX
 #include <gio/gio.h>
-DE::Value currentDE = DE::UnityGnome;
+DE::Value currentDE = DE::Gnome;
 #endif
 
 DesktopEnvironment::DesktopEnvironment(){}
@@ -58,19 +58,15 @@ DE::Value DesktopEnvironment::detectCurrentDe(){
         return DE::LXDE;
     else if(xdg.contains("XFCE", Qt::CaseInsensitive))
         return DE::XFCE;
-    else if(xdg.contains("UNITY", Qt::CaseInsensitive))
-        return DE::UnityGnome;
     else if(xdg.contains("MATE", Qt::CaseInsensitive))
         return DE::Mate;
-    else if(xdg.contains("Gnome", Qt::CaseInsensitive))
+    else if(xdg.contains("GNOME", Qt::CaseInsensitive) || xdg.contains("UNITY", Qt::CaseInsensitive))
         return DE::Gnome;
     else{
         if(QFile::exists("/usr/bin/xfconf-query"))
             return DE::XFCE;
         else if(QFile::exists("/usr/bin/mate-help"))
             return DE::Mate;
-        else if(QFile::exists("/usr/bin/unity"))
-            return DE::UnityGnome;
         else if(QDir("/etc/xdg/lubuntu").exists())
             return DE::LXDE;
         else
@@ -82,9 +78,6 @@ QString DesktopEnvironment::getCurrentDEprettyName(){
     DE::Value detected = detectCurrentDe();
 
     switch(detected){
-    case DE::UnityGnome:
-        return "Unity";
-        break;
     case DE::Gnome:
         return "Gnome";
         break;
@@ -99,7 +92,7 @@ QString DesktopEnvironment::getCurrentDEprettyName(){
     }
 }
 
-// UnityGnome, Gnome, Mate
+// Gnome, Mate
 
 void DesktopEnvironment::gsettingsSet(const QString &schema, const QString &key, const QString &value){
     GSettings *settings = g_settings_new(schema.toLocal8Bit().data());

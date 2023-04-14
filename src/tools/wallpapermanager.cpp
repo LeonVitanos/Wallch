@@ -277,7 +277,7 @@ QString WallpaperManager::currentBackgroundWallpaper(){
     //returns the image currently set as desktop background
     QString currentImage;
 #ifdef Q_OS_UNIX
-    if(currentDE == DE::UnityGnome || currentDE == DE::Gnome || currentDE == DE::Mate){
+    if(currentDE == DE::Gnome || currentDE == DE::Mate){
         currentImage = DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", DesktopEnvironment::getPictureUriName());
         if(currentImage.startsWith("file://")){
             currentImage=currentImage.right(currentImage.count()-7);
@@ -379,7 +379,6 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
 
     switch(currentDE){
     case DE::Gnome:
-    case DE::UnityGnome:
     case DE::Mate:{
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", DesktopEnvironment::getPictureUriName(), "file://"+image);
         if(DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", "picture-options") == "none"){
@@ -487,7 +486,7 @@ QImage WallpaperManager::indexed8ToARGB32(const QImage &image){
 
 short WallpaperManager::getCurrentFit(){
 #ifdef Q_OS_UNIX
-    if(currentDE == DE::UnityGnome || currentDE == DE::Gnome || currentDE == DE::Mate){
+    if(currentDE == DE::Gnome || currentDE == DE::Mate){
         QString style=DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", "picture-options");
         if(style=="none")
             return 0;
@@ -549,7 +548,7 @@ void WallpaperManager::setCurrentFit(short index){
 
     bool result = true;
 
-    if(currentDE == DE::Gnome || currentDE == DE::UnityGnome || currentDE == DE::Mate){
+    if(currentDE == DE::Gnome || currentDE == DE::Mate){
         QString type;
         switch(index){
         case 0:

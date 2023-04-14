@@ -75,7 +75,6 @@ Q_SIGNALS:
     void changePathsToIcons();
     void changeIconsToPaths();
     void changeTheme();
-    void unityProgressbarChanged(bool show);
     void researchFolders();
     void previewChanged();
     void deManuallyChanged();
