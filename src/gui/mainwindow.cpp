@@ -472,12 +472,6 @@ void MainWindow::applySettings()
     }
 
     ui->shuffle_images_checkbox->setChecked(gv.randomImagesEnabled);
-
-#ifdef Q_OS_UNIX
-    if(currentDE == DE::LXDE){
-        ui->set_desktop_color->hide();
-    }
-#endif
 }
 
 void MainWindow::continueAlreadyRunningFeature()
@@ -1040,6 +1034,13 @@ void MainWindow::processRequestStop(){
     }
 }
 
+void MainWindow::deChanged(){
+    addingImageStylesNow = true;
+    ui->image_style_combo->clear();
+    findAvailableWallpaperStyles();
+    addingImageStylesNow = false;
+}
+
 void MainWindow::findAvailableWallpaperStyles(){
 #ifdef Q_OS_UNIX
     if(currentDE == DE::UnityGnome || currentDE == DE::Gnome || currentDE == DE::Mate){
@@ -1112,7 +1113,7 @@ void MainWindow::setButtonColor(){
 
 void MainWindow::on_image_style_combo_currentIndexChanged(int index)
 {
-    if(!gv.mainwindowLoaded)
+    if(!gv.mainwindowLoaded || addingImageStylesNow)
         return;
 
     wallpaperManager_->setCurrentFit(index);
@@ -3839,6 +3840,7 @@ void MainWindow::on_action_Preferences_triggered()
     connect(preferences_, SIGNAL(intervalTypeChanged()), this, SLOT(intervalTypeChanged()));
     connect(preferences_, SIGNAL(changeTheme()), this, SLOT(changeCurrentTheme()));
     connect(preferences_, SIGNAL(maxCacheChanged(qint64)), cacheManager_, SLOT(setMaxCache(qint64)));
+    connect(preferences_, SIGNAL(deManuallyChanged()), this, SLOT(deChanged()));
 #ifdef UNITY
     connect(preferences_, SIGNAL(unityProgressbarChanged(bool)), this, SLOT(unityProgressbarSetEnabled(bool)));
 #endif

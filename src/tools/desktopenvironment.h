@@ -26,6 +26,8 @@ public:
 
 #ifdef Q_OS_UNIX
     static void setCurrentDE();
+    static DE::Value detectCurrentDe();
+    static QString getCurrentDEprettyName();
 
     // UnityGnome, Mate
     static QString gsettingsGet(const QString &schema, const QString &key);
@@ -35,10 +37,10 @@ public:
     // LXDE
     static QString getPcManFmValue(const QString &key);
     static void setPcManFmValue(const QString &key, const QString &value);
-    static void runPcManFm(QStringList args);
+    static bool runPcManFm(QStringList args);
 
     // XFCE
-    static void runXfconf(QStringList args);
+    static bool runXfconf(QStringList args);
     static QStringList runCommand(QString command, bool backdrop = false, QStringList parameters = QStringList(),
                                   bool replaceNewLine = false, QString split = "\n");
 #endif

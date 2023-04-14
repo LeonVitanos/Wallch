@@ -66,8 +66,10 @@ Preferences::Preferences(QWidget *parent) :
     ui->startup_timeout_spinbox->setValue(settings->value("startup_timeout", 3).toInt());
 
 #ifdef Q_OS_UNIX
-    ui->de_combo->setCurrentIndex(currentDE);
-    on_de_combo_currentIndexChanged(currentDE);
+    ui->DEname->setText(DesktopEnvironment::getCurrentDEprettyName());
+    ui->de_combo->setCurrentIndex(settings->value("desktopEnvironment", 0).toInt());
+    on_de_combo_currentIndexChanged(ui->de_combo->currentIndex());
+
     #ifdef UNITY
         ui->unity_prog_checkbox->setChecked(settings->value("unity_progressbar_enabled", false).toBool());
     #endif //ifdef UNITY
@@ -268,6 +270,17 @@ void Preferences::on_saveButton_clicked()
         Q_EMIT previewChanged();
     }
 
+    short index = ui->de_combo->currentIndex();
+    int prIndex = settings->value("desktopEnvironment", 0).toInt();
+    if(index != prIndex){
+        settings->setValue("desktopEnvironment", ui->de_combo->currentIndex());
+        DesktopEnvironment::setCurrentDE();
+
+        QList<int> unityGnomeMate = {1,2,5};
+        if(!(unityGnomeMate.contains(index) && unityGnomeMate.contains(prIndex)))
+            Q_EMIT deManuallyChanged();
+    }
+
 #ifdef UNITY
     if(gv.unityProgressbarEnabled!=ui->unity_prog_checkbox->isChecked()){
         gv.unityProgressbarEnabled=ui->unity_prog_checkbox->isChecked();
@@ -370,9 +383,7 @@ void Preferences::on_reset_clicked()
         ui->theme_combo->setCurrentIndex(2);
         ui->de_combo->setCurrentIndex(0);
 #ifdef UNITY
-        if(currentDE == DE::UnityGnome){
-            ui->unity_prog_checkbox->setChecked(false);
-        }
+        ui->unity_prog_checkbox->setChecked(false);
 #endif
 
         //applying these settings and closing the dialog...
@@ -472,11 +483,10 @@ QString Preferences::dataToNiceString(qint64 data){
 #ifdef Q_OS_UNIX
 void Preferences::on_de_combo_currentIndexChanged(int index)
 {
-    DesktopEnvironment::Value curEnv = static_cast<DesktopEnvironment::Value>(index);
-    if(curEnv != DE::UnityGnome)
-        ui->unity_prog_checkbox->hide();
-    else
+    if(index - 1 == DE::UnityGnome || (index == 0 && currentDE == DE::UnityGnome))
         ui->unity_prog_checkbox->show();
+    else
+        ui->unity_prog_checkbox->hide();
 }
 #endif
 

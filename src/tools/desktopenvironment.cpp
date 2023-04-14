@@ -2,6 +2,8 @@
 #include "desktopenvironment.h"
 #include "glob.h"
 
+#include <QMessageBox>
+
 #ifdef Q_OS_UNIX
 #include <gio/gio.h>
 DE::Value currentDE = DE::UnityGnome;
@@ -42,16 +44,59 @@ QString DesktopEnvironment::getOSWallpaperPath(){
 
 #ifdef Q_OS_UNIX
 void DesktopEnvironment::setCurrentDE(){
-    if(QDir("/etc/xdg/lubuntu").exists())
-        currentDE = DE::LXDE;
-    else if(QFile::exists("/usr/bin/xfconf-query"))
-        currentDE = DE::XFCE;
-    else if(QFile::exists("/usr/bin/mate-help"))
-        currentDE = DE::Mate;
-    else if(QFile::exists("/usr/bin/unity"))
-        currentDE = DE::UnityGnome;
+    if(settings->value("desktopEnvironment", 0).toInt() != 0)
+        currentDE = static_cast<DE::Value>(settings->value("desktopEnvironment", 0).toInt()-1);
     else
-        currentDE = DE::Gnome;
+        currentDE = detectCurrentDe();
+}
+
+DE::Value DesktopEnvironment::detectCurrentDe(){
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    QString xdg = env.value("XDG_CURRENT_DESKTOP");
+
+    if(xdg.contains("LXDE", Qt::CaseInsensitive) || xdg.contains("LXQT", Qt::CaseInsensitive))
+        return DE::LXDE;
+    else if(xdg.contains("XFCE", Qt::CaseInsensitive))
+        return DE::XFCE;
+    else if(xdg.contains("UNITY", Qt::CaseInsensitive))
+        return DE::UnityGnome;
+    else if(xdg.contains("MATE", Qt::CaseInsensitive))
+        return DE::Mate;
+    else if(xdg.contains("Gnome", Qt::CaseInsensitive))
+        return DE::Gnome;
+    else{
+        if(QFile::exists("/usr/bin/xfconf-query"))
+            return DE::XFCE;
+        else if(QFile::exists("/usr/bin/mate-help"))
+            return DE::Mate;
+        else if(QFile::exists("/usr/bin/unity"))
+            return DE::UnityGnome;
+        else if(QDir("/etc/xdg/lubuntu").exists())
+            return DE::LXDE;
+        else
+            return DE::Gnome;
+    }
+}
+
+QString DesktopEnvironment::getCurrentDEprettyName(){
+    DE::Value detected = detectCurrentDe();
+
+    switch(detected){
+    case DE::UnityGnome:
+        return "Unity";
+        break;
+    case DE::Gnome:
+        return "Gnome";
+        break;
+    case DE::LXDE:
+        return "LXDE";
+        break;
+    case DE::XFCE:
+        return "XFCE";
+        break;
+    case DE::Mate:
+        return "Mate";
+    }
 }
 
 // UnityGnome, Gnome, Mate
@@ -88,7 +133,6 @@ QString DesktopEnvironment::getPictureUriName(){
         return "picture-uri";
 }
 
-
 //LXDE
 
 QString DesktopEnvironment::getPcManFmValue(const QString &key){
@@ -98,6 +142,8 @@ QString DesktopEnvironment::getPcManFmValue(const QString &key){
     settings.beginGroup("desktop");
     result=settings.value(key, "").toString();
     settings.endGroup();
+
+    //TODO: CHECK IF LXDE ever returns "0", in order to return 1 on the getCurrentFit
 
     return result;
 }
@@ -123,15 +169,28 @@ void DesktopEnvironment::setPcManFmValue(const QString &key, const QString &valu
         QProcess::startDetached("pcmanfm", QStringList() << "--desktop");
 }
 
-void DesktopEnvironment::runPcManFm(QStringList args){
-    QProcess::startDetached("pcmanfm", args);
-}
+bool DesktopEnvironment::runPcManFm(QStringList args){
+    QProcess process;
+    process.start("pcmanfm", args);
+    process.waitForFinished(3000);
 
+    if(process.error() == QProcess::FailedToStart)
+        return false;
+    else
+        return process.readAllStandardError().isEmpty(); //TODO: CHECK WITH LXDE
+}
 
 // XFCE
 
-void DesktopEnvironment::runXfconf(QStringList args){
-    QProcess::startDetached("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << args);
+bool DesktopEnvironment::runXfconf(QStringList args){
+    QProcess process;
+    process.start("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << args);
+    process.waitForFinished(3000);
+
+    if(process.error() == QProcess::FailedToStart)
+        return false;
+    else
+        return process.readAllStandardError().isEmpty(); //TODO: CHECK WITH XFCE
 }
 
 QStringList DesktopEnvironment::runCommand(QString command, bool backdrop, QStringList parameters, bool replaceNewLine, QString split){
@@ -150,8 +209,9 @@ QStringList DesktopEnvironment::runCommand(QString command, bool backdrop, QStri
 
     QByteArray data;
 
-    while(process.waitForReadyRead())
-        data.append(process.readAll());
+    process.waitForFinished(3000);
+
+    data.append(process.readAll());
 
     QString output = replaceNewLine ? QString(data.data()).replace("\n", "") : data.data();
 

@@ -389,16 +389,19 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
         break;
     }
     case DE::LXDE:
-        DesktopEnvironment::runPcManFm(QStringList() << "-w" << image);
+        result = DesktopEnvironment::runPcManFm(QStringList() << "-w" << image);
         break;
     case DE::XFCE:
+        result = false;
         Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
-            if(entry.contains("image-path") || entry.contains("last-image"))
-                DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << image);
+            if(entry.contains("image-path") || entry.contains("last-image")){
+                result = DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << image);
+                if(result)
+                    break; //TODO: CHECK WITH XFCE
+            }
         }
         break;
     default:
-        QMessageBox::warning(0, QObject::tr("Error"), QObject::tr("Failed to change wallpaper. If your Desktop Environment is not listed at \"Preferences->Integration-> Current Desktop Environment\", then it is not supported."));
         result=false;
         break;
     }
@@ -427,7 +430,9 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
 
 #endif //Q_OS_UNIX
 
-    if(result && feature!=0){
+    if (!result)
+        QMessageBox::warning(0, QObject::tr("Error"), QObject::tr("Failed to change wallpaper. If your Desktop Environment is not listed at \"Preferences->Integration->Current Desktop Environment\", then it is not supported."));
+    else if(result && feature!=0){
         if(gv.setAverageColor && changeAverageColor)
             Global::setAverageColor(image);
 
@@ -542,6 +547,8 @@ void WallpaperManager::setCurrentFit(short index){
     if(index == getCurrentFit())
         return;
 
+    bool result = true;
+
     if(currentDE == DE::Gnome || currentDE == DE::UnityGnome || currentDE == DE::Mate){
         QString type;
         switch(index){
@@ -572,9 +579,12 @@ void WallpaperManager::setCurrentFit(short index){
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "picture-options", type);
     }
     else if(currentDE == DE::XFCE){
+        result = false;
         Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
             if(entry.contains("image-style"))
-                DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << QString::number(index));
+                result = DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << QString::number(index));
+            if(result)
+                break;
         }
     }
     else if(currentDE == DE::LXDE){
@@ -598,7 +608,7 @@ void WallpaperManager::setCurrentFit(short index){
             break;
         }
 
-        DesktopEnvironment::runPcManFm(QStringList() << "--wallpaper-mode=" + style);
+        result = DesktopEnvironment::runPcManFm(QStringList() << "--wallpaper-mode=" + style);
     }
 #else
     QString currentBg = currentBackgroundWallpaper();

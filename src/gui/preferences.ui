@@ -254,9 +254,9 @@
             <property name="geometry">
              <rect>
               <x>0</x>
-              <y>0</y>
-              <width>601</width>
-              <height>604</height>
+              <y>-119</y>
+              <width>662</width>
+              <height>630</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -624,6 +624,45 @@ picture and change the desktop background once at System Startup</string>
                </property>
                <layout class="QVBoxLayout" name="verticalLayout_18">
                 <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_5">
+                  <property name="spacing">
+                   <number>2</number>
+                  </property>
+                  <item>
+                   <widget class="QLabel" name="DEname">
+                    <property name="font">
+                     <font>
+                      <bold>true</bold>
+                     </font>
+                    </property>
+                    <property name="text">
+                     <string>GNOME </string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="DElabel">
+                    <property name="text">
+                     <string>is identified as the current desktop environment</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                 </layout>
+                </item>
+                <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_19">
                   <item>
                    <widget class="QLabel" name="label_16">
@@ -634,6 +673,11 @@ picture and change the desktop background once at System Startup</string>
                   </item>
                   <item>
                    <widget class="QComboBox" name="de_combo">
+                    <item>
+                     <property name="text">
+                      <string>Autodetect</string>
+                     </property>
+                    </item>
                     <item>
                      <property name="text">
                       <string notr="true">Unity-Gnome</string>
@@ -685,7 +729,10 @@ picture and change the desktop background once at System Startup</string>
                    </font>
                   </property>
                   <property name="text">
-                   <string>(Change this value if your background is not changing. You will need to restart Wallch)</string>
+                   <string>(Change this value if your background is not changing)</string>
+                  </property>
+                  <property name="indent">
+                   <number>15</number>
                   </property>
                  </widget>
                 </item>
@@ -757,8 +804,8 @@ picture and change the desktop background once at System Startup</string>
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>615</width>
-              <height>483</height>
+              <width>481</width>
+              <height>274</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_8">

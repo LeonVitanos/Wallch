@@ -78,6 +78,7 @@ Q_SIGNALS:
     void unityProgressbarChanged(bool show);
     void researchFolders();
     void previewChanged();
+    void deManuallyChanged();
     void maxCacheChanged(qint64 maxCache);
 };
 

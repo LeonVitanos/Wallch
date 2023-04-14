@@ -290,6 +290,7 @@ private:
     QImage scaleWallpapersPreview(QString filename);
     QStringList getCurrentWallpaperFolders();
     void iconsPathsChanged();
+    bool addingImageStylesNow = false;
 
 private Q_SLOTS:
 #ifdef Q_OS_UNIX
@@ -368,6 +369,7 @@ private Q_SLOTS:
     void beginFixCacheForFolders();
     void wait_preview_changed();
     void preview_changed();
+    void deChanged();
     void update_website_settings();
     void doQuit();
     void onlineRequestFailed();
