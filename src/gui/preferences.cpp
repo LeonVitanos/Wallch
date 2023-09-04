@@ -35,8 +35,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QProcess>
 #include <QKeyEvent>
 
-#ifdef Q_OS_UNIX
-#include "desktopenvironment.h"
+#ifdef Q_OS_LINUX
+    #include "desktopenvironment.h"
 #endif
 
 Preferences::Preferences(QWidget *parent) :
@@ -65,7 +65,7 @@ Preferences::Preferences(QWidget *parent) :
     ui->showPreview_checkBox->setChecked(gv.previewImagesOnScreen);
     ui->startup_timeout_spinbox->setValue(settings->value("startup_timeout", 3).toInt());
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     ui->DEname->setText(DesktopEnvironment::getCurrentDEprettyName());
     ui->de_combo->setCurrentIndex(settings->value("desktopEnvironment", 0).toInt());
     on_de_combo_currentIndexChanged(ui->de_combo->currentIndex());
@@ -266,7 +266,7 @@ void Preferences::on_saveButton_clicked()
         Q_EMIT previewChanged();
     }
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     short index = ui->de_combo->currentIndex();
     int prIndex = settings->value("desktopEnvironment", 0).toInt();
     if(index != prIndex){

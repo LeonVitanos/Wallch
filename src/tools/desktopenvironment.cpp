@@ -4,9 +4,9 @@
 
 #include <QMessageBox>
 
-#ifdef Q_OS_UNIX
-#include <gio/gio.h>
-DE::Value currentDE = DE::Gnome;
+#ifdef Q_OS_LINUX
+    #include <gio/gio.h>
+    DE::Value currentDE = DE::Gnome;
 #endif
 
 DesktopEnvironment::DesktopEnvironment(){}
@@ -26,7 +26,7 @@ QString DesktopEnvironment::getOSprettyName(){
 }
 
 QString DesktopEnvironment::getOSWallpaperPath(){
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(currentDE == DE::LXDE && QDir("/usr/share/lubuntu/wallpapers").exists())
         return "/usr/share/lubuntu/wallpapers";
     if(currentDE == DE::XFCE && QDir("usr/share/xfce4/backdrops").exists())
@@ -37,12 +37,19 @@ QString DesktopEnvironment::getOSWallpaperPath(){
         return "/usr/share/wallpapers";
     //enlightenment(when supported) usr/share/enlightenment/data/backgrounds
 #else
-    return"C:\\Windows\\Web\\Wallpaper";
+# ifdef Q_OS_WIN
+    return "C:\\Windows\\Web\\Wallpaper";
+# endif
+# ifdef Q_OS_MAC
+    if (QDir("/System/Library/Desktop Pictures").exists())
+        return "/System/Library/Desktop Pictures";
+    return "/Library/Desktop Pictures/";
+# endif
 #endif
     return "";
 }
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
 void DesktopEnvironment::setCurrentDE(){
     if(settings->value("desktopEnvironment", 0).toInt() != 0)
         currentDE = static_cast<DE::Value>(settings->value("desktopEnvironment", 0).toInt()-1);

@@ -5,14 +5,14 @@
 #include <QString>
 #include <QStringList>
 
-#ifdef Q_OS_UNIX
-struct DE {
-    enum Value {
-        Gnome, XFCE, LXDE, Mate
+#ifdef Q_OS_LINUX
+    struct DE {
+        enum Value {
+            Gnome, XFCE, LXDE, Mate
+        };
     };
-};
 
-extern DE::Value currentDE;
+    extern DE::Value currentDE;
 #endif
 
 class DesktopEnvironment
@@ -24,7 +24,7 @@ public:
     static QString getOSprettyName();
     static QString getOSWallpaperPath();
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     static void setCurrentDE();
     static DE::Value detectCurrentDe();
     static QString getCurrentDEprettyName();

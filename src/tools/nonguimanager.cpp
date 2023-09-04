@@ -512,7 +512,7 @@ void NonGuiManager::connectToServer()
     localServer_ = new QLocalServer(this);
 
     if(!localServer_->listen(QString(SOCKET_SERVER_NAME))){
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
         //if not in windows, remove the socket and retry...
         QLocalServer::removeServer(QString(SOCKET_SERVER_NAME));
         if(!localServer_->listen(QString(SOCKET_SERVER_NAME))){
@@ -520,10 +520,9 @@ void NonGuiManager::connectToServer()
             return;
         }
 #else
-        //if in windows, there doesn't seem to be a solution
         Global::error("Could not connect to the local socket server.");
         return;
-#endif //#ifdef Q_OS_UNIX
+#endif
 
     }
 
@@ -605,7 +604,7 @@ void NonGuiManager::changeWallpaperNow(){
     }
 }
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
 void show_app_callback(guint, gpointer *){
     nongui->doAction("--focus");
 }
@@ -785,11 +784,6 @@ void NonGuiManager::setupTray()
     quitAction_ = new QAction(tr("Exit"), this);
     connect(quitAction_, SIGNAL(triggered()), this, SLOT(trayActionQuit()));
 
-    //timer to distinguish between double and single clicks
-    doubleClick_ = new QTimer(this);
-    doubleClick_->setSingleShot(true);
-    connect(doubleClick_, SIGNAL(timeout()), this, SLOT(trayActionWallpapersNext()));
-
     //a timer just to not allow constant scrolling on the tray
     trayWheelTimer_ = new QTimer(this);
     trayWheelTimer_->setSingleShot(true);
@@ -833,7 +827,6 @@ void NonGuiManager::trayActivatedActions(QSystemTrayIcon::ActivationReason reaso
 {
     if(reason == QSystemTrayIcon::DoubleClick)
     {
-        doubleClick_->stop();
         if (mainWindowLaunched_) {
             // mainwindow has launched, either focus to it or hide it
             Q_EMIT signalHideOrShow();
@@ -841,9 +834,6 @@ void NonGuiManager::trayActivatedActions(QSystemTrayIcon::ActivationReason reaso
             // mainwindow has yet to launch, just focus to it
             doAction("--focus");
         }
-    }
-    else if(reason == QSystemTrayIcon::Trigger){
-        doubleClick_->start(qApp->doubleClickInterval());
     }
 }
 
@@ -1591,7 +1581,7 @@ void NonGuiManager::checkSettings(bool allSettings){
         gv.potdIncludeDescription = settings->value("potd_include_description", true).toBool();
         gv.leEnableTag = settings->value("le_enable_tag", false).toBool();
         gv.potdDescriptionBottom = settings->value("potd_description_bottom", true).toBool();
-        gv.potdDescriptionFont = settings->value("potd_description_font", "Ubuntu").toString();
+        gv.potdDescriptionFont = settings->value("potd_description_font", "Arial").toString();
         gv.potdDescriptionColor = settings->value("potd_text_color", "#FFFFFF").toString();
         gv.potdDescriptionBackgroundColor = settings->value("potd_background_color", "#000000").toString();
         gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (0)).toInt();
@@ -1646,7 +1636,7 @@ void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     QObject::connect(nongui, SIGNAL(signalQuit()), w, SLOT(doQuit()));
     QObject::connect(nongui, SIGNAL(signalDeleteCurrent()), w, SLOT(on_actionDelete_triggered()));
     QObject::connect(nongui, SIGNAL(signalAddFolderForMonitor(const QString&)), w, SLOT(addFolderForMonitor(const QString&)));
-    QObject::connect(nongui, SIGNAL(signalFocus()), w, SLOT(strongShowApp()));
+    QObject::connect(nongui, SIGNAL(signalFocus()), w, SLOT(showNormal()));
     QObject::connect(nongui, SIGNAL(signalHideOrShow()), w, SLOT(hideOrShow()));
     QObject::connect(w, SIGNAL(signalUncheckRunningFeatureOnTray()), nongui , SLOT(uncheckRunningFeatureOnTray()));
     QObject::connect(w, SIGNAL(signalRecreateTray()), nongui , SLOT(createTray()));
@@ -1721,7 +1711,7 @@ void NonGuiManager::viralSettingsOperations(){
         QTranslator *translator = new QTranslator(this);
         QString translationsFolder;
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
         translationsFolder = QString::fromStdString(PREFIX)+"/share/wallch/translations/";
 #else
         translationsFolder = QDir::currentPath()+"/translations/";
@@ -1741,24 +1731,26 @@ void NonGuiManager::viralSettingsOperations(){
 
     if(settings->value("first-run", true).toBool()){
         settings->setValue("first-run", false);
-    #ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
         if(!QDir(gv.homePath+"/.config/Wallch/").removeRecursively())
             Global::error("I probably could not remove previous Wallch configurations!");
-    #else
+#else
         if(!QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)+"/Wallch/").removeRecursively())
             Global::error("I probably could not remove previous Wallch configurations!");
 
+# ifdef Q_OS_WIN
         QSettings settings2("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\wallch.exe", QSettings::NativeFormat);
         settings2.setValue("Default", QDir::currentPath()+"/wallch.exe");
         settings2.setValue("Path", QDir::currentPath()+"/Wallch");
         settings2.sync();
-    #endif
+# endif
+#endif
     }
 
     settings->setValue("times_launched", settings->value("times_launched", 0).toUInt()+1); //adding one to times launched
     settings->sync();
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     DesktopEnvironment::setCurrentDE();
     gv.wallchHomePath=gv.homePath+"/.wallch/";
     gv.cachePath=gv.homePath+"/.cache/wallch/thumbs/";

@@ -60,14 +60,16 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "pictures_locations.h"
 #include "timermanager.h"
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     #include <glib-object.h>
     #include <gtk/gtk.h>
 #else
     #include <QSystemTrayIcon>
     #include "notification.h"
+# ifdef Q_OS_WIN
     #include <stdio.h>
     #include <windows.h>
+# endif
 #endif
 
 #include <QMessageBox>
@@ -111,13 +113,15 @@ protected:
     bool eventFilter(QObject *object, QEvent *event);
 
 private:
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     QTimer *batteryStatusChecker_;
     QString getSecondaryColor();
     QProcess *dconf;
 #else
     Notification *notification_;
+# ifdef Q_OS_WIN
     bool nativeEvent(const QByteArray& eventType, void* message, long* result);
+# endif
 #endif
 
     QSharedMemory *attachedMemory_;
@@ -276,7 +280,6 @@ private:
     QString fixBasenameSize(const QString &basename);
     void actionsOnWallpaperChange();
     void resetWatchFolders();
-    void strongMinimize();
     void processRunningResetPictures();
     void forceUpdateIconOf(int index);
     void prepareWebsiteSnapshot();
@@ -290,7 +293,7 @@ private:
     bool addingImageStylesNow = false;
 
 private Q_SLOTS:
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     void dconfChanges();
 #endif
     void timeSpinboxChanged();
@@ -340,7 +343,6 @@ private Q_SLOTS:
     void startWithThisImage();
     void setAverageColor(const QString &image);
     void updateScreenLabel();
-    void strongShowApp();
     void hideOrShow();
     void picturesLocationsChanged();
     void preferencesDestroyed();

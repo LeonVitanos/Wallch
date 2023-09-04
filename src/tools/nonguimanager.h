@@ -111,7 +111,6 @@ private:
     QAction *preferencesAction_;
     QAction *aboutAction_;
     QAction *quitAction_;
-    QTimer *doubleClick_;
     void setupTray();
     bool currentSelectionIsASet();
     void viralSettingsOperations();

@@ -28,11 +28,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "colormanager.h"
 
 #ifdef Q_OS_WIN
-#include <stdio.h>
-#include <windows.h>
-#include <shlobj.h>
+    #include <stdio.h>
+    #include <windows.h>
+    #include <shlobj.h>
 #else
-#include "desktopenvironment.h"
+    #include "desktopenvironment.h"
 #endif
 
 ColorsGradients::ColorsGradients(WallpaperManager *wallpaperManager, QWidget *parent) :
@@ -204,7 +204,7 @@ void ColorsGradients::on_solid_radioButton_clicked()
     if(currentShading == ColoringType::Solid)
         return;
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(currentDE == DE::Gnome || currentDE == DE::Mate){
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "solid");
     }
@@ -230,7 +230,7 @@ void ColorsGradients::on_horizontal_radioButton_clicked()
     if(currentShading == ColoringType::Horizontal)
         return;
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(currentDE == DE::Gnome || currentDE == DE::Mate){
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "horizontal");
     }
@@ -257,7 +257,7 @@ void ColorsGradients::on_vertical_radioButton_clicked()
     if(currentShading == ColoringType::Vertical)
         return;
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(currentDE == DE::Gnome || currentDE == DE::Mate)
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "vertical");
     else if(currentDE == DE::XFCE){
@@ -305,7 +305,7 @@ void ColorsGradients::on_wallpaperModeButton_clicked()
     ui->vertical_radioButton->setEnabled(false);
     ui->horizontal_radioButton->setEnabled(false);
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     wallpaperManager_->setCurrentFit(2);
 #else
     wallpaperManager_->setBackground(settings->value("last_wallpaper", wallpaperManager_->getPreviousWallpaper()).toString(), false, false, 0);

@@ -42,9 +42,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define HELP_URL "http://melloristudio.com/wallch/help"
 #define DONATE_URL "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Z34FXUH6M4G9S"
 
-#ifdef Q_OS_UNIX
-#define APP_DESKTOP_NAME "wallch-nautilus.desktop"
-#endif //#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
+    #define APP_DESKTOP_NAME "wallch-nautilus.desktop"
+#endif
 
 #define AMBIANCE_SEPARATOR QPixmap(":/themes/ambiance_separator.png")
 #define RADIANCE_SEPARATOR QPixmap(":/themes/radiance_seperator.png")
@@ -78,7 +78,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define INTERVAL_INDEPENDENCE_DEFAULT_VALUE "p-1.0000:00:00:00:00:00"
 
-#define IMAGE_FILTERS QStringList() << "*.png" << "*.PNG" << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG" << "*.gif" << "*.GIF" << "*.bmp" << "*.BMP" << "*.svg" << "*.SVG"
+#define IMAGE_FILTERS QStringList() << "*.png" << "*.PNG" << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG" << "*.gif" << "*.GIF" << "*.bmp" << "*.BMP" << "*.svg" << "*.SVG" << "*.heic" << "*.HEIC"
 
 #define MENU_POPUP_POS QPoint(QCursor::pos()) + QPoint(2, 0)
 
@@ -87,10 +87,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define AUTOSTART_DIR "/.config/autostart/"
 #define BOOT_DESKTOP_FILE "wallch.desktop"
 
-#ifdef Q_OS_WIN
-
-#include "notification.h"
-
+#ifndef Q_OS_LINUX
+    #include "notification.h"
 #endif
 
 extern QSettings *settings;
@@ -107,7 +105,7 @@ struct GlobalVar {
     bool firstTimeout;
     bool symlinks;
     bool processPaused;
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     QStringList unacceptedDesktopValues;
 #endif
     bool saveHistory;
@@ -175,7 +173,7 @@ struct GlobalVar {
 
     GlobalVar() : homePath(QDir::homePath()), preferencesDialogShown(false), independentIntervalEnabled(true),
         typeOfInterval(0), randomImagesEnabled(false), firstTimeout(false), symlinks(false), processPaused(false),
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     unacceptedDesktopValues(QStringList() << "" << "default.desktop" << "X-Cinnamon" << "default"),
 #endif
         saveHistory(true), randomTimeFrom(300), randomTimeTo(1200), doNotToggleRadiobuttonFallback(false), previewImagesOnScreen(true), pauseOnBattery(false), amPmEnabled(false),
@@ -184,7 +182,7 @@ struct GlobalVar {
         iconMode(true), rotateImages(false), potdIncludeDescription(true), leEnableTag(false), potdDescriptionBottom(true), refreshhourinterval(0), websiteWaitAfterFinishSeconds(3),
         websiteLoadImages(true), websiteJavaEnabled(false), websiteJavascriptCanReadClipboard(false), websiteJavascriptEnabled(true), websiteSimpleAuthEnabled(false),
         websiteInterval(6), screenHeight(0), screenWidth(0), potdDescriptionLeftMargin(100), potdDescriptionRightMargin(0), potdDescriptionBottomTopMargin(0), appStartTime(QDateTime::currentDateTime()),
-        websiteWebpageToLoad("http://google.com"), defaultPicturesLocation(homePath+"/"+QStandardPaths::displayName(QStandardPaths::PicturesLocation)), potdDescriptionFont("Ubuntu")
+        websiteWebpageToLoad("http://google.com"), defaultPicturesLocation(homePath+"/"+QStandardPaths::displayName(QStandardPaths::PicturesLocation)), potdDescriptionFont("Arial")
         {}
 };
 
@@ -219,7 +217,7 @@ public:
     static void addPreviousBackground(QStringList &previous_backgrounds, const QString &image);
     static void error(const QString &message);
     static void debug(const QString &message);
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     static void changeIndicatorIcon(const QString &icon);
     static void changeIndicatorSelection(const QString &status);
     static void showWallpapersIndicatorControls(bool show, bool pauseText);
@@ -233,15 +231,13 @@ public:
     static QPixmap roundedCorners(const QImage &image, const int radius);
     bool runsOnBattery();
 
-private:
-#ifdef Q_OS_WIN
-    Notification *notification_ = NULL;
-#endif
+#ifndef Q_OS_LINUX
+    private:
+        Notification *notification_ = NULL;
+    private Q_SLOTS:
+        void notificationDestroyed();
+#else
     static QString searchForFileInDir(QString folder, QString file);
-
-    #ifdef Q_OS_WIN
-private Q_SLOTS:
-    void notificationDestroyed();
 #endif
 
 Q_SIGNALS:

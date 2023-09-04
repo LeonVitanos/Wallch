@@ -37,11 +37,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <iostream>
 using namespace std;
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     #include <libnotify/notify.h>
     #include <libexif/exif-data.h>
 #else
+# ifdef Q_OS_WIN
     #include <windows.h>
+# endif
 #endif
 
 #include "glob.h"
@@ -53,7 +55,7 @@ Global::Global(){}
 Global::~Global(){}
 
 bool Global::runsOnBattery(){
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     QFile file("/sys/class/power_supply/BAT0/status");
     if(!file.open(QIODevice::ReadOnly)){
         return false;
@@ -64,9 +66,11 @@ bool Global::runsOnBattery(){
     file.close();
     return content.startsWith("Discharging");
 #else
+# ifdef Q_OS_WIN
     SYSTEM_POWER_STATUS pwr;
     GetSystemPowerStatus(&pwr);
     return !(pwr.BatteryFlag & 8);
+# endif
 #endif
 }
 
@@ -94,7 +98,7 @@ QString Global::monthInEnglish(short month)
     }
 }
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
 QString Global::searchForFileInDir(QString folder, QString file){
     if(!QDir(folder).exists()){
         return QString();
@@ -134,7 +138,7 @@ short Global::getExifRotation(const QString &filename){
     }
     return return_value;
 }
-#endif //#ifdef Q_OS_UNIX
+#endif
 
 QString Global::setAverageColor(const QString &image){
     //sets the desktop's average color and returns the name of it.
@@ -177,23 +181,7 @@ void Global::desktopNotify(const QString text, bool checkImage, const QString &i
         return;
     }
 
-#ifdef Q_OS_WIN
-    if(notification_==NULL)
-    {
-        notification_ = new Notification(text, image, 0);
-        notification_->setAttribute(Qt::WA_DeleteOnClose);
-        connect(notification_, SIGNAL(destroyed()), this, SLOT(notificationDestroyed()));
-        connect(this, SIGNAL(updateNotification(QString,QString)), notification_, SLOT(setupNotification(QString,QString)));
-        notification_->setWindowFlags(Qt::ToolTip | Qt::WindowStaysOnTopHint);//look like a popup
-        notification_->setAttribute(Qt::WA_X11NetWmWindowTypeNotification, true);//stay on top
-        notification_->setAttribute(Qt::WA_ShowWithoutActivating, true);//do not take focus
-        notification_->show();
-    }
-    else
-    {
-        Q_EMIT updateNotification(text, image);
-    }
-#else
+#ifdef Q_OS_LINUX
     static NotifyNotification* notification=NULL;
 
     if (!notify_init ("update-notifications")){
@@ -205,7 +193,6 @@ void Global::desktopNotify(const QString text, bool checkImage, const QString &i
     GError* error = NULL;
 
     if(notification==NULL){
-
         notification = notify_notification_new ( "Wallch", text.toLocal8Bit().data(), image.toLocal8Bit().data());
         error = NULL;
         successfullyCreated = notify_notification_show (notification, &error);
@@ -226,10 +213,24 @@ void Global::desktopNotify(const QString text, bool checkImage, const QString &i
             g_error_free (error);
         }
     }
-#endif //#ifdef Q_OS_UNIX
+#else
+    if(notification_==NULL)
+    {
+        notification_ = new Notification(text, image, 0);
+        notification_->setAttribute(Qt::WA_DeleteOnClose);
+        connect(notification_, SIGNAL(destroyed()), this, SLOT(notificationDestroyed()));
+        connect(this, SIGNAL(updateNotification(QString,QString)), notification_, SLOT(setupNotification(QString,QString)));
+        notification_->setWindowFlags(Qt::ToolTip | Qt::WindowStaysOnTopHint);//look like a popup
+        notification_->setAttribute(Qt::WA_X11NetWmWindowTypeNotification, true);//stay on top
+        notification_->setAttribute(Qt::WA_ShowWithoutActivating, true);//do not take focus
+        notification_->show();
+    }
+    else
+        Q_EMIT updateNotification(text, image);
+#endif
 }
 
-#ifdef Q_OS_WIN
+#ifndef Q_OS_LINUX
 void Global::notificationDestroyed(){
     notification_=NULL;
 }
@@ -689,6 +690,7 @@ void Global::updateStartup()
         }
         settings2.sync();
 #else
+# ifdef Q_OS_UNIX
         if(!QDir(gv.homePath+AUTOSTART_DIR).exists()){
             if(!QDir().mkpath(gv.homePath+AUTOSTART_DIR)){
                 Global::error("Failed to create ~"+QString(AUTOSTART_DIR)+" folder. Please check folder existence and permissions.");
@@ -726,11 +728,11 @@ void Global::updateStartup()
         else{
             start_hidden=false;
         }
-#ifdef Q_OS_UNIX
+#  ifdef Q_OS_LINUX
         short defaultValue=3;
-#else
+#  else
         short defaultValue=0;
-#endif
+#  endif
 
         if(settings->value("startup_timeout", defaultValue).toInt()!=0){
             desktopFileCommand="bash -c 'sleep "+QString::number(settings->value("startup_timeout", defaultValue).toInt())+" && "+desktopFileCommand+"'";
@@ -744,8 +746,8 @@ void Global::updateStartup()
                 Global::error("There was probably an error while trying to create the desktop file "+gv.homePath+AUTOSTART_DIR+"/"+BOOT_DESKTOP_FILE);
             }
         }
-
-#endif //#ifdef Q_OS_WIN
+# endif
+#endif
     }
 }
 

@@ -28,7 +28,7 @@ public:
     static void setPrimaryColor(const QString &colorName);
     static QString getSecondaryColor();
     static void setSecondaryColor(const QString &colorName);
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     static QString getColor(short num);
     static void setColor(short num, QString colorName);
 #endif

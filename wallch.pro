@@ -17,7 +17,9 @@ win32 {
     QMAKE_TARGET_PRODUCT = "Wallch"
     QMAKE_TARGET_DESCRIPTION = "Wallch"
     QMAKE_TARGET_COPYRIGHT = "GNU General Public License"
-} else {
+}
+
+unix:!macx {
     CONFIG += link_pkgconfig
     PKGCONFIG += libnotify libexif gtk+-3.0
 }

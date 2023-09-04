@@ -2,8 +2,8 @@
 #include "colormanager.h"
 #include <QPainter>
 
-#ifdef Q_OS_UNIX
-#include "desktopenvironment.h"
+#ifdef Q_OS_LINUX
+    #include "desktopenvironment.h"
 #endif
 
 ColoringType::Value currentShading = ColoringType::Solid;
@@ -11,12 +11,13 @@ ColoringType::Value currentShading = ColoringType::Solid;
 ColorManager::ColorManager(){}
 
 QString ColorManager::getPrimaryColor(){
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(currentDE == DE::LXDE)
         return DesktopEnvironment::getPcManFmValue("desktop_bg");
     else
         return getColor(1);
 #else
+# ifdef Q_OS_WIN
     QSettings collorSetting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
     if(collorSetting.value("Background").isValid()){
         QString primaryColor = collorSetting.value("Background").toString();
@@ -42,16 +43,19 @@ QString ColorManager::getPrimaryColor(){
         currentColors[0] = GetSysColor(Elements[0]);
         return QColor(GetRValue(currentColors[0]), GetGValue(currentColors[0]), GetBValue(currentColors[0])).name();
     }
+# endif
 #endif
+    return "";
 }
 
 void ColorManager::setPrimaryColor(const QString &colorName){
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(currentDE == DE::LXDE)
         DesktopEnvironment::setPcManFmValue("desktop_bg", colorName);
     else
         setColor(1, colorName);
 #else
+# ifdef Q_OS_WIN
     QColor color = colorName;
     QSettings color_setting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
     color_setting.setValue("Background", QString::number(color.red())+' '+QString::number(color.green())+' '+QString::number(color.blue()));
@@ -59,12 +63,13 @@ void ColorManager::setPrimaryColor(const QString &colorName){
     DWORD NewColors[1];
     NewColors[0] = RGB(color.red(), color.green(), color.blue());
     SetSysColors(1, Elements, NewColors);
+# endif
 #endif
 }
 
 
 QString ColorManager::getSecondaryColor(){
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     return getColor(2);
 #else
     return settings->value("secondaryColor", "black").toString();
@@ -73,14 +78,14 @@ QString ColorManager::getSecondaryColor(){
 
 
 void ColorManager::setSecondaryColor(const QString &colorName){
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     setColor(2, colorName);
 #else
     settings->setValue("secondaryColor", colorName);
 #endif
 }
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
 QString ColorManager::getColor(short num){
     if(currentDE == DE::Gnome || currentDE == DE::Mate)
         return DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", num == 1 ? "primary-color" : "secondary-color");
@@ -130,7 +135,7 @@ void ColorManager::setColor(short num, QString colorName){
 #endif
 
 ColoringType::Value ColorManager::getColoringType(){
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(currentDE == DE::Gnome || currentDE == DE::Mate){
         QString colorStyle=DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", "color-shading-type");
         if(colorStyle.contains("solid"))
@@ -206,12 +211,13 @@ short ColorManager::getCurrentTheme(){
     if(settings->value("theme") != "autodetect")
         theme = settings->value("theme").toString();
     else{
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
         if(currentDE == DE::Gnome)
             theme = DesktopEnvironment::gsettingsGet("org.gnome.desktop.interface", "gtk-theme");
         else
             return 1;
 #else
+# ifdef Q_OS_WIN
         QSettings appsUseLightTheme("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", QSettings::NativeFormat);
         if(appsUseLightTheme.value("AppsUseLightTheme").isValid())
             return appsUseLightTheme.value("AppsUseLightTheme").toInt();
@@ -222,6 +228,7 @@ short ColorManager::getCurrentTheme(){
             else
                 return 1;
         }
+# endif
 #endif
     }
 

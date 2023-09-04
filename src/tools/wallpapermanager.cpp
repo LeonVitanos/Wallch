@@ -25,9 +25,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "glob.h"
 
 #ifdef Q_OS_WIN
-#include "windows.h"
+    #include "windows.h"
 #else
-#include "desktopenvironment.h"
+    #include "desktopenvironment.h"
 #endif
 
 #include <QMessageBox>
@@ -276,7 +276,7 @@ void WallpaperManager::generateRandomImages(int firstOne /*=-1*/){
 QString WallpaperManager::currentBackgroundWallpaper(){
     //returns the image currently set as desktop background
     QString currentImage;
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(currentDE == DE::Gnome || currentDE == DE::Mate){
         currentImage = DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", DesktopEnvironment::getPictureUriName());
         if(currentImage.startsWith("file://")){
@@ -294,21 +294,23 @@ QString WallpaperManager::currentBackgroundWallpaper(){
         currentImage=DesktopEnvironment::getPcManFmValue("wallpaper");
     }
 #else
+# ifdef Q_OS_WIN
     char *current_image = (char*) malloc(MAX_PATH*sizeof(char));
     if(current_image == NULL){
         return QString("");
     }
-#ifdef UNICODE
+#  ifdef UNICODE
     bool result = (bool) SystemParametersInfoA(SPI_GETDESKWALLPAPER, MAX_PATH, (PVOID) current_image, 0);
-#else
+#  else
     bool result = (bool) SystemParametersInfoW(SPI_GETDESKWALLPAPER, MAX_PATH, (PVOID) current_image, 0);
-#endif //#ifdef UNICODE
+#  endif
     if(result){
         currentImage = QString(current_image);
     }
     free(current_image);
 
-#endif //#ifdef Q_OS_UNIX
+# endif
+#endif
     return currentImage;
 }
 
@@ -361,18 +363,18 @@ void WallpaperManager::openFolderOf(QString image /* = "" */){
         //opening the current path with the default files viewer.
         Global::openUrl("file://"+Global::dirnameOf(image));
     }
-#endif //#ifdef Q_OS_WIN
+#endif
 }
 
 void WallpaperManager::setBackground(const QString &image, bool changeAverageColor, bool showNotification, short feature){
-    bool result=true;
-
-#ifdef Q_OS_UNIX
-    if(!QFile::exists(image)){
+    if(image!="" && !QFile::exists(image)){
         Global::error("Image doesn't exist, background cannot be changed!");
         return;
     }
 
+    bool result=true;
+
+#ifdef Q_OS_LINUX
     if(gv.rotateImages){
         Global::rotateImageBasedOnExif(image);
     }
@@ -405,33 +407,34 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
         break;
     }
 
+    if (!result)
+        QMessageBox::warning(0, QObject::tr("Error"), QObject::tr("Failed to change wallpaper. If your Desktop Environment is not listed at \"Preferences->Integration->Current Desktop Environment\", then it is not supported."));
 #else
-    if(image!="" && !QFile::exists(image)){
-        Global::error("Image doesn't exist, background cannot be changed!");
-        return;
-    }
-
     QString currentBackground = currentBackgroundWallpaper();
     bool update_image_style = currentBackground == "" || currentBackground == gv.wallchHomePath+COLOR_IMAGE;
 
-#ifdef UNICODE
+# ifdef Q_OS_WIN
+#  ifdef UNICODE
     result = (bool) SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, (PVOID) image.toLocal8Bit().data(), SPIF_UPDATEINIFILE);
-#else
+#  else
     result = (bool) SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, (PVOID) image.toLocal8Bit().data(), SPIF_UPDATEINIFILE);
-#endif //UNICODE
+#  endif
 
     if(!result)
         QMessageBox::warning(0, QObject::tr("Error"),
                              QObject::tr("Failed to change wallpaper. Maybe your Windows version is not supported? "
                                          "Usually Windows XP fails to change JPEG images."));
-    else if (update_image_style)
+# else
+#  ifdef Q_OS_MAC
+    QProcess::startDetached("osascript", QStringList() << "-e" << "tell application \"Finder\" to set desktop picture to POSIX file \"" +  QDir::toNativeSeparators(image) + "\"" );
+#  endif
+# endif
+    if (result && update_image_style)
         Q_EMIT updateImageStyle();
 
-#endif //Q_OS_UNIX
+#endif
 
-    if (!result)
-        QMessageBox::warning(0, QObject::tr("Error"), QObject::tr("Failed to change wallpaper. If your Desktop Environment is not listed at \"Preferences->Integration->Current Desktop Environment\", then it is not supported."));
-    else if(result && feature!=0){
+    if(result && feature!=0){
         if(gv.setAverageColor && changeAverageColor)
             Global::setAverageColor(image);
 
@@ -485,7 +488,7 @@ QImage WallpaperManager::indexed8ToARGB32(const QImage &image){
 }
 
 short WallpaperManager::getCurrentFit(){
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(currentDE == DE::Gnome || currentDE == DE::Mate){
         QString style=DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", "picture-options");
         if(style=="none")
@@ -514,6 +517,7 @@ short WallpaperManager::getCurrentFit(){
     else if(currentDE == DE::LXDE)
         return DesktopEnvironment::getPcManFmValue("wallpaper_mode").toInt();
 #else
+# ifdef Q_OS_WIN
     QSettings desktop_settings("HKEY_CURRENT_USER\\Control Panel\\Desktop", QSettings::NativeFormat);
 
     QString currentBackground = currentBackgroundWallpaper();
@@ -536,13 +540,14 @@ short WallpaperManager::getCurrentFit(){
     case 22:
         return 6;
     }
+# endif
 #endif
 
     return 1;
 }
 
 void WallpaperManager::setCurrentFit(short index){
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(index == getCurrentFit())
         return;
 
@@ -610,6 +615,7 @@ void WallpaperManager::setCurrentFit(short index){
         result = DesktopEnvironment::runPcManFm(QStringList() << "--wallpaper-mode=" + style);
     }
 #else
+# ifdef Q_OS_WIN
     QString currentBg = currentBackgroundWallpaper();
 
     if(index == 0){
@@ -713,5 +719,6 @@ void WallpaperManager::setCurrentFit(short index){
         setBackground(settings->value("last_wallpaper", getPreviousWallpaper()).toString(), false, false, 0);
     else
        setBackground(currentBg, false, false, 0);
+# endif
 #endif
 }

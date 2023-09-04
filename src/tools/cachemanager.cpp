@@ -166,7 +166,7 @@ QString CacheManager::cacheToOriginalName(QString cacheName){
         return cacheName.insert(1, ':'); //adding the ":" to the filename
 #else
         return cacheName;
-#endif //#ifdef Q_OS_WIN
+#endif
     }
     else
     {
@@ -174,7 +174,7 @@ QString CacheManager::cacheToOriginalName(QString cacheName){
         return cacheName.replace(cacheToChar_, cacheFromChar_).insert(1, ':'); //adding the ":" to the filename
 #else
         return cacheName.replace(cacheToChar_, cacheFromChar_);
-#endif //#ifdef Q_OS_WIN
+#endif
     }
 }
 

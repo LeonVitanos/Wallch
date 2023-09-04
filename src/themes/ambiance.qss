@@ -2,7 +2,7 @@
 {
     color: white;
     background-image: url(:/themes/ambiance_not_checked.png);
-    font: 10pt "Ubuntu";
+    font: 12pt;
     border: 0px;
 }
 

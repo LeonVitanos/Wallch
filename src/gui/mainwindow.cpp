@@ -109,7 +109,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::closeEvent(QCloseEvent * event)
 {
-    strongMinimize();
     this->hide();
     event->ignore();
 }
@@ -192,28 +191,12 @@ QPoint MainWindow::calculateSettingsMenuPos(){
     return showPoint;
 }
 
-void MainWindow::strongShowApp(){
-    if(this->isActiveWindow()){
-        return;
-    }
-
-    this->show();
-    this->activateWindow();
-}
-
 void MainWindow::hideOrShow()
 {
-    if (this->isHidden()) {
-        strongShowApp();
-    } else {
-        strongMinimize();
+    if (this->isHidden())
+        showNormal();
+    else
         this->hide();
-    }
-}
-
-void MainWindow::strongMinimize(){
-    this->setWindowState(Qt::WindowMaximized); //dirty trick
-    this->setWindowState(Qt::WindowMinimized);
 }
 
 void MainWindow::connectSignalSlots(){
@@ -239,7 +222,7 @@ void MainWindow::connectSignalSlots(){
     connect(QGuiApplication::primaryScreen(), SIGNAL(geometryChanged(QRect)), this, SLOT(getScreenResolution(QRect)));
     connect(QGuiApplication::primaryScreen(), SIGNAL(availableGeometryChanged(QRect)), this, SLOT(getScreenAvailableResolution(QRect)));
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     dconf = new QProcess(this);
     connect(dconf, SIGNAL(readyReadStandardOutput()), this, SLOT(dconfChanges()));
     connect(dconf , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(dconfChanges()));
@@ -303,7 +286,7 @@ void MainWindow::setupTimers(){
     hideProgress_ = new QTimer(this);
     connect(hideProgress_, SIGNAL(timeout()), this, SLOT(hideTimeForNext()));
     hideProgress_->setSingleShot(true);
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     //Timer to check battery status after laptop is unplugged
     batteryStatusChecker_ = new QTimer(this);
     connect(batteryStatusChecker_, SIGNAL(timeout()), this, SLOT(checkBatteryStatus()));
@@ -321,7 +304,7 @@ void MainWindow::setupKeyboardShortcuts(){
     (void) new QShortcut(Qt::ALT + Qt::Key_F4, this, SLOT(escapePressed()));
 }
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
 void MainWindow::dconfChanges(){
     QByteArray output = dconf->readAllStandardOutput();
     if(output.contains("theme"))
@@ -577,13 +560,10 @@ void MainWindow::onlineImageRequestReady(QString image){
 }
 
 void MainWindow::escapePressed(){
-    if(ui->stackedWidget->currentIndex() == 0 && ui->search_box->hasFocus() && searchIsOn_){
+    if(ui->stackedWidget->currentIndex() == 0 && ui->search_box->hasFocus() && searchIsOn_)
         on_search_close_clicked();
-    }
     else
-    {
-        strongMinimize();
-    }
+        this->hide();
 }
 
 void MainWindow::deletePressed(){
@@ -689,8 +669,7 @@ void MainWindow::setPreviewImage(){
     QImage image = scaleWatcher_->result();
 
     if(!image.isNull()){
-#ifdef Q_OS_UNIX
-
+#ifdef Q_OS_LINUX
         DesktopStyle desktopStyle = qvariant_cast<DesktopStyle>(ui->image_style_combo->currentData());
 
         if(image.format() == QImage::Format_Indexed8){
@@ -907,8 +886,7 @@ void MainWindow::setPreviewImage(){
 #else
         image = QImage(image.scaled(2*SCREEN_LABEL_SIZE_X, 2*SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::FastTransformation)
                        .scaled(SCREEN_LABEL_SIZE_X, SCREEN_LABEL_SIZE_Y, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
-#endif //#ifdef Q_OS_UNIX
-
+#endif
         ui->screen_label->setPixmap(QPixmap::fromImage(image));
     }
 }
@@ -1017,7 +995,7 @@ void MainWindow::deChanged(){
 }
 
 void MainWindow::findAvailableWallpaperStyles(){
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(currentDE == DE::Gnome || currentDE == DE::Mate){
         ui->image_style_combo->addItem(tr("Color"), NoneStyle);
         ui->image_style_combo->addItem(tr("Tile"), Tile);
@@ -1043,6 +1021,7 @@ void MainWindow::findAvailableWallpaperStyles(){
         ui->image_style_combo->addItem(tr("Tile"), Tile);
     }
 #else
+# ifdef Q_OS_WIN
     ui->image_style_combo->addItem(tr("Color"), NoneStyle);
     ui->image_style_combo->addItem(tr("Tile"), Tile);
     ui->image_style_combo->addItem(tr("Center"), Center);
@@ -1058,6 +1037,16 @@ void MainWindow::findAvailableWallpaperStyles(){
         if(DesktopEnvironment::getOSproductVersion()>=6.2)
             ui->image_style_combo->addItem(tr("Span"), Span);
     }
+# else
+#  ifdef Q_OS_MAC
+    ui->image_style_combo->addItem(tr("Color"), NoneStyle);
+    ui->image_style_combo->addItem(tr("Fill Screen"), Zoom);
+    ui->image_style_combo->addItem(tr("Fit to Screen"), Scale);
+    ui->image_style_combo->addItem(tr("Stretch to Fill Screendfdfgdfg"), Stretch);
+    ui->image_style_combo->addItem(tr("Centre"), Center);
+    ui->image_style_combo->addItem(tr("Tile"), Tile);
+#  endif
+# endif
 #endif
 
     updateImageStyleCombo();
@@ -1175,7 +1164,7 @@ void MainWindow::updateSeconds(){
      * the corresponding action when the seconds have passed!
      */
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(gv.pauseOnBattery){
         if(globalParser_->runsOnBattery()){
             if(!manuallyStartedOnBattery_){
@@ -1478,7 +1467,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
         if(gv.pauseOnBattery){
             if(globalParser_->runsOnBattery()){
                 //manually started
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
                 if(batteryStatusChecker_->isActive()){
                     batteryStatusChecker_->stop();
                 }
@@ -1540,7 +1529,7 @@ void MainWindow::on_stopButton_clicked(){
     stopButtonsSetEnabled(false);
     gv.wallpapersRunning=false;
     globalParser_->updateStartup();
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(gv.pauseOnBattery){
         if(batteryStatusChecker_->isActive()){
             batteryStatusChecker_->stop();
@@ -1690,7 +1679,7 @@ void MainWindow::on_wallpapersList_itemDoubleClicked()
     if(gv.rotateImages && gv.iconMode)
         forceUpdateIconOf(curRow);
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
     if(currentDE == DE::LXDE){
         DesktopStyle desktopStyle = qvariant_cast<DesktopStyle>(ui->image_style_combo->currentData());
         if(desktopStyle == NoneStyle){
@@ -2101,7 +2090,7 @@ void MainWindow::updateTiming(){
 
 void MainWindow::checkBatteryStatus(){
     if(!globalParser_->runsOnBattery()){
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
         batteryStatusChecker_->stop();
 #endif
 
@@ -2198,9 +2187,9 @@ void MainWindow::monitor(const QStringList &finalListOfPaths){
 
 void MainWindow::monitor(const QString &path, int &itemCount)
 {
-    if(monitoredFoldersList_.contains(path, Qt::CaseSensitive)){
+    if(monitoredFoldersList_.contains(path, Qt::CaseSensitive) || !QFile::exists(path))
         return;
-    }
+
     watchFolders_->addPath(path);
     monitoredFoldersList_ << path;
     addFilesToWallpapers(path, itemCount);
@@ -3318,7 +3307,7 @@ void MainWindow::loadPotdPage(){
     gv.potdIncludeDescription = settings->value("potd_include_description", true).toBool();
     gv.leEnableTag = settings->value("le_enable_tag", false).toBool();
     gv.potdDescriptionBottom = settings->value("potd_description_bottom", true).toBool();
-    gv.potdDescriptionFont = settings->value("potd_description_font", "Ubuntu").toString();
+    gv.potdDescriptionFont = settings->value("potd_description_font", "Arial").toString();
     gv.potdDescriptionColor = settings->value("potd_text_color", "#FFFFFF").toString();
     gv.potdDescriptionBackgroundColor = settings->value("potd_background_color", "#000000").toString();
     gv.potdDescriptionRightMargin = settings->value("potd_description_right_margin", 0).toInt();
