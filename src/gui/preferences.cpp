@@ -68,7 +68,6 @@ Preferences::Preferences(QWidget *parent) :
 #ifdef Q_OS_LINUX
     ui->DEname->setText(DesktopEnvironment::getCurrentDEprettyName());
     ui->de_combo->setCurrentIndex(settings->value("desktopEnvironment", 0).toInt());
-    on_de_combo_currentIndexChanged(ui->de_combo->currentIndex());
 #else
     ui->integrationgroupBox->hide();
 #endif

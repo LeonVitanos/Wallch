@@ -62,9 +62,6 @@ private Q_SLOTS:
     void on_page_3_advanced_clicked();
     void on_theme_combo_currentIndexChanged(int index);
     void on_rotate_checkBox_clicked(bool checked);
-#ifdef Q_OS_LINUX
-    void on_de_combo_currentIndexChanged(int index);
-#endif
     void on_startupCheckBox_clicked(bool checked);
     void on_help_clicked();
     void on_max_cache_slider_valueChanged(int value);

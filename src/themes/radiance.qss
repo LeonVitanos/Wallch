@@ -1,6 +1,6 @@
 #page_0_wallpapers, #page_1_earth, #page_2_potd, #page_3_clock, #page_4_web, #page_5_other, #menubarMenu{
     background-image: url(:/themes/radiance_not_checked.png);
-    font: 12pt;
+    font: 10pt;
     border: 0px;
 }
 

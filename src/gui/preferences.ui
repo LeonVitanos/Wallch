@@ -254,12 +254,15 @@
             <property name="geometry">
              <rect>
               <x>0</x>
-              <y>-86</y>
+              <y>0</y>
               <width>601</width>
-              <height>604</height>
+              <height>607</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_3">
+             <property name="spacing">
+              <number>12</number>
+             </property>
              <item>
               <widget class="QGroupBox" name="generalSettingsgroupBox">
                <property name="styleSheet">
@@ -403,8 +406,7 @@
                      <enum>Qt::NoFocus</enum>
                     </property>
                     <property name="text">
-                     <string>If the feature that was previously running was 'Wallpapers', Wallch will pick a random
-picture and change the desktop background once at System Startup</string>
+                     <string>On 'Wallpapers' feature, change wallpaper only once</string>
                     </property>
                     <property name="tristate">
                      <bool>false</bool>
@@ -784,11 +786,14 @@ picture and change the desktop background once at System Startup</string>
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>389</width>
-              <height>274</height>
+              <width>615</width>
+              <height>482</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_8">
+             <property name="spacing">
+              <number>12</number>
+             </property>
              <item>
               <widget class="QGroupBox" name="generalSettingsgroupBox_2">
                <property name="styleSheet">
