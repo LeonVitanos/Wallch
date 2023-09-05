@@ -21,7 +21,7 @@ win32 {
 
 unix:!macx {
     CONFIG += link_pkgconfig
-    PKGCONFIG += libnotify libexif gtk+-3.0
+    PKGCONFIG += libnotify libexif
 }
 
 isEmpty(PREFIX) {

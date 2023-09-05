@@ -62,7 +62,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifdef Q_OS_LINUX
     #include <glib-object.h>
-    #include <gtk/gtk.h>
 #else
     #include <QSystemTrayIcon>
     #include "notification.h"

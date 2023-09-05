@@ -47,7 +47,7 @@ fi
 
 report_step "Installing the needed packages"
 apt-get install debhelper qt5-qmake qttools5-dev-tools libqt5core5a libqt5widgets5 qt5-default libqt5network5 libqt5dbus5 libnotify-dev libkeybinder-dev libdee-dev libexif-dev libappindicator-dev libglib2.0-dev qtdeclarative5-dev libqt5opengl5-dev libgstreamer-plugins-base0.10-dev libsqlite3-dev libxslt1-dev libqt5webkit5-dev || (error_report "installing build dependencies failed")
-apt-get install xdg-utils libstdc++6 libappindicator1 libc6 libdbusmenu-glib4 libexif12 libgcc1 libglib2.0-0 libgtk2.0-0 libnotify4 || (error_report "installing dependencies failed")
+apt-get install xdg-utils libstdc++6 libappindicator1 libc6 libdbusmenu-glib4 libexif12 libgcc1 libglib2.0-0 libnotify4 || (error_report "installing dependencies failed")
 
 report_step "Building the source code"
 
