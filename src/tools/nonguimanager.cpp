@@ -800,9 +800,7 @@ void NonGuiManager::trayActionOpenCurrentImage()
     if(!WallpaperManager::currentBackgroundExists())
         return;
 
-    if(!QDesktopServices::openUrl(QUrl("file:///"+WallpaperManager::currentBackgroundWallpaper()))){
-        Global::error("I probably could not open "+WallpaperManager::currentBackgroundWallpaper());
-    }
+    Global::openUrl("file:///"+WallpaperManager::currentBackgroundWallpaper());
 }
 
 void NonGuiManager::trayActionOpenCurrentImageFolder()

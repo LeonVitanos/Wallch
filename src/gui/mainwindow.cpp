@@ -23,7 +23,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <QtConcurrent/QtConcurrentRun>
 #include <QMimeData>
-#include <QDesktopServices>
 #include <QRadioButton>
 #include <QFileDialog>
 #include <QNetworkReply>
@@ -3520,9 +3519,7 @@ void MainWindow::on_actionOpen_Image_triggered()
     if(!WallpaperManager::currentBackgroundExists())
         return;
 
-    if(!QDesktopServices::openUrl(QUrl("file:///"+WallpaperManager::currentBackgroundWallpaper()))){
-        globalParser_->error("I probably could not open "+WallpaperManager::currentBackgroundWallpaper());
-    }
+    globalParser_->openUrl("file:///"+WallpaperManager::currentBackgroundWallpaper());
 }
 
 void MainWindow::on_actionOpen_Folder_triggered()

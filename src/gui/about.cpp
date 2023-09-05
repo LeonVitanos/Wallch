@@ -27,7 +27,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <QMessageBox>
 #include <QProcess>
-#include <QDesktopServices>
 
 #define PERSON(name, email) name " &lt;<a href=\"mailto:" email "\">" email "</a>&gt;"
 #define TRANSLATION(translation) translation " Translation:"

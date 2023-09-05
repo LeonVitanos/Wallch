@@ -32,14 +32,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QSharedMemory>
 #include <QLocalSocket>
 #include <QLocalServer>
-#include <QDesktopServices>
 #include <QtGlobal>
 #include <QSystemTrayIcon>
 
 #include "properties.h"
 #include "preferences.h"
 #include "mainwindow.h"
-#include "about.h"
 #include "glob.h"
 #include "websitesnapshot.h"
 #include "wallpapermanager.h"

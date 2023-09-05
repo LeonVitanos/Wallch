@@ -60,11 +60,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "pictures_locations.h"
 #include "timermanager.h"
 
-#ifdef Q_OS_LINUX
-    #include <glib-object.h>
-#else
-    #include <QSystemTrayIcon>
+#ifndef Q_OS_LINUX
     #include "notification.h"
+#else
 # ifdef Q_OS_WIN
     #include <stdio.h>
     #include <windows.h>

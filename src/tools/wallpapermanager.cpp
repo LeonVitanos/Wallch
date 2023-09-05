@@ -325,17 +325,6 @@ bool WallpaperManager::currentBackgroundExists()
 }
 
 void WallpaperManager::openFolderOf(QString image /* = "" */){
-    /*
-     * Function for opening an image's path.
-     * If 'img' is empty then the current image's (set as background)
-     * path open, but, if img has been specified,
-     * then the specified image's path opens.
-     * To open the background wallpaper's path works
-     * only in GNOME 3.
-     * If nautilus is installed and running then the
-     * image is being selected as well.
-     */
-
     if(image.isEmpty()){
         if(!currentBackgroundExists())
             return;
@@ -343,27 +332,7 @@ void WallpaperManager::openFolderOf(QString image /* = "" */){
             image=currentBackgroundWallpaper();
     }
 
-    if(image==gv.wallchHomePath+NULL_IMAGE){
-        QMessageBox::information(0, QObject::tr("Hey!"), QObject::tr("You just won the game."));
-    }
-
-#ifdef Q_OS_WIN
-    QProcess::startDetached("explorer", QStringList() << "/select," << QDir::toNativeSeparators(image));
-#else
-    if(QFile::exists("/usr/bin/nautilus")){
-        //opening the current path and selecting the image with nautilus
-        QProcess::startDetached("nautilus", QStringList() << image);
-    }
-    else if(QFile::exists("/usr/bin/nemo")){
-        //opening the current path and selecting the image with nemo
-        QProcess::startDetached("nemo", QStringList() << image);
-    }
-    else
-    {
-        //opening the current path with the default files viewer.
-        Global::openUrl("file://"+Global::dirnameOf(image));
-    }
-#endif
+    Global::openUrl("file:///"+Global::dirnameOf(image));
 }
 
 void WallpaperManager::setBackground(const QString &image, bool changeAverageColor, bool showNotification, short feature){

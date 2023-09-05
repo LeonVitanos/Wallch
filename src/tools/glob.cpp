@@ -396,7 +396,7 @@ QString Global::basenameOf(const QString &path){
 
 QString Global::dirnameOf(const QString &path){
     //returns the absolute folder path of the file
-    return path.left(path.count()-(basenameOf(path).count()+1));//the +1 so as to remove the trailing '/'
+    return QDir::toNativeSeparators(path.left(path.count()-(basenameOf(path).count()+1)));//the +1 so as to remove the trailing '/'
 }
 
 QString Global::suffixOf(const QString &path){
@@ -653,9 +653,8 @@ bool Global::isSubfolder(QString &subFolder, QString &parentFolder){
 }
 
 void Global::openUrl(const QString &url){
-    if(!QDesktopServices::openUrl(QUrl(url))){
-        Global::error("I probably could not open \""+url+"\"");
-    }
+    if(!QDesktopServices::openUrl(QUrl(url)))
+        Global::error(url + " could not be opened");
 }
 
 void Global::updateStartup()

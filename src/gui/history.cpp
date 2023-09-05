@@ -33,7 +33,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QClipboard>
 #include <QDate>
 #include <QSettings>
-#include <QDesktopServices>
 #include <QImageReader>
 
 History::History(WallpaperManager *wallpaperManager, QWidget *parent) :
@@ -284,10 +283,8 @@ void History::historyPropertiesDestroyed(){
 }
 
 void History::launchInBrowser(){
-    if((ui->historyInfo->currentItem()->isSelected() || ui->historyInfo->currentItem()->toolTip().isEmpty()) &&
-            !QDesktopServices::openUrl(QUrl(ui->historyInfo->currentItem()->toolTip()))){
-        Global::error("I probably could not show the image to your browser!");
-    }
+    if((ui->historyInfo->currentItem()->isSelected() || ui->historyInfo->currentItem()->toolTip().isEmpty()))
+        Global::openUrl(ui->historyInfo->currentItem()->toolTip());
 }
 
 void History::copyLink(){
@@ -304,16 +301,13 @@ void History::on_historyInfo_doubleClicked()
             QString type=ui->historyInfo->currentItem()->data(12).toString();
             if(type=="file")
             {
-                if(!QFile(ui->historyInfo->currentItem()->data(11).toString()).exists()){
+                if(!QFile(ui->historyInfo->currentItem()->data(11).toString()).exists())
                     return;
-                }
-                if(!QDesktopServices::openUrl(QUrl("file:///"+ui->historyInfo->currentItem()->data(11).toString()))){
-                    Global::error("I probably could not open "+ui->historyInfo->currentItem()->data(12).toString());
-                }
+
+                Global::openUrl("file:///"+ui->historyInfo->currentItem()->data(11).toString());
             }
-            else if (type=="link"){
+            else if (type=="link")
                 launchInBrowser();
-            }
         }
     }
 }
