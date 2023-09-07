@@ -70,7 +70,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #endif
 
 #include <QMessageBox>
-#include <QClipboard>
 #include <QProgressBar>
 #include <QMovie>
 #include <QPropertyAnimation>
@@ -307,15 +306,6 @@ private Q_SLOTS:
     void changeIconsToPaths();
     void launchTimerToUpdateIcons();
     void updateVisibleIcons();
-    void removeImageFromDisk();
-    void removeImagesFromDisk();
-    void showProperties();
-    void openImageFolder();
-    void openImageFolderMassive();
-    void rotateRight();
-    void rotateLeft();
-    void copyImage();
-    void copyImagePath();
     void readCoordinates(const QRect &cropArea);
     void findAvailableWallpaperStyles();
     void setWebsitePreviewImage(QImage *image);
@@ -326,9 +316,7 @@ private Q_SLOTS:
     void liveWebsiteImageCreated(QImage *image, short errorCode);
     void changeCurrentTheme();
     void showHideSearchBox();
-    void showHideSearchBoxMenu();
     void escapePressed();
-    void deletePressed();
     void previousPage();
     void nextPage();
     void openCloseSearchAnimationFinished();
@@ -337,7 +325,6 @@ private Q_SLOTS:
     void showPreview();
     void removeBottomwidgets();
     void bottomWidgetsAnimation();
-    void startWithThisImage();
     void setAverageColor(const QString &image);
     void updateScreenLabel();
     void hideOrShow();
@@ -372,9 +359,7 @@ private Q_SLOTS:
     void on_actionContents_triggered();
     void on_previous_Button_clicked();
     void on_next_Button_clicked();
-    void on_wallpapersList_customContextMenuRequested();
-    void on_wallpapersList_itemDoubleClicked();
-    void on_wallpapersList_itemSelectionChanged();
+
     void on_timerSlider_valueChanged(int value);
     void on_website_preview_clicked();
     void on_edit_crop_clicked();
@@ -395,12 +380,7 @@ private Q_SLOTS:
     void on_actionReport_A_Bug_triggered();
     void on_actionGet_Help_Online_triggered();
     void on_actionWhat_is_my_screen_resolution_triggered();
-    void on_actionCopy_Path_triggered();
-    void on_actionCopy_Image_triggered();
-    void on_actionDelete_triggered();
     void on_actionProperties_triggered();
-    void on_actionOpen_Image_triggered();
-    void on_actionOpen_Folder_triggered();
     void on_potd_viewer_Button_clicked();
     void on_add_login_details_clicked(bool checked);
     void on_action_About_triggered();
@@ -426,6 +406,27 @@ private Q_SLOTS:
     void on_hours_spinBox_valueChanged(int arg1);
     void on_minutes_spinBox_valueChanged(int arg1);
     void on_seconds_spinBox_valueChanged(int arg1);
+
+    // 'Wallpapers' ListWidget functions
+    void on_wallpapersList_customContextMenuRequested();
+    void on_wallpapersList_itemDoubleClicked();
+    void on_wallpapersList_itemSelectionChanged();
+    void deletePressed();
+
+    // 'Wallpapers' ListWidget right-click menu functions
+    void startWithThisImage();
+    void openImage();
+    void removeImageFromDisk();
+    void removeImagesFromDisk();
+    void rotateRight();
+    void rotateLeft();
+    void rotationCompleted(QString &imagePath);
+    void copyImage();
+    void copyImagePath();
+    void openImageFolder();
+    void openImageFolderMassive();
+    void showProperties();
+    void showHideSearchBoxMenu();
 
 Q_SIGNALS:
      void fixLivewebsiteButtons();

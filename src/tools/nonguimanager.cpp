@@ -611,22 +611,22 @@ void NonGuiManager::setupTray()
     connect(showWindowAction_, SIGNAL(triggered()), this, SLOT(trayActionShowWindow()));
 
     openCurrentImageAction_ = new QAction(tr("Open Image"), this);
-    connect(openCurrentImageAction_, SIGNAL(triggered()), this, SLOT(trayActionOpenCurrentImage()));
+    connect(openCurrentImageAction_, &QAction::triggered, wallpaperManager_->openCurrentBackgroundImage);
 
     openCurrentImageFolderAction_ = new QAction(tr("Open Folder"), this);
-    connect(openCurrentImageFolderAction_, SIGNAL(triggered()), this, SLOT(trayActionOpenCurrentImageFolder()));
+    connect(openCurrentImageFolderAction_, &QAction::triggered, wallpaperManager_->openCurrentBackgroundFolder);
 
     copyCurrentImageAction_ = new QAction(tr("Copy Image"), this);
-    connect(copyCurrentImageAction_, SIGNAL(triggered()), this, SLOT(trayActionCopyImage()));
+    connect(copyCurrentImageAction_, &QAction::triggered, wallpaperManager_->copyCurrentBackgroundImage);
 
     copyCurrentImagePathAction_ = new QAction(tr("Copy Path"), this);
-    connect(copyCurrentImagePathAction_, SIGNAL(triggered()), this, SLOT(trayActionCopyPath()));
+    connect(copyCurrentImagePathAction_, &QAction::triggered, wallpaperManager_->copyCurrentBackgroundPath);
 
     deleteCurrentImageAction_ = new QAction(tr("Delete"), this);
-    connect(deleteCurrentImageAction_, SIGNAL(triggered()), this, SLOT(trayActionDeleteCurrentImage()));
+    connect(deleteCurrentImageAction_, &QAction::triggered, wallpaperManager_->deleteCurrentBackgroundImage);
 
     openCurrentImagePropertiesAction_ = new QAction(tr("Properties"), this);
-    connect(openCurrentImagePropertiesAction_, SIGNAL(triggered()), this, SLOT(trayActionOpenCurrentImageProperties()));
+    connect(openCurrentImagePropertiesAction_, &QAction::triggered, wallpaperManager_->openCurrentBackgroundProperties);
 
     wallpapersAction_ = new QAction(tr("Wallpapers"), this);
     connect(wallpapersAction_, SIGNAL(triggered()), this, SLOT(trayActionWallpapers()));
@@ -781,42 +781,6 @@ void NonGuiManager::createTray()
 void NonGuiManager::trayActionShowWindow()
 {
     doAction("--focus");
-}
-
-void NonGuiManager::trayActionCopyPath()
-{
-    if(WallpaperManager::currentBackgroundExists())
-        QApplication::clipboard()->setText(WallpaperManager::currentBackgroundWallpaper());
-}
-
-void NonGuiManager::trayActionCopyImage()
-{
-    if(WallpaperManager::currentBackgroundExists())
-        QApplication::clipboard()->setImage(QImage(WallpaperManager::currentBackgroundWallpaper()), QClipboard::Clipboard);
-}
-
-void NonGuiManager::trayActionOpenCurrentImage()
-{
-    if(!WallpaperManager::currentBackgroundExists())
-        return;
-
-    Global::openUrl("file:///"+WallpaperManager::currentBackgroundWallpaper());
-}
-
-void NonGuiManager::trayActionOpenCurrentImageFolder()
-{
-    if(WallpaperManager::currentBackgroundExists())
-        WallpaperManager::openFolderOf();
-}
-
-void NonGuiManager::trayActionDeleteCurrentImage()
-{
-    doAction("--delete-current");
-}
-
-void NonGuiManager::trayActionOpenCurrentImageProperties()
-{
-    doAction("--properties");
 }
 
 void NonGuiManager::trayActionWallpapers()
@@ -1509,7 +1473,7 @@ void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     QObject::connect(nongui, SIGNAL(signalShowPreferences()), w, SLOT(on_action_Preferences_triggered()));
     QObject::connect(nongui, SIGNAL(signalShowAbout()), w, SLOT(on_action_About_triggered()));
     QObject::connect(nongui, SIGNAL(signalQuit()), w, SLOT(doQuit()));
-    QObject::connect(nongui, SIGNAL(signalDeleteCurrent()), w, SLOT(on_actionDelete_triggered()));
+    QObject::connect(nongui, &NonGuiManager::signalDeleteCurrent, wallpaperManager_->deleteCurrentBackgroundImage);
     QObject::connect(nongui, SIGNAL(signalAddFolderForMonitor(const QString&)), w, SLOT(addFolderForMonitor(const QString&)));
     QObject::connect(nongui, SIGNAL(signalFocus()), w, SLOT(showNormal()));
     QObject::connect(nongui, SIGNAL(signalHideOrShow()), w, SLOT(hideOrShow()));

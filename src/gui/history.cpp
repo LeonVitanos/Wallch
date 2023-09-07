@@ -30,7 +30,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QDir>
 #include <QMessageBox>
 #include <QShortcut>
-#include <QClipboard>
 #include <QDate>
 #include <QSettings>
 #include <QImageReader>
@@ -242,15 +241,13 @@ void History::on_historyInfo_customContextMenuRequested()
 }
 
 void History::openFolder(){
-    if(ui->historyInfo->currentItem()->isSelected()){
+    if(ui->historyInfo->currentItem()->isSelected())
         WallpaperManager::openFolderOf(ui->historyInfo->currentItem()->data(11).toString());
-    }
 }
 
 void History::copyPath(){
-    if(ui->historyInfo->currentItem()->isSelected()){
-        QApplication::clipboard()->setText(ui->historyInfo->currentItem()->data(11).toString());
-    }
+    if(ui->historyInfo->currentItem()->isSelected())
+        Global::copyTextToClipboard(ui->historyInfo->currentItem()->data(11).toString());
 }
 
 void History::setAsBackground(){
@@ -288,9 +285,8 @@ void History::launchInBrowser(){
 }
 
 void History::copyLink(){
-    if(ui->historyInfo->currentItem()->isSelected()){
-        QApplication::clipboard()->setText(ui->historyInfo->currentItem()->toolTip());
-    }
+    if(ui->historyInfo->currentItem()->isSelected())
+        Global::copyTextToClipboard(ui->historyInfo->currentItem()->toolTip());
 }
 
 void History::on_historyInfo_doubleClicked()

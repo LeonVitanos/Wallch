@@ -147,12 +147,6 @@ private Q_SLOTS:
     void researchDirs();
     void onlineBackgroundReady(QString image);
     void trayActionShowWindow();
-    void trayActionCopyPath();
-    void trayActionCopyImage();
-    void trayActionOpenCurrentImage();
-    void trayActionOpenCurrentImageFolder();
-    void trayActionDeleteCurrentImage();
-    void trayActionOpenCurrentImageProperties();
     void trayActionWallpapers();
     void trayActionWallpapersOnce();
     void trayActionWallpapersPause();

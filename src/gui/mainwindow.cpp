@@ -372,12 +372,12 @@ void MainWindow::setupMenu()
     settingsMenu_->addAction(tr("Preferences"), this, SLOT(on_action_Preferences_triggered()), QKeySequence(tr("Ctrl+P")));
     settingsMenu_->addSeparator();
     currentBgMenu_->setTitle(tr("Current Background"));
-    currentBgMenu_->addAction(tr("Open Image"), this, SLOT(on_actionOpen_Image_triggered()));
-    currentBgMenu_->addAction(tr("Open Folder"), this, SLOT(on_actionOpen_Folder_triggered()));
-    currentBgMenu_->addAction(tr("Copy Image"), this, SLOT(on_actionCopy_Image_triggered()));
-    currentBgMenu_->addAction(tr("Copy Path"), this, SLOT(on_actionCopy_Path_triggered()));
-    currentBgMenu_->addAction(tr("Delete"), this, SLOT(on_actionDelete_triggered()));
-    currentBgMenu_->addAction(tr("Properties"), this, SLOT(on_actionProperties_triggered()));
+    currentBgMenu_->addAction(tr("Open Image"), this, wallpaperManager_->openCurrentBackgroundImage);
+    currentBgMenu_->addAction(tr("Open Folder"), this, wallpaperManager_->openCurrentBackgroundFolder);
+    currentBgMenu_->addAction(tr("Copy Image"), this, wallpaperManager_->copyCurrentBackgroundImage);
+    currentBgMenu_->addAction(tr("Copy Path"), this, wallpaperManager_->copyCurrentBackgroundPath);
+    currentBgMenu_->addAction(tr("Delete"), this, wallpaperManager_->deleteCurrentBackgroundImage);
+    currentBgMenu_->addAction(tr("Properties"), this, wallpaperManager_->openCurrentBackgroundProperties);
     settingsMenu_->addMenu(currentBgMenu_);
     settingsMenu_->addSeparator();
     settingsMenu_->addAction(tr("History"), this, SLOT(on_actionHistory_triggered()), QKeySequence(tr("Ctrl+H")));
@@ -563,18 +563,6 @@ void MainWindow::escapePressed(){
         on_search_close_clicked();
     else
         this->hide();
-}
-
-void MainWindow::deletePressed(){
-    if(ui->stackedWidget->currentIndex() == 0 && ui->wallpapersList->selectedItems().count() > 0){
-        if(ui->wallpapersList->selectedItems().count() > 1){
-            removeImagesFromDisk();
-        }
-        else
-        {
-            removeImageFromDisk();
-        }
-    }
 }
 
 void MainWindow::startUpdateSeconds(){
@@ -1638,169 +1626,6 @@ void MainWindow::currentFolderDoesNotExist()
     }
 }
 
-void MainWindow::on_wallpapersList_itemSelectionChanged()
-{
-    if(!gv.mainwindowLoaded || !gv.previewImagesOnScreen){
-        return;
-    }
-
-    if(ui->wallpapersList->selectedItems().count()==1){
-
-        QString filename = getPathOfListItem();
-
-        if(!processingOnlineRequest_){
-            ui->screen_label_info->setText(fixBasenameSize(globalParser_->basenameOf(filename)));
-        }
-        imageTransition(filename);
-    }
-}
-
-void MainWindow::on_wallpapersList_itemDoubleClicked()
-{
-    if(!wallpaperManager_->wallpapersCount())
-        return;
-
-    int curRow = ui->wallpapersList->currentRow();
-    if(curRow < 0)
-        return;
-
-    QString picture = getPathOfListItem(curRow);
-
-    if(WallpaperManager::imageIsNull(picture))
-        return;
-
-    wallpaperManager_->addToPreviousWallpapers(picture);
-    wallpaperManager_->setBackground(picture, true, true, 1);
-
-    if(gv.setAverageColor)
-        setButtonColor();
-
-    if(gv.rotateImages && gv.iconMode)
-        forceUpdateIconOf(curRow);
-
-#ifdef Q_OS_LINUX
-    if(currentDE == DE::LXDE){
-        DesktopStyle desktopStyle = qvariant_cast<DesktopStyle>(ui->image_style_combo->currentData());
-        if(desktopStyle == NoneStyle){
-            ui->image_style_combo->setCurrentIndex(2);
-        }
-    }
-#endif
-}
-
-void MainWindow::startWithThisImage(){
-    stopEverythingThatsRunning(0);
-    if(ui->shuffle_images_checkbox->isChecked()){
-        firstRandomImageIsntRandom_=true;
-    }
-    on_startButton_clicked();
-}
-
-void MainWindow::removeImageFromDisk(){
-    if (QMessageBox::question(this, tr("Confirm deletion"), tr("Are you sure you want to permanently delete the selected image?")) != QMessageBox::Yes)
-    {
-        return;
-    }
-
-    QString imageFilename = getPathOfListItem(ui->wallpapersList->currentRow());
-
-    if(!QFile::remove(imageFilename)){
-        QMessageBox::warning(this, tr("Error!"), tr("Image deletion failed possibly because you don't have the permissions to delete the image or the image doesn't exist"));
-    }
-    else
-    {
-        //remove the cache of the image, in case it exists
-        cacheManager_->removeCacheOf(imageFilename);
-    }
-
-    if(wallpaperManager_->wallpapersCount() <= LEAST_WALLPAPERS_FOR_START)
-        startButtonsSetEnabled(false);
-}
-
-void MainWindow::removeImagesFromDisk(){
-    int selectedCount=ui->wallpapersList->selectedItems().count();
-    if(QMessageBox::question(this, tr("Warning!"), tr("Image deletion.")+"<br><br>"+tr("This action is going to permanently delete")+" "+QString::number(selectedCount)+" "+tr("images. Are you sure?"))==QMessageBox::Yes){
-        QStringList imagesThatFailedToDelete;
-        for(int i=0;i<selectedCount;i++){
-            QString currentImage;
-            if(gv.iconMode){
-                if(ui->wallpapersList->selectedItems().at(i)->statusTip().isEmpty()){
-                    currentImage = ui->wallpapersList->selectedItems().at(i)->toolTip();
-                }
-                else
-                {
-                    currentImage = ui->wallpapersList->selectedItems().at(i)->statusTip();
-                }
-            }
-            else
-            {
-                currentImage = ui->wallpapersList->selectedItems().at(i)->text();
-            }
-            if(!QFile::remove(currentImage)){
-                imagesThatFailedToDelete << currentImage;
-            }
-            else
-            {
-                //remove the cache of the image, in case it exists
-                cacheManager_->removeCacheOf(currentImage);
-            }
-        }
-        if(imagesThatFailedToDelete.count() > 0){
-            QMessageBox::warning(this, tr("Error!"), tr("There was a problem with the deletion of the following files:")+"\n"+imagesThatFailedToDelete.join("\n"));
-        }
-    }
-}
-
-void MainWindow::rotateRight(){
-    if(!ui->wallpapersList->currentItem()->isSelected()){
-        return;
-    }
-    QString path = getPathOfListItem();
-
-    if(!QFile::exists(path) || QImage(path).isNull()){
-        return;
-    }
-    globalParser_->rotateImg(path, 6, false);
-    if(gv.iconMode){
-        forceUpdateIconOf(ui->wallpapersList->currentRow());
-    }
-    else
-        updateScreenLabel();
-
-    if(path==wallpaperManager_->currentBackgroundWallpaper()){
-        wallpaperManager_->setBackground(path, false, false, 1);
-    }
-}
-
-void MainWindow::rotateLeft(){
-    if(!ui->wallpapersList->currentItem()->isSelected()){
-        return;
-    }
-    QString path = getPathOfListItem();
-
-    if(!QFile::exists(path) || QImage(path).isNull()){
-        return;
-    }
-    globalParser_->rotateImg(path, 8, false);
-    if(gv.iconMode){
-        forceUpdateIconOf(ui->wallpapersList->currentRow());
-    }
-    else
-        updateScreenLabel();
-
-    if(path==WallpaperManager::currentBackgroundWallpaper()){
-        wallpaperManager_->setBackground(path, false, false, 1);
-    }
-}
-
-void MainWindow::copyImagePath(){
-    QApplication::clipboard()->setText(getPathOfListItem());
-}
-
-void MainWindow::copyImage(){
-    QApplication::clipboard()->setImage(QImage(getPathOfListItem()), QClipboard::Clipboard);
-}
-
 QString MainWindow::getPathOfListItem(int index /* = -1*/){
     /*
      * Returns the full path of the listwidget item at 'index'
@@ -1822,64 +1647,6 @@ QString MainWindow::getPathOfListItem(int index /* = -1*/){
     {
         return ui->wallpapersList->item(index)->text();
     }
-}
-
-void MainWindow::on_wallpapersList_customContextMenuRequested()
-{
-    if(!currentFolderExists())
-        return;
-
-    int selectedCount = ui->wallpapersList->selectedItems().count();
-
-    if(selectedCount==0){
-        return;
-    }
-
-    listwidgetMenu_ = new QMenu(this);
-
-    if (selectedCount<2){
-
-        QAction *enterAction = new QAction(tr("Set this item as Background"), listwidgetMenu_);
-        enterAction->setShortcut(QKeySequence("Enter"));
-        connect(enterAction, SIGNAL(triggered()), this, SLOT(on_wallpapersList_itemDoubleClicked()));
-        listwidgetMenu_->addAction(enterAction);
-
-        if(wallpaperManager_->wallpapersCount()>2)
-            listwidgetMenu_->addAction(tr("Start from this image"), this, SLOT(startWithThisImage()));
-
-        QAction *deleteAction = new QAction(tr("Delete image from disk"), listwidgetMenu_);
-        deleteAction->setShortcut(QKeySequence::Delete);
-        connect(deleteAction, SIGNAL(triggered()), this, SLOT(removeImageFromDisk()));
-        listwidgetMenu_->addAction(deleteAction);
-
-        listwidgetMenu_->addAction(tr("Rotate Right"), this, SLOT(rotateRight()));
-        listwidgetMenu_->addAction(tr("Rotate Left"), this, SLOT(rotateLeft()));
-        listwidgetMenu_->addAction(tr("Copy path to clipboard"), this, SLOT(copyImagePath()));
-        listwidgetMenu_->addAction(tr("Copy image to clipboard"), this, SLOT(copyImage()));
-        listwidgetMenu_->addAction(tr("Open folder"), this, SLOT(openImageFolder()));
-
-        QAction *findAction = new QAction(tr("Find an image by name"), listwidgetMenu_);
-        findAction->setShortcut(QKeySequence("Ctrl+F"));
-        connect(findAction, SIGNAL(triggered()), this, SLOT(showHideSearchBoxMenu()));
-        listwidgetMenu_->addAction(findAction);
-
-        QAction *propertiesAction = new QAction(tr("Properties"), listwidgetMenu_);
-        propertiesAction->setShortcut(QKeySequence("Alt+Enter"));
-        connect(propertiesAction, SIGNAL(triggered()), this, SLOT(showProperties()));
-        listwidgetMenu_->addAction(propertiesAction);
-    }
-    else
-    {
-        //more than one file has been selected, show shorter menu with massive options
-        listwidgetMenu_->addAction(tr("Open containing folder of all images"), this, SLOT(openImageFolderMassive()));
-
-        QAction *deleteAction = new QAction(tr("Delete images from disk"), listwidgetMenu_);
-        deleteAction->setShortcut(QKeySequence::Delete);
-        connect(deleteAction, SIGNAL(triggered()), this, SLOT(removeImagesFromDisk()));
-        listwidgetMenu_->addAction(deleteAction);
-    }
-
-    listwidgetMenu_->popup(MENU_POPUP_POS);
 }
 
 void MainWindow::addFolderForMonitor(const QString &folder){
@@ -2017,47 +1784,6 @@ void MainWindow::continueToPreviousMatch(){
         ui->wallpapersList->scrollToItem(ui->wallpapersList->item(currentSearchItemIndex));
         ui->wallpapersList->setCurrentItem(ui->wallpapersList->item(currentSearchItemIndex));
         ui->wallpapersList->item(currentSearchItemIndex)->setSelected(true);
-    }
-}
-
-void MainWindow::openImageFolder(){
-
-    if(!ui->wallpapersList->currentItem()->isSelected()){
-        return;
-    }
-    wallpaperManager_->openFolderOf(getPathOfListItem());
-}
-
-void MainWindow::openImageFolderMassive(){
-    QStringList parentFolders;
-    int selectedCount=ui->wallpapersList->selectedItems().count();
-    short totalFolderCount=0;
-    for(int i=0;i<selectedCount;i++){
-        QString currentImage;
-        if(gv.iconMode){
-            if(ui->wallpapersList->selectedItems().at(i)->statusTip().isEmpty()){
-                currentImage = ui->wallpapersList->selectedItems().at(i)->toolTip();
-            }
-            else{
-                currentImage = ui->wallpapersList->selectedItems().at(i)->statusTip();
-            }
-        }
-        else{
-            currentImage = ui->wallpapersList->selectedItems().at(i)->text();
-        }
-        QString image_folder = globalParser_->dirnameOf(currentImage);
-        if(!parentFolders.contains(image_folder)){
-            parentFolders << image_folder;
-            totalFolderCount++;
-        }
-    }
-    if(totalFolderCount>5){
-        if(QMessageBox::question(this, tr("Warning!"), tr("Too many folders to open.")+"<br><br>"+tr("This action is going to open")+" "+QString::number(totalFolderCount)+" "+tr("folders. Are you sure?"))!=QMessageBox::Yes){
-            return;
-        }
-    }
-    for(short i=0;i<totalFolderCount;i++){
-        wallpaperManager_->openFolderOf(parentFolders.at(i));
     }
 }
 
@@ -2692,18 +2418,9 @@ void MainWindow::doesMatch(){
     ui->search_box->setPalette(pal);
 }
 
-void MainWindow::showHideSearchBoxMenu(){
-    if(searchIsOn_){
-        ui->search_box->setFocus();
-        return;
-    }
-    showHideSearchBox();
-}
-
 void MainWindow::showHideSearchBox(){
-    if(!ui->stackedWidget->currentIndex()==0){
+    if(!ui->stackedWidget->currentIndex()==0)
         return;
-    }
 
     openCloseSearch_->setStartValue(ui->search_widget->maximumHeight());
 
@@ -3514,45 +3231,6 @@ void MainWindow::nextPage(){
 
 //Actions code
 
-void MainWindow::on_actionOpen_Image_triggered()
-{
-    if(!WallpaperManager::currentBackgroundExists())
-        return;
-
-    globalParser_->openUrl("file:///"+WallpaperManager::currentBackgroundWallpaper());
-}
-
-void MainWindow::on_actionOpen_Folder_triggered()
-{
-    if(WallpaperManager::currentBackgroundExists())
-        wallpaperManager_->openFolderOf();
-}
-
-void MainWindow::on_actionCopy_Path_triggered()
-{
-    if(WallpaperManager::currentBackgroundExists())
-        QApplication::clipboard()->setText(WallpaperManager::currentBackgroundWallpaper());
-}
-
-void MainWindow::on_actionCopy_Image_triggered()
-{
-    if(WallpaperManager::currentBackgroundExists())
-        QApplication::clipboard()->setImage(QImage(WallpaperManager::currentBackgroundWallpaper()), QClipboard::Clipboard);
-}
-
-void MainWindow::on_actionDelete_triggered()
-{
-    if(!WallpaperManager::currentBackgroundExists())
-        return;
-
-    if(QMessageBox::question(0, tr("Confirm deletion"), tr("Are you sure you want to permanently delete the current image?"))==QMessageBox::Yes)
-    {
-        if(!QFile::remove(WallpaperManager::currentBackgroundWallpaper())){
-            QMessageBox::warning(0, tr("Error"), tr("There was a problem deleting the current image. Please make sure you have the permission to delete the image or that the image exists."));
-        }
-    }
-}
-
 void MainWindow::doQuit()
 {
     actionsOnClose();
@@ -3766,42 +3444,11 @@ void MainWindow::on_potd_viewer_Button_clicked()
     connect(potdViewer_, SIGNAL(destroyed()), this, SLOT(potdViewerDestroyed()));
     potdViewer_->setWindowFlags(Qt::Dialog | Qt::WindowCloseButtonHint | Qt::WindowMaximizeButtonHint);
     potdViewer_->show();
-
 }
 
 void MainWindow::potdViewerDestroyed()
 {
     potdViewerShown_=false;
-}
-
-void MainWindow::showProperties()
-{
-    if(propertiesShown_ || !ui->wallpapersList->currentItem()->isSelected() || ui->stackedWidget->currentIndex()!=0){
-        return;
-    }
-
-    QString currentImage = getPathOfListItem();
-
-    if(WallpaperManager::imageIsNull(currentImage))
-    {
-        QMessageBox::warning(this, tr("Properties"), tr("This file maybe doesn't exist or it's not an image. Please perform a check for the file and try again."));
-        return;
-    }
-    else
-    {
-        propertiesShown_=true;
-        properties_ = new Properties(currentImage, true, ui->wallpapersList->currentRow(), wallpaperManager_, this);
-
-        properties_->setModal(true);
-        properties_->setAttribute(Qt::WA_DeleteOnClose);
-        connect(properties_, SIGNAL(destroyed()), this, SLOT(propertiesDestroyed()));
-        connect(properties_, SIGNAL(requestNext(int)), this, SLOT(sendPropertiesNext(int)));
-        connect(properties_, SIGNAL(requestPrevious(int)), this, SLOT(sendPropertiesPrevious(int)));
-        connect(properties_, SIGNAL(averageColorChanged()), this, SLOT(setButtonColor()));
-        connect(this, SIGNAL(givePropertiesRequest(QString, int)), properties_, SLOT(updateEntries(QString, int)));
-        properties_->show();
-        properties_->activateWindow();
-    }
 }
 
 void MainWindow::sendPropertiesNext(int current){
@@ -4087,3 +3734,305 @@ void MainWindow::on_seconds_spinBox_valueChanged(int arg1)
     settings->setValue("seconds_box", arg1);
 }
 
+// 'Wallpapers' ListWidget functions
+
+void MainWindow::on_wallpapersList_customContextMenuRequested()
+{
+    if(!currentFolderExists())
+        return;
+
+    int selectedCount = ui->wallpapersList->selectedItems().count();
+
+    if(selectedCount==0)
+        return;
+
+    listwidgetMenu_ = new QMenu(this);
+
+    if (selectedCount<2){
+
+        QAction *enterAction = new QAction(tr("Set this item as Background"), listwidgetMenu_);
+        enterAction->setShortcut(QKeySequence("Enter"));
+        connect(enterAction, SIGNAL(triggered()), this, SLOT(on_wallpapersList_itemDoubleClicked()));
+        listwidgetMenu_->addAction(enterAction);
+
+        if(wallpaperManager_->wallpapersCount()>2)
+           listwidgetMenu_->addAction(tr("Start from this image"), this, SLOT(startWithThisImage()));
+
+        listwidgetMenu_->addAction(tr("Open Image"), this, SLOT(openImage()));
+        listwidgetMenu_->addAction(tr("Open folder"), this, SLOT(openImageFolder()));
+        listwidgetMenu_->addAction(tr("Rotate Right"), this, SLOT(rotateRight()));
+        listwidgetMenu_->addAction(tr("Rotate Left"), this, SLOT(rotateLeft()));
+        listwidgetMenu_->addAction(tr("Copy path to clipboard"), this, SLOT(copyImagePath()));
+        listwidgetMenu_->addAction(tr("Copy image to clipboard"), this, SLOT(copyImage()));
+
+        QAction *findAction = new QAction(tr("Find an image by name"), listwidgetMenu_);
+        findAction->setShortcut(QKeySequence("Ctrl+F"));
+        connect(findAction, SIGNAL(triggered()), this, SLOT(showHideSearchBoxMenu()));
+        listwidgetMenu_->addAction(findAction);
+
+        QAction *deleteAction = new QAction(tr("Delete image from disk"), listwidgetMenu_);
+        deleteAction->setShortcut(QKeySequence::Delete);
+        connect(deleteAction, SIGNAL(triggered()), this, SLOT(removeImageFromDisk()));
+        listwidgetMenu_->addAction(deleteAction);
+
+        QAction *propertiesAction = new QAction(tr("Properties"), listwidgetMenu_);
+        propertiesAction->setShortcut(QKeySequence("Alt+Enter"));
+        connect(propertiesAction, SIGNAL(triggered()), this, SLOT(showProperties()));
+        listwidgetMenu_->addAction(propertiesAction);
+    }
+    else
+    {
+        //more than one file has been selected, show shorter menu with massive options
+        listwidgetMenu_->addAction(tr("Open containing folder of all images"), this, SLOT(openImageFolderMassive()));
+
+        QAction *deleteAction = new QAction(tr("Delete images from disk"), listwidgetMenu_);
+        deleteAction->setShortcut(QKeySequence::Delete);
+        connect(deleteAction, SIGNAL(triggered()), this, SLOT(removeImagesFromDisk()));
+        listwidgetMenu_->addAction(deleteAction);
+    }
+
+    listwidgetMenu_->popup(MENU_POPUP_POS);
+}
+
+void MainWindow::on_wallpapersList_itemDoubleClicked()
+{
+    if(!wallpaperManager_->wallpapersCount())
+        return;
+
+    int curRow = ui->wallpapersList->currentRow();
+    if(curRow < 0)
+        return;
+
+    QString picture = getPathOfListItem(curRow);
+
+    if(WallpaperManager::imageIsNull(picture))
+        return;
+
+    wallpaperManager_->addToPreviousWallpapers(picture);
+    wallpaperManager_->setBackground(picture, true, true, 1);
+
+    if(gv.setAverageColor)
+        setButtonColor();
+
+    if(gv.rotateImages && gv.iconMode)
+        forceUpdateIconOf(curRow);
+
+#ifdef Q_OS_LINUX
+    if(currentDE == DE::LXDE){
+        DesktopStyle desktopStyle = qvariant_cast<DesktopStyle>(ui->image_style_combo->currentData());
+        if(desktopStyle == NoneStyle)
+           ui->image_style_combo->setCurrentIndex(2);
+    }
+#endif
+}
+
+void MainWindow::on_wallpapersList_itemSelectionChanged()
+{
+    if(!gv.mainwindowLoaded || !gv.previewImagesOnScreen)
+        return;
+
+    if(ui->wallpapersList->selectedItems().count()==1){
+
+        QString filename = getPathOfListItem();
+
+        if(!processingOnlineRequest_)
+           ui->screen_label_info->setText(fixBasenameSize(globalParser_->basenameOf(filename)));
+
+        imageTransition(filename);
+    }
+}
+
+void MainWindow::deletePressed(){
+    if(ui->stackedWidget->currentIndex() == 0 && ui->wallpapersList->selectedItems().count() > 0){
+        if(ui->wallpapersList->selectedItems().count() > 1)
+           removeImagesFromDisk();
+        else
+           removeImageFromDisk();
+    }
+}
+
+// 'Wallpapers' ListWidget right-click menu functions
+
+void MainWindow::openImage()
+{
+    if(!ui->wallpapersList->currentItem()->isSelected())
+        return;
+
+    Global::openUrl("file:///" + getPathOfListItem());
+}
+
+void MainWindow::openImageFolder(){
+    if(!ui->wallpapersList->currentItem()->isSelected())
+        return;
+
+    wallpaperManager_->openFolderOf(getPathOfListItem());
+}
+
+void MainWindow::openImageFolderMassive(){
+    QStringList parentFolders;
+    int selectedCount = ui->wallpapersList->selectedItems().count();
+    short totalFolderCount=0;
+
+    for(int i=0; i<selectedCount; i++){
+        QString currentImage;
+
+        if(gv.iconMode){
+           if(ui->wallpapersList->selectedItems().at(i)->statusTip().isEmpty())
+               currentImage = ui->wallpapersList->selectedItems().at(i)->toolTip();
+           else
+               currentImage = ui->wallpapersList->selectedItems().at(i)->statusTip();
+        }
+        else
+           currentImage = ui->wallpapersList->selectedItems().at(i)->text();
+
+        QString image_folder = globalParser_->dirnameOf(currentImage);
+
+        if(!parentFolders.contains(image_folder)){
+           parentFolders << image_folder;
+           totalFolderCount++;
+        }
+    }
+
+    if(totalFolderCount>5 && QMessageBox::question(this, tr("Warning!"), tr("Too many folders to open.")+"<br><br>"+tr("This action is going to open")+" "+QString::number(totalFolderCount)+" "+tr("folders. Are you sure?"))!=QMessageBox::Yes)
+        return;
+
+    for(short i=0; i<totalFolderCount; i++)
+        wallpaperManager_->openFolderOf(parentFolders.at(i));
+}
+
+void MainWindow::startWithThisImage(){
+    stopEverythingThatsRunning(0);
+
+    if(ui->shuffle_images_checkbox->isChecked())
+        firstRandomImageIsntRandom_=true;
+
+    on_startButton_clicked();
+}
+
+void MainWindow::removeImageFromDisk(){
+    if (QMessageBox::question(this, tr("Confirm deletion"), tr("Are you sure you want to permanently delete the selected image?")) != QMessageBox::Yes)
+        return;
+
+    QString imageFilename = getPathOfListItem(ui->wallpapersList->currentRow());
+
+    if(!QFile::remove(imageFilename))
+        QMessageBox::warning(this, tr("Error!"), tr("Image deletion failed possibly because you don't have the permissions to delete the image or the image doesn't exist"));
+    else //remove the cache of the image, in case it exists
+        cacheManager_->removeCacheOf(imageFilename);
+
+    if(wallpaperManager_->wallpapersCount() <= LEAST_WALLPAPERS_FOR_START)
+        startButtonsSetEnabled(false);
+}
+
+void MainWindow::removeImagesFromDisk(){
+    int selectedCount = ui->wallpapersList->selectedItems().count();
+
+    if(QMessageBox::question(this, tr("Warning!"), tr("Image deletion.")+"<br><br>"+tr("This action is going to permanently delete")+" "+QString::number(selectedCount)+" "+tr("images. Are you sure?"))==QMessageBox::Yes){
+        QStringList imagesThatFailedToDelete;
+
+        for(int i=0;i<selectedCount;i++){
+           QString currentImage;
+
+           if(gv.iconMode){
+               if(ui->wallpapersList->selectedItems().at(i)->statusTip().isEmpty())
+                   currentImage = ui->wallpapersList->selectedItems().at(i)->toolTip();
+               else
+                   currentImage = ui->wallpapersList->selectedItems().at(i)->statusTip();
+           }
+           else
+               currentImage = ui->wallpapersList->selectedItems().at(i)->text();
+
+           if(!QFile::remove(currentImage))
+               imagesThatFailedToDelete << currentImage;
+           else //remove the cache of the image, in case it exists
+               cacheManager_->removeCacheOf(currentImage);
+        }
+
+        if(imagesThatFailedToDelete.count() > 0)
+           QMessageBox::warning(this, tr("Error!"), tr("There was a problem with the deletion of the following files:")+"\n"+imagesThatFailedToDelete.join("\n"));
+    }
+}
+
+void MainWindow::rotateRight(){
+    if(!ui->wallpapersList->currentItem()->isSelected())
+        return;
+
+    QString path = getPathOfListItem();
+
+    if(!QFile::exists(path) || QImage(path).isNull())
+        return;
+
+    globalParser_->rotateImg(path, 6, false);
+
+    rotationCompleted(path);
+}
+
+void MainWindow::rotateLeft(){
+    if(!ui->wallpapersList->currentItem()->isSelected())
+        return;
+
+    QString path = getPathOfListItem();
+
+    if(!QFile::exists(path) || QImage(path).isNull())
+        return;
+
+    globalParser_->rotateImg(path, 8, false);
+
+    rotationCompleted(path);
+}
+
+void MainWindow::rotationCompleted(QString &imagePath){
+    if(gv.iconMode)
+        forceUpdateIconOf(ui->wallpapersList->currentRow());
+    else
+        updateScreenLabel();
+
+    if(imagePath == wallpaperManager_->currentBackgroundWallpaper())
+        wallpaperManager_->setBackground(imagePath, false, false, 1);
+}
+
+void MainWindow::copyImagePath(){
+    globalParser_->copyTextToClipboard(getPathOfListItem());
+}
+
+void MainWindow::copyImage(){
+    globalParser_->copyImageToClipboard(getPathOfListItem());
+}
+
+void MainWindow::showHideSearchBoxMenu(){
+    if(searchIsOn_){
+        ui->search_box->setFocus();
+        return;
+    }
+
+    showHideSearchBox();
+}
+
+void MainWindow::showProperties()
+{
+    if(propertiesShown_ || !ui->wallpapersList->currentItem()->isSelected() || ui->stackedWidget->currentIndex()!=0)
+        return;
+
+    QString currentImage = getPathOfListItem();
+
+    if(WallpaperManager::imageIsNull(currentImage))
+    {
+        QMessageBox::warning(this, tr("Properties"), tr("This file maybe doesn't exist or it's not an image. Please perform a check for the file and try again."));
+        return;
+    }
+    else
+    {
+        propertiesShown_=true;
+        properties_ = new Properties(currentImage, true, ui->wallpapersList->currentRow(), wallpaperManager_, this);
+
+        properties_->setModal(true);
+        properties_->setAttribute(Qt::WA_DeleteOnClose);
+        connect(properties_, SIGNAL(destroyed()), this, SLOT(propertiesDestroyed()));
+        connect(properties_, SIGNAL(requestNext(int)), this, SLOT(sendPropertiesNext(int)));
+        connect(properties_, SIGNAL(requestPrevious(int)), this, SLOT(sendPropertiesPrevious(int)));
+        connect(properties_, SIGNAL(averageColorChanged()), this, SLOT(setButtonColor()));
+        connect(this, SIGNAL(givePropertiesRequest(QString, int)), properties_, SLOT(updateEntries(QString, int)));
+        properties_->show();
+        properties_->activateWindow();
+    }
+}

@@ -78,6 +78,14 @@ public:
     short getCurrentFit();
     void setCurrentFit(short index);
 
+    //Current image
+    static void openCurrentBackgroundImage();
+    static void openCurrentBackgroundFolder();
+    static void copyCurrentBackgroundImage();
+    static void copyCurrentBackgroundPath();
+    static void deleteCurrentBackgroundImage();
+    static void openCurrentBackgroundProperties();
+
 Q_SIGNALS:
     void updateImageStyle();
 };

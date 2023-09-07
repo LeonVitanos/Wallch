@@ -35,6 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QNetworkAccessManager>
 #include <QStandardPaths>
 #include <QSettings>
+#include <QClipboard>
 
 #include "time.h"
 #include "math.h"
@@ -239,6 +240,10 @@ public:
 #else
     static QString searchForFileInDir(QString folder, QString file);
 #endif
+
+    // Clipboard management
+    static void copyImageToClipboard(const QString &image);
+    static void copyTextToClipboard(const QString &text);
 
 Q_SIGNALS:
     void updateNotification(QString message, QString image);

@@ -324,15 +324,8 @@ bool WallpaperManager::currentBackgroundExists()
     return true;
 }
 
-void WallpaperManager::openFolderOf(QString image /* = "" */){
-    if(image.isEmpty()){
-        if(!currentBackgroundExists())
-            return;
-        else
-            image=currentBackgroundWallpaper();
-    }
-
-    Global::openUrl("file:///"+Global::dirnameOf(image));
+void WallpaperManager::openFolderOf(QString image){
+    Global::openUrl("file:///" + Global::dirnameOf(image));
 }
 
 void WallpaperManager::setBackground(const QString &image, bool changeAverageColor, bool showNotification, short feature){
@@ -691,3 +684,51 @@ void WallpaperManager::setCurrentFit(short index){
 # endif
 #endif
 }
+
+// Functions regarding current background image
+void WallpaperManager::openCurrentBackgroundImage(){
+    if(!currentBackgroundExists())
+        return;
+
+    Global::openUrl("file:///"+WallpaperManager::currentBackgroundWallpaper());
+}
+
+void WallpaperManager::openCurrentBackgroundFolder(){
+    if(!currentBackgroundExists())
+        return;
+
+    openFolderOf(currentBackgroundWallpaper());
+}
+
+void WallpaperManager::copyCurrentBackgroundImage(){
+    if(!currentBackgroundExists())
+        return;
+
+    Global::copyImageToClipboard(currentBackgroundWallpaper());
+}
+
+void WallpaperManager::copyCurrentBackgroundPath(){
+    if(!currentBackgroundExists())
+        return;
+
+    Global::copyTextToClipboard(currentBackgroundWallpaper());
+}
+
+void WallpaperManager::deleteCurrentBackgroundImage(){
+    if(!currentBackgroundExists())
+        return;
+
+    if(QMessageBox::question(0, tr("Confirm deletion"), tr("Are you sure you want to permanently delete the current image?"))==QMessageBox::Yes &&
+        !QFile::remove(currentBackgroundWallpaper()))
+            QMessageBox::warning(0, tr("Error"), tr("There was a problem deleting the current image. Please make sure you have the permission to delete the image or that the image exists."));
+}
+
+
+void WallpaperManager::openCurrentBackgroundProperties(){
+    if(!currentBackgroundExists())
+        return;
+
+    //openPropertiesOf(currentBackgroundWallpaper());
+}
+
+

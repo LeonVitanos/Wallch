@@ -780,3 +780,16 @@ QPixmap Global::roundedCorners(const QImage &image, const int radius){
 
     return roundedPixmap;
 }
+
+// Clipboard management
+
+void Global::copyImageToClipboard(const QString &imagePath){
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setImage(QImage(imagePath));
+}
+
+void Global::copyTextToClipboard(const QString &text){
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(text);
+}
+
