@@ -324,10 +324,6 @@ bool WallpaperManager::currentBackgroundExists()
     return true;
 }
 
-void WallpaperManager::openFolderOf(QString image){
-    Global::openUrl("file:///" + Global::dirnameOf(image));
-}
-
 void WallpaperManager::setBackground(const QString &image, bool changeAverageColor, bool showNotification, short feature){
     if(image!="" && !QFile::exists(image)){
         Global::error("Image doesn't exist, background cannot be changed!");
@@ -697,7 +693,7 @@ void WallpaperManager::openCurrentBackgroundFolder(){
     if(!currentBackgroundExists())
         return;
 
-    openFolderOf(currentBackgroundWallpaper());
+    FileManager::openFolderOf(currentBackgroundWallpaper());
 }
 
 void WallpaperManager::copyCurrentBackgroundImage(){

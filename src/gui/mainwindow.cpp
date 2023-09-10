@@ -71,7 +71,6 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     setupMenu();
     connectSignalSlots();
     retrieveSettings();
-    resetWatchFolders();
     setupTimers();
     setupKeyboardShortcuts();
     applySettings();
@@ -218,6 +217,10 @@ void MainWindow::connectSignalSlots(){
     connect(ui->seconds_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(btn_group, SIGNAL(buttonClicked(int)), this, SLOT(page_button_clicked(int)));
     connect(wallpaperManager_, SIGNAL(updateImageStyle()), this, SLOT(updateImageStyleCombo()));
+    connect(fileManager_, SIGNAL(prepareToSearchFolders()), this, SLOT(prepareToSearchFolders()));
+    connect(fileManager_, SIGNAL(monitoredFoldersChanged()), this, SLOT(monitoredFoldersUpdated()));
+    connect(fileManager_, SIGNAL(currentFolderDoesNotExist()), this, SLOT(currentFolderDoesNotExist()));
+    connect(fileManager_, SIGNAL(addFilesToWallpapers(QString)), this, SLOT(addFilesToWallpapers(QString)));
     connect(QGuiApplication::primaryScreen(), SIGNAL(geometryChanged(QRect)), this, SLOT(getScreenResolution(QRect)));
     connect(QGuiApplication::primaryScreen(), SIGNAL(availableGeometryChanged(QRect)), this, SLOT(getScreenAvailableResolution(QRect)));
 
@@ -250,27 +253,11 @@ void MainWindow::retrieveSettings()
     currentShading = ColorManager::getColoringType();
 }
 
-void MainWindow::resetWatchFolders(){
-    /*
-     * Unfortunately, this is the only way to completely reset QFileSystemWatcher, because
-     * the removePaths(s) function fails miserably most of the times.
-     */
-    if(gv.mainwindowLoaded){
-        delete watchFolders_;
-    }
-    watchFolders_ = new QFileSystemWatcher(this);
-    connect(watchFolders_, SIGNAL(directoryChanged(QString)), this, SLOT(folderChanged()));
-}
-
 void MainWindow::setupTimers(){
     //Timer to updates progressbar and launch the changing process
     updateSecondsTimer_ = new QTimer(this);
     updateSecondsTimer_->setTimerType(Qt::VeryCoarseTimer);
     connect(updateSecondsTimer_, SIGNAL(timeout()), this, SLOT(updateSeconds()));
-
-    //Timer for folder monitoring
-    researchFoldersTimer_ = new QTimer(this);
-    connect(researchFoldersTimer_, SIGNAL(timeout()), this, SLOT(researchFolders()));
 
     //Timer that updates the configuration for timing once it is changed
     updateCheckTime_ = new QTimer(this);
@@ -348,6 +335,7 @@ void MainWindow::initializePrivateVariables(Global *globalParser, ImageFetcher *
     opacityEffect_ = new QGraphicsOpacityEffect(this);
     opacityEffect2_ = new QGraphicsOpacityEffect(this);
     scaleWatcher_ = new QFutureWatcher<QImage>(this);
+    fileManager_ = new FileManager();
 
     increaseOpacityAnimation = new QPropertyAnimation();
     increaseOpacityAnimation->setTargetObject(opacityEffect_);
@@ -1077,7 +1065,7 @@ void MainWindow::on_image_style_combo_currentIndexChanged(int index)
 void MainWindow::actionsOnWallpaperChange(){
     if(gv.wallpapersRunning)
     {
-        if(!currentFolderExists())
+        if(!fileManager_->currentFolderExists())
             return;
 
         timerManager_->findSeconds(true);
@@ -1322,7 +1310,7 @@ void MainWindow::updateScreenLabel()
     case 0:
     {
         if(wallpaperManager_->wallpapersCount()==0 || ui->wallpapersList->selectedItems().count()==0)
-            changeTextOfScreenLabelTo(tr("Select an image to preview"));
+            changeTextOfScreenLabelTo(tr("Select an image to preview")); //TODO: Stays on top sometimes
         else
             on_wallpapersList_itemSelectionChanged();
         break;
@@ -1398,7 +1386,7 @@ void MainWindow::on_startButton_clicked(){
 }
 
 void MainWindow::startPauseWallpaperChangingProcess(){
-    if(!currentFolderExists()){
+    if(!fileManager_->currentFolderExists()){
         return;
     }
     if (actAsStart_){
@@ -1531,7 +1519,7 @@ void MainWindow::on_stopButton_clicked(){
 
 void MainWindow::on_next_Button_clicked()
 {
-    if (!ui->next_Button->isEnabled() || !currentFolderExists())
+    if (!ui->next_Button->isEnabled() || !fileManager_->currentFolderExists())
         return;
 
     updateSecondsTimer_->stop();
@@ -1541,7 +1529,7 @@ void MainWindow::on_next_Button_clicked()
 
 void MainWindow::on_previous_Button_clicked()
 {
-    if(!ui->previous_Button->isEnabled() || !currentFolderExists())
+    if(!ui->previous_Button->isEnabled() || !fileManager_->currentFolderExists())
         return;
 
     updateSecondsTimer_->stop();
@@ -1559,70 +1547,50 @@ void MainWindow::on_previous_Button_clicked()
     startUpdateSeconds();
 }
 
-bool MainWindow::currentFolderExists()
-{
-    if(currentFolderIsAList_){
-        short folders_list_count=currentFolderList_.count();
-        for(short i=0;i<folders_list_count;i++){
-            if(QDir(currentFolderList_.at(i)).exists()){
-                return true;
-                break;
-            }
-        }
-    }
-    else if(QDir(currentFolder_).exists()){
-        return true;
-    }
-    currentFolderDoesNotExist();
-    return false;
+void MainWindow::beginFixCacheForFolders(){
+    QtConcurrent::run(cacheManager_, &CacheManager::fixCacheSizeWithCurrentFoldersBeing, fileManager_->getCurrentWallpaperFolders());
 }
 
-void MainWindow::beginFixCacheForFolders(){
-    QtConcurrent::run(cacheManager_, &CacheManager::fixCacheSizeWithCurrentFoldersBeing, getCurrentWallpaperFolders());
+void MainWindow::clearWallpapersList(){
+    ui->wallpapersList->clear();
+    wallpaperManager_->clearWallpapers();
 }
 
 void MainWindow::currentFolderDoesNotExist()
 {
     int index=ui->pictures_location_comboBox->currentIndex();
-    ui->pictures_location_comboBox->setItemText(index, currentFolderIsAList_ ? ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString()+" (0)":globalParser_->basenameOf(ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString()+" (0)" ));
-    ui->wallpapersList->clear();
-    wallpaperManager_->clearWallpapers();
-    if(gv.wallpapersRunning){
-        on_stopButton_clicked();
-    }
+    ui->pictures_location_comboBox->setItemText(index, fileManager_->currentSelectionIsASet() ? ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString()+" (0)":globalParser_->basenameOf(ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString()+" (0)" ));
 
-    if(currentFolderIsAList_)
+    if(gv.wallpapersRunning)
+        on_stopButton_clicked();
+
+    if(fileManager_->currentSelectionIsASet())
     {
         QString listOfFolders;
-        short foldersListCount = currentFolderList_.count();
-        for(short i = 0;i < foldersListCount; i++){
-            listOfFolders.append(currentFolderList_.at(i) + "\n");
-        }
+        short foldersListCount = fileManager_->currentFolderList_.count();
+        for(short i = 0;i < foldersListCount; i++)
+            listOfFolders.append(fileManager_->currentFolderList_.at(i) + "\n");
         if(QMessageBox::question(this, tr("None of the below folders exist\n"), listOfFolders+
-                                 tr("They could be on a hard drive on this computer so check if that disk is properly inserted, or it could be on a network so check if you are connected to the Internet or your network, and then try again. Delete this set of folders from the list?"))==QMessageBox::Yes)
+                                                                                     tr("They could be on a hard drive on this computer so check if that disk is properly inserted, or it could be on a network so check if you are connected to the Internet or your network, and then try again. Delete this set of folders from the list?"))==QMessageBox::Yes)
         {
             ui->pictures_location_comboBox->setCurrentIndex(0);
             ui->pictures_location_comboBox->removeItem(index);
             savePicturesLocations();
         }
         else
-        {
             ui->pictures_location_comboBox->setCurrentIndex(0);
-        }
     }
     else
     {
-        if(QMessageBox::question(this, tr("Location is not available"), currentFolder_+" "+tr("referes to a location that is unavailable.")+" "+
-                                 tr("It could be on a hard drive on this computer so check if that disk is properly inserted, or it could be on a network so check if you are connected to the Internet or your network, and then try again. Delete this folder from the list?"))==QMessageBox::Yes)
+        if(QMessageBox::question(this, tr("Location is not available"), fileManager_->currentFolder_+" "+tr("referes to a location that is unavailable.")+" "+
+                                                                             tr("It could be on a hard drive on this computer so check if that disk is properly inserted, or it could be on a network so check if you are connected to the Internet or your network, and then try again. Delete this folder from the list?"))==QMessageBox::Yes)
         {
             ui->pictures_location_comboBox->setCurrentIndex(0);
             ui->pictures_location_comboBox->removeItem(index);
             savePicturesLocations();
         }
         else
-        {
             ui->pictures_location_comboBox->setCurrentIndex(0);
-        }
     }
 }
 
@@ -1654,7 +1622,7 @@ void MainWindow::addFolderForMonitor(const QString &folder){
         short count = ui->pictures_location_comboBox->count();
         for(short i=0; i<count; i++)
         {
-            if(globalParser_->foldersAreSame(folder, ui->pictures_location_comboBox->itemData(i, Qt::UserRole).toString()))
+            if(fileManager_->foldersAreSame(folder, ui->pictures_location_comboBox->itemData(i, Qt::UserRole).toString()))
             {
                 ui->pictures_location_comboBox->setCurrentIndex(i);
                 return;
@@ -1697,6 +1665,9 @@ void MainWindow::changeImage(){
 }
 
 void MainWindow::searchFor(const QString &term){
+    if(term.isEmpty())
+        return;
+
     ui->wallpapersList->clearSelection();
     searchList_.clear();
     int listCount=wallpaperManager_->wallpapersCount();
@@ -1853,181 +1824,26 @@ void MainWindow::previousAndNextButtonsSetEnabled(bool enabled){
     ui->next_Button->setEnabled(enabled); ui->previous_Button->setEnabled(enabled);
 }
 
-void MainWindow::monitor(const QStringList &finalListOfPaths){
-    /*
-     * Note: This function SHOULD NOT be called in a loop
-     * because it updates the UI with the itemCount
-     * This means that 'paths' QStringList should contain
-     * the FULL list of paths that are to be monitored
-     * and added to the Wallpaper's List.
-    */
-    /*
-     * Monitor outside
-     * For the people inside
-     * A prevention of crime
-     * A passing of time
-     *
-     * A monitor outside
-     * A monitor outside
-     *
-     * They come and they go
-     * It's a passing of time
-     * They come and they go
-     * Whilst we sit in our homes
-     *
-     * Sit back, sit back, sit back
-     * Sit back and enjoy
-     *
-     * Monitor - Siouxsie and the Banshees
-     */
-
-    int itemCount = 0;
-    Q_FOREACH(QString path, finalListOfPaths)
-        monitor(path, itemCount);
-
-    startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
-
-    if(gv.iconMode)
-        launchTimerToUpdateIcons();
-
-    switch(ui->pictures_location_comboBox->currentIndex()){
-    case 0:
-        ui->pictures_location_comboBox->setItemText(0, DesktopEnvironment::getOSprettyName() + " "  + tr("Desktop Backgrounds")
-                                                           + " (" + QString::number(itemCount) + ")");
-        break;
-    case 1:
-        ui->pictures_location_comboBox->setItemText(1,tr("My Pictures") + " (" + QString::number(itemCount) + ")");
-        break;
-    default:
-        short index=ui->pictures_location_comboBox->currentIndex();
-        if(currentFolderIsAList_)
-            ui->pictures_location_comboBox->setItemText(index, ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString()
-                                                                   + " (" + QString::number(itemCount) + ")");
-        else
-            ui->pictures_location_comboBox->setItemText(index, globalParser_->basenameOf(ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString())
-                                                                   + " (" + QString::number(itemCount) + ")");
-        break;
-    }
-}
-
-void MainWindow::monitor(const QString &path, int &itemCount)
-{
-    if(monitoredFoldersList_.contains(path, Qt::CaseSensitive) || !QFile::exists(path))
-        return;
-
-    watchFolders_->addPath(path);
-    monitoredFoldersList_ << path;
-    addFilesToWallpapers(path, itemCount);
-}
-
-void MainWindow::folderChanged()
-{
-    /*
-     *  This function just launches the research_folders_timer.
-     *  This is done in order to prevent researching the folders constantly, when multiple changes
-     *  are being made in a very short period of time.
-     */
-    if(researchFoldersTimer_->isActive()){
-        researchFoldersTimer_->stop();
-    }
-    researchFoldersTimer_->start(RESEARCH_FOLDERS_TIMEOUT);
-}
-
-void MainWindow::researchFolders()
-{
-    researchFoldersTimer_->stop();
-
-    if(gv.previewImagesOnScreen){
-        //keep the current selected file (it will be selected again after the folder researching has finished)
-        if(ui->wallpapersList->selectedItems().count()){
-            if(gv.iconMode){
-                if(ui->wallpapersList->selectedItems().at(0)->statusTip().isEmpty()){
-                    nameOfSelectionPriorFolderChange_=ui->wallpapersList->selectedItems().at(0)->toolTip();
-                }
-                else
-                {
-                    nameOfSelectionPriorFolderChange_=ui->wallpapersList->selectedItems().at(0)->statusTip();
-                }
-            }
-            else
-            {
-                nameOfSelectionPriorFolderChange_=ui->wallpapersList->selectedItems().at(0)->text();
-            }
-        }
-    }
-
-    if(searchIsOn_){
-        on_search_close_clicked();
-    }
-
-    wallpaperManager_->clearWallpapers();
-
-    ui->search_box->clear();
-    ui->wallpapersList->clear();
-    monitoredFoldersList_.clear();
-    resetWatchFolders();
-
-    if(currentFolderIsAList_){
-        short foldersListCount=currentFolderList_.count();
-        QStringList folderListSubfolders;
-        for(short i=0;i<foldersListCount;i++){
-            if(QDir(currentFolderList_.at(i)).exists()){
-                folderListSubfolders << globalParser_->listFolders(currentFolderList_.at(i), true, true);
-            }
-        }
-        monitor(folderListSubfolders);
-    }
-    else
-    {
-        monitor(globalParser_->listFolders(currentFolder_, true, true));
-    }
-
-    if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START){
-        if(gv.wallpapersRunning){
-            on_stopButton_clicked();
-        }
-    }
-    else
-        startButtonsSetEnabled(true);
-
-    if(gv.wallpapersRunning){
-        processRunningResetPictures();
-    }
-
-    if(gv.previewImagesOnScreen && ui->stackedWidget->currentIndex()==0){
-        searchFor(nameOfSelectionPriorFolderChange_);
-        ui->screen_label_info->clear();
-        updateScreenLabel();
-    }
-}
-
-void MainWindow::addFilesToWallpapers(const QString &path, int &itemCount){
+void MainWindow::addFilesToWallpapers(const QString path){
     QString cleanPath = path.endsWith('/') ? path.left(path.count()-1) : path;
-    QDir currrentDirectory(cleanPath, QString(""), QDir::Name, QDir::Files);
-    if(gv.iconMode){
-        Q_FOREACH(QString file, currrentDirectory.entryList(IMAGE_FILTERS)){
-            QListWidgetItem *item = new QListWidgetItem;
+    QStringList currrentDirectory = QDir (cleanPath, QString(""), QDir::Name, QDir::Files).entryList(IMAGE_FILTERS);
+
+    Q_FOREACH(QString file, currrentDirectory){
+        QString fullPath= cleanPath + '/' + file;
+        QListWidgetItem *item = new QListWidgetItem;
+        if(gv.iconMode){
             item->setIcon(imageLoading_);
             item->setSizeHint(WALLPAPERS_LIST_ICON_SIZE+WALLPAPERS_LIST_ITEMS_OFFSET);
-            item->setToolTip(cleanPath+'/'+file);
-            wallpaperManager_->addWallpaper(cleanPath+'/'+file);
-            ui->wallpapersList->addItem(item);
-            itemCount++;
+            item->setToolTip(fullPath);
         }
-    }
-    else
-    {
-        QString fullPath;
-        Q_FOREACH(QString file, currrentDirectory.entryList(IMAGE_FILTERS)){
-            fullPath=cleanPath+'/'+file;
-            QListWidgetItem *item = new QListWidgetItem;
+        else{
             item->setText(fullPath);
             item->setToolTip("");
             item->setStatusTip(fullPath);
-            wallpaperManager_->addWallpaper(fullPath);
-            ui->wallpapersList->addItem(item);
-            itemCount++;
         }
+        ui->wallpapersList->addItem(item);
+
+        wallpaperManager_->addWallpaper(fullPath);
     }
 }
 
@@ -2085,10 +1901,7 @@ void MainWindow::iconsPathsChanged(){
         animateScreenLabel(true);
         updateScreenLabel();
     }
-    if(searchIsOn_){
-        on_search_close_clicked();
-    }
-    ui->search_box->clear();
+    clearSearchBox();
 }
 
 void MainWindow::launchTimerToUpdateIcons(){
@@ -2150,10 +1963,7 @@ bool MainWindow::updateIconOf(int index){
             wallpaperManager_->getCurrentWallpapers().removeAt(index);
         }
         else
-        {
-            ui->wallpapersList->clear();
-            wallpaperManager_->clearWallpapers();
-        }
+            clearWallpapersList();
         return false;
     }
 
@@ -2177,16 +1987,6 @@ void MainWindow::forceUpdateIconOf(int index){
 
     if(ui->wallpapersList->currentRow() == index && ui->stackedWidget->currentIndex() == 0)
         updateScreenLabel();
-}
-
-QStringList MainWindow::getCurrentWallpaperFolders(){
-    if(currentFolderIsAList_){
-        return currentFolderList_;
-    }
-    else
-    {
-        return QStringList() << currentFolder_;
-    }
 }
 
 void MainWindow::on_browse_folders_clicked()
@@ -2232,17 +2032,11 @@ void MainWindow::delayed_pictures_location_change()
     ui->pictures_location_comboBox->setCurrentIndex(tempForDelayedPicturesLocationChange_);
 }
 
-bool MainWindow::atLeastOneFolderFromTheSetExists()
-{
-    currentFolderList_.clear();
-    currentFolderList_=ui->pictures_location_comboBox->itemData(ui->pictures_location_comboBox->currentIndex(), Qt::UserRole+2).toString().split("\n");
-    short foldersListCount=currentFolderList_.count();
-    for(short i=0;i<foldersListCount;i++){
-        if(QDir(currentFolderList_.at(i)).exists()){
-            return true;
-        }
+void MainWindow::clearSearchBox(){
+    if(searchIsOn_){
+        on_search_close_clicked();
     }
-    return false;
+    ui->search_box->clear();
 }
 
 void MainWindow::on_pictures_location_comboBox_currentIndexChanged(int index)
@@ -2250,83 +2044,44 @@ void MainWindow::on_pictures_location_comboBox_currentIndexChanged(int index)
     if(changingPicturesLocations_)
         return;
 
-    if(searchIsOn_){
-        on_search_close_clicked();
-    }
-    ui->search_box->clear();
+    clearSearchBox();
 
-    if(!monitoredFoldersList_.isEmpty())
-    {
-        monitoredFoldersList_.clear();
-        resetWatchFolders();
-        ui->wallpapersList->clear();
-    }
+    fileManager_->resetWatchFolders();
 
-    wallpaperManager_->clearWallpapers();
+    clearWallpapersList();
 
-    bool selectionIsOk=false;
+    settings->setValue("currentFolder_index", ui->pictures_location_comboBox->currentIndex());
+    settings->sync();
 
-    if(ui->pictures_location_comboBox->itemData(index, Qt::UserRole+1).toBool())
-    {
-        currentFolderIsAList_=true;
-        if(atLeastOneFolderFromTheSetExists()){
-            short foldersListCount=currentFolderList_.count();
-            QStringList folderListSubfolders;
-            for(short i=0;i<foldersListCount;i++){
-                if(QDir(currentFolderList_.at(i)).exists()){
-                    folderListSubfolders << globalParser_->listFolders(currentFolderList_.at(i), true, true);
-                }
-            }
-            monitor(folderListSubfolders);
-            selectionIsOk=true;
-        }
-    }
-    else
-    {
-        currentFolderIsAList_=false;
-        currentFolder_=ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString();
-        if(QDir(currentFolder_).exists())
-        {
-            currentFolderIsAList_=false;
-            monitor(globalParser_->listFolders(currentFolder_, true, true));
-            selectionIsOk=true;
-        }
-    }
+    bool selectionIsOk = fileManager_->picturesLocationChanged();
 
     if(selectionIsOk)
     {
         startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
 
-        settings->setValue("currentFolder_index", ui->pictures_location_comboBox->currentIndex());
-        settings->sync();
-
         if(wallpaperManager_->wallpapersCount())
             ui->wallpapersList->setCurrentRow(0);
 
-        if(gv.wallpapersRunning){
+        if(gv.wallpapersRunning)
             processRunningResetPictures();
-        }
     }
     else
     {
         startButtonsSetEnabled(false);
-        if(gv.wallpapersRunning){
+        if(gv.wallpapersRunning)
             on_stopButton_clicked();
-        }
+
         if(gv.mainwindowLoaded)
         {
-            if(index==0){
+            if(index==0)
                 QMessageBox::warning(this, tr("Load system's pictures folder"), tr("We couldn't find your System's backgrounds folder."));
-            }
-            else if(index==1){
+            else if(index==1)
                 QMessageBox::warning(this, tr("Load system's pictures folder"), tr("We couldn't find your Pictures folder."));
-            }
             else
-            {
                 currentFolderDoesNotExist();
-            }
         }
     }
+    monitoredFoldersUpdated();
 }
 
 void MainWindow::processRunningResetPictures(){
@@ -2958,8 +2713,7 @@ void MainWindow::loadWallpapersPage(){
         currentFolder=0;
 
     if(ui->pictures_location_comboBox->itemData(currentFolder, Qt::UserRole+1).toBool()){
-        currentFolderIsAList_=true;
-        if(atLeastOneFolderFromTheSetExists()){
+        if(fileManager_->atLeastOneFolderFromTheSetExists()){
             tempForDelayedPicturesLocationChange_=currentFolder;
             QTimer::singleShot(100, this, SLOT(delayed_pictures_location_change()));
         }
@@ -2971,8 +2725,8 @@ void MainWindow::loadWallpapersPage(){
         }
     }
     else{
-        currentFolder_=ui->pictures_location_comboBox->itemData(currentFolder, Qt::UserRole).toString();
-        if(!QDir(currentFolder_).exists())
+        fileManager_->currentFolder_=ui->pictures_location_comboBox->itemData(currentFolder, Qt::UserRole).toString();
+        if(!QDir(fileManager_->currentFolder_).exists())
         {
             tempForDelayedPicturesLocationChange_=currentFolder;
             QTimer::singleShot(100, this, SLOT(delayed_pictures_location_change()));
@@ -3392,7 +3146,7 @@ void MainWindow::on_action_Preferences_triggered()
     connect(preferences_, SIGNAL(destroyed()), this, SLOT(preferencesDestroyed()));
     connect(preferences_, SIGNAL(changePathsToIcons()), this, SLOT(changePathsToIcons()));
     connect(preferences_, SIGNAL(changeIconsToPaths()), this, SLOT(changeIconsToPaths()));
-    connect(preferences_, SIGNAL(researchFolders()), this, SLOT(researchFolders()));
+    connect(preferences_, SIGNAL(researchFolders()), fileManager_, SLOT(researchFolders()));
     connect(preferences_, SIGNAL(previewChanged()), this, SLOT(wait_preview_changed()));
     connect(preferences_, SIGNAL(intervalTypeChanged()), this, SLOT(intervalTypeChanged()));
     connect(preferences_, SIGNAL(changeTheme()), this, SLOT(changeCurrentTheme()));
@@ -3738,7 +3492,7 @@ void MainWindow::on_seconds_spinBox_valueChanged(int arg1)
 
 void MainWindow::on_wallpapersList_customContextMenuRequested()
 {
-    if(!currentFolderExists())
+    if(!fileManager_->currentFolderExists())
         return;
 
     int selectedCount = ui->wallpapersList->selectedItems().count();
@@ -3851,6 +3605,68 @@ void MainWindow::deletePressed(){
     }
 }
 
+// File System Watcher
+void MainWindow::prepareToSearchFolders(){
+    if(gv.previewImagesOnScreen){
+        //keep the current selected file (it will be selected again after the folder researching has finished)
+
+        if(ui->wallpapersList->selectedItems().count()){
+           if(gv.iconMode){
+               if(ui->wallpapersList->selectedItems().at(0)->statusTip().isEmpty())
+                   nameOfSelectionPriorFolderChange_=ui->wallpapersList->selectedItems().at(0)->toolTip();
+               else
+                   nameOfSelectionPriorFolderChange_=ui->wallpapersList->selectedItems().at(0)->statusTip();
+           }
+           else
+               nameOfSelectionPriorFolderChange_=ui->wallpapersList->selectedItems().at(0)->text();
+        }
+    }
+    clearWallpapersList();
+    clearSearchBox();
+}
+
+void MainWindow::monitoredFoldersUpdated(){
+    //TODO: Fix bug where deleting the current picture freezes app
+    int itemCount =ui->wallpapersList->count();
+    startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
+
+    if(gv.iconMode)
+        launchTimerToUpdateIcons();
+
+    switch(ui->pictures_location_comboBox->currentIndex()){
+    case 0:
+        ui->pictures_location_comboBox->setItemText(0, DesktopEnvironment::getOSprettyName() + " "  + tr("Desktop Backgrounds")
+                                                           + " (" + QString::number(itemCount) + ")");
+        break;
+    case 1:
+        ui->pictures_location_comboBox->setItemText(1,tr("My Pictures") + " (" + QString::number(itemCount) + ")");
+        break;
+    default:
+        short index=ui->pictures_location_comboBox->currentIndex();
+        if(fileManager_->currentSelectionIsASet())
+           ui->pictures_location_comboBox->setItemText(index, ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString()
+                                                                  + " (" + QString::number(itemCount) + ")");
+        else
+           ui->pictures_location_comboBox->setItemText(index, globalParser_->basenameOf(ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString())
+                                                                  + " (" + QString::number(itemCount) + ")");
+        break;
+    }
+
+    if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START){
+        if(gv.wallpapersRunning)
+           on_stopButton_clicked();
+    }
+    else
+        startButtonsSetEnabled(true);
+
+    if(gv.previewImagesOnScreen && ui->stackedWidget->currentIndex()==0){
+        searchFor(nameOfSelectionPriorFolderChange_);
+        ui->screen_label_info->clear();
+        updateScreenLabel();
+    }
+}
+
+
 // 'Wallpapers' ListWidget right-click menu functions
 
 void MainWindow::openImage()
@@ -3865,39 +3681,11 @@ void MainWindow::openImageFolder(){
     if(!ui->wallpapersList->currentItem()->isSelected())
         return;
 
-    wallpaperManager_->openFolderOf(getPathOfListItem());
+    FileManager::openFolderOf(getPathOfListItem());
 }
 
 void MainWindow::openImageFolderMassive(){
-    QStringList parentFolders;
-    int selectedCount = ui->wallpapersList->selectedItems().count();
-    short totalFolderCount=0;
-
-    for(int i=0; i<selectedCount; i++){
-        QString currentImage;
-
-        if(gv.iconMode){
-           if(ui->wallpapersList->selectedItems().at(i)->statusTip().isEmpty())
-               currentImage = ui->wallpapersList->selectedItems().at(i)->toolTip();
-           else
-               currentImage = ui->wallpapersList->selectedItems().at(i)->statusTip();
-        }
-        else
-           currentImage = ui->wallpapersList->selectedItems().at(i)->text();
-
-        QString image_folder = globalParser_->dirnameOf(currentImage);
-
-        if(!parentFolders.contains(image_folder)){
-           parentFolders << image_folder;
-           totalFolderCount++;
-        }
-    }
-
-    if(totalFolderCount>5 && QMessageBox::question(this, tr("Warning!"), tr("Too many folders to open.")+"<br><br>"+tr("This action is going to open")+" "+QString::number(totalFolderCount)+" "+tr("folders. Are you sure?"))!=QMessageBox::Yes)
-        return;
-
-    for(short i=0; i<totalFolderCount; i++)
-        wallpaperManager_->openFolderOf(parentFolders.at(i));
+    FileManager::openMultipleFolders(ui->wallpapersList->selectedItems());
 }
 
 void MainWindow::startWithThisImage(){

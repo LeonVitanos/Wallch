@@ -59,6 +59,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "imagefetcher.h"
 #include "pictures_locations.h"
 #include "timermanager.h"
+#include "filemanager.h"
 
 #ifndef Q_OS_LINUX
     #include "notification.h"
@@ -77,8 +78,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QFutureWatcher>
 #include <QDragEnterEvent>
 #include <QPainter>
-#include <QFileSystemWatcher>
-#include <QTranslator>
 #include <QStyledItemDelegate>
 #include <QButtonGroup>
 #include <QShortcut>
@@ -122,12 +121,12 @@ private:
 
     QSharedMemory *attachedMemory_;
     WallpaperManager *wallpaperManager_;
+    FileManager *fileManager_;
     ColorManager *colorManager_;
     CacheManager *cacheManager_;
     QTimer *updateSecondsTimer_;
     QTimer *updateCheckTime_;
     QTimer *iconUpdater_;
-    QTimer *researchFoldersTimer_;
     QTimer *hideProgress_;
 
     QMenu *listwidgetMenu_;
@@ -143,8 +142,6 @@ private:
     QAction *preferencesAction_;
     QAction *QuitAction_;
 
-    QFileSystemWatcher *watchFolders_;
-
     QFutureWatcher<QImage> *scaleWatcher_;
 
     QRect availableGeometry_;
@@ -159,7 +156,6 @@ private:
     History *history_;
     PicturesLocations *locations_;
     PotdPreview *potdPreview_;
-    QTranslator *translator_;
     WebsitePreview *webPreview_;
     TimerManager *timerManager_;
 
@@ -188,6 +184,9 @@ private:
     short timePassedForLiveWebsiteRequest_;
     short tempForDelayedPicturesLocationChange_;
 
+    //seach box
+    QString nameOfSelectionPriorFolderChange_;
+
     //dialogs
     bool addDialogShown_ = false;
     bool historyShown_ = false;
@@ -209,15 +208,10 @@ private:
     bool firstRandomImageIsntRandom_ = false;
     bool shuffleWasChecked_ = false;
     bool changingPicturesLocations_ = false;
-    bool currentFolderIsAList_ = false;
     bool manuallyStartedOnBattery_ = false;
     QString initialWebPage_;
     QString changedWebPage_;
-    QString nameOfSelectionPriorFolderChange_;
-    QString currentFolder_;
     QStringList searchList_;
-    QStringList monitoredFoldersList_;
-    QStringList currentFolderList_;
     QShortcut *menubarShortcut_ = NULL;
     QShortcut *preferencesShortcut_ = NULL;
     QShortcut *quitShortcut_ = NULL;
@@ -233,8 +227,6 @@ private:
     void stopButtonsSetEnabled(bool enabled);
     void previousAndNextButtonsSetEnabled(bool enabled);
     void startPotd(bool launchNow);
-    void monitor(const QString &path, int &itemCount);
-    void monitor(const QStringList &finalListOfPaths);
     void setupKeyboardShortcuts();
     void setupTimers();
     QPoint calculateSettingsMenuPos();
@@ -245,7 +237,6 @@ private:
     void setupMenu();
     void connectSignalSlots();
     void startUpdateSeconds();
-    void addFilesToWallpapers(const QString &path, int &itemCount);
     void searchFor(const QString &term);
     void continueToNextMatch();
     void continueToPreviousMatch();
@@ -267,24 +258,19 @@ private:
     void imageTransition(const QString &filename = QString());
     void changeTextOfScreenLabelTo(const QString &text);
     bool updateIconOf(int row);
-    bool atLeastOneFolderFromTheSetExists();
     void stopEverythingThatsRunning(short excludingFeature);
     void pauseEverythingThatsRunning();
     bool websiteConfiguredCorrectly();
     void updatePotdProgress();
-    void currentFolderDoesNotExist();
     QString fixBasenameSize(const QString &basename);
     void actionsOnWallpaperChange();
-    void resetWatchFolders();
     void processRunningResetPictures();
     void forceUpdateIconOf(int index);
     void prepareWebsiteSnapshot();
     QString base64Encode(const QString &string);
     static void nextKeySignal(const char *, void *);
     void disableLiveWebsitePage();
-    bool currentFolderExists();
     QImage scaleWallpapersPreview(QString filename);
-    QStringList getCurrentWallpaperFolders();
     void iconsPathsChanged();
     bool addingImageStylesNow = false;
 
@@ -297,8 +283,6 @@ private Q_SLOTS:
     void closeWhatsRunning();
     void checkBatteryStatus();
     void addFolderForMonitor(const QString &folder);
-    void folderChanged();
-    void researchFolders();
     void updateTiming();
     void sendPropertiesNext(int current);
     void sendPropertiesPrevious(int current);
@@ -406,6 +390,16 @@ private Q_SLOTS:
     void on_hours_spinBox_valueChanged(int arg1);
     void on_minutes_spinBox_valueChanged(int arg1);
     void on_seconds_spinBox_valueChanged(int arg1);
+    void clearWallpapersList();
+
+    // Search Box
+    void clearSearchBox();
+
+    // File System Watcher
+    void prepareToSearchFolders();
+    void monitoredFoldersUpdated();
+    void addFilesToWallpapers(const QString path);
+    void currentFolderDoesNotExist();
 
     // 'Wallpapers' ListWidget functions
     void on_wallpapersList_customContextMenuRequested();

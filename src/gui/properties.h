@@ -32,6 +32,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QPainter>
 
 #include "wallpapermanager.h"
+#include "filemanager.h"
 
 namespace Ui {
     class properties;

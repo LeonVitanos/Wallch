@@ -57,43 +57,6 @@ void NonGuiManager::getDelay(){
     timerManager_->totalSeconds_=settings->value("delay", DEFAULT_SLIDER_DELAY).toInt();
 }
 
-void NonGuiManager::dirChanged(){
-    if(researchFoldersTimerMain_.isActive()){
-        researchFoldersTimerMain_.stop();
-    }
-    researchFoldersTimerMain_.start(RESEARCH_FOLDERS_TIMEOUT);
-}
-
-void NonGuiManager::resetWatchFolders(bool justDelete){
-    if(watchFoldersMain_){
-        watchFoldersMain_->deleteLater();
-    }
-    if(!justDelete){
-        watchFoldersMain_ = new QFileSystemWatcher(this);
-        connect(watchFoldersMain_, SIGNAL(directoryChanged(QString)), this, SLOT(dirChanged()));
-    }
-}
-
-void NonGuiManager::researchDirs(){
-    if(researchFoldersTimerMain_.isActive()){
-        researchFoldersTimerMain_.stop();
-    }
-
-    resetWatchFolders(false);
-
-    if(!getPicturesLocation(false)){
-        return;
-    }
-
-    if(gv.randomImagesEnabled){
-        wallpaperManager_->setRandomMode(true);
-    }
-    else
-    {
-        wallpaperManager_->startOver();
-    }
-}
-
 void NonGuiManager::onlineBackgroundReady(QString image){
     wallpaperManager_->setBackground(image, true, gv.potdRunning, (gv.potdRunning ? 3 : 2));
 }
@@ -144,79 +107,12 @@ void NonGuiManager::readPictures(const QString &folder){
     }
 }
 
-bool NonGuiManager::currentSelectionIsASet(){
-    short currentFolderIndex=settings->value("currentFolder_index", 0).toInt();
-    settings->beginReadArray("pictures_locations");
-    settings->setArrayIndex(currentFolderIndex);
-    bool toReturn = settings->value("type", false).toBool();
-    settings->endArray();
-    return toReturn;
-}
-
 bool NonGuiManager::getPicturesLocation(bool init){
 
-    if(!startedWithJustChange_ && init){
-        resetWatchFolders(false);
-        connect(&researchFoldersTimerMain_, SIGNAL(timeout()), this, SLOT(researchDirs()));
-    }
+    if(!startedWithJustChange_ && init)
+        fileManager_->resetWatchFolders();
 
-    if(currentSelectionIsASet()){
-        //current selection is a set of folders!
-        short currentFolderIndex=settings->value("currentFolder_index", 0).toInt();
-        settings->beginReadArray("pictures_locations");
-        settings->setArrayIndex(currentFolderIndex);
-        short setFolderCount = settings->beginReadArray(QString::number(currentFolderIndex));
-        QStringList setFolders;
-        bool atLeastOneExists=false;
-        for(int i=0;i<setFolderCount;i++){
-            settings->setArrayIndex(i);
-            QString curFolder = settings->value("item", QString()).toString();
-            if(QDir(curFolder).exists()){
-                atLeastOneExists=true;
-                setFolders << curFolder;
-            }
-        }
-        settings->endArray();
-        settings->endArray();
-
-        if(atLeastOneExists){
-            wallpaperManager_->clearWallpapers();
-            Q_FOREACH(QString parentFolder, setFolders){
-                Q_FOREACH(QString curFolder, Global::listFolders(parentFolder, true, true)){
-                    if(!startedWithJustChange_){
-                        //no need to monitor anything if this instance is for changing the picture just once.
-                        if(!watchFoldersMain_){
-                            resetWatchFolders(false);
-                        }
-                        watchFoldersMain_->addPath(curFolder);
-                    }
-                    getFilesFromFolder(curFolder);
-                }
-            }
-        }
-    }
-    else
-    {
-        //current selection is a simple folder
-        QString parentFolder=getCurrentWallpapersFolder();
-        if(!QDir(parentFolder).exists()){
-            globalParser_->desktopNotify(tr("Folder doesn't exist for the process to continue."), false, "info");
-            return false;
-        }
-
-        wallpaperManager_->clearWallpapers();
-
-        Q_FOREACH(QString curFolder, Global::listFolders(parentFolder, true, true)){
-            if(!startedWithJustChange_){
-                //no need to monitor anything if this instance is for changing the picture just once.
-                if(!watchFoldersMain_){
-                    resetWatchFolders(false);
-                }
-                watchFoldersMain_->addPath(curFolder);
-            }
-            getFilesFromFolder(curFolder);
-        }
-    }
+    fileManager_->picturesLocationChanged();
 
     if(gv.randomImagesEnabled){
         wallpaperManager_->setRandomMode(true);
@@ -887,7 +783,7 @@ void NonGuiManager::doAction(const QString &message){
             generalTimer_->stop();
         }
 
-        resetWatchFolders(true);
+        fileManager_->resetWatchFolders();
 
         Global::debug("Focus was requested! Continuing the process to the Graphical Interface");
 
@@ -1097,7 +993,7 @@ void NonGuiManager::doAction(const QString &message){
             return;
         }
 
-        QString parentFolder=getCurrentWallpapersFolder();
+        QString parentFolder = fileManager_->getCurrentWallpapersFolder();
         if(!QDir(parentFolder).exists()){
             globalParser_->desktopNotify(tr("Folder doesn't exist for the process to continue."), false, "info");
             return;
@@ -1293,23 +1189,12 @@ void NonGuiManager::doAction(const QString &message){
         //update the configuration to point to the new folder
         setDefaultFolderInSettings(folder);
 
-        if(gv.wallpapersRunning){
-            researchDirs();
-        }
+        if(gv.wallpapersRunning)
+            fileManager_->researchFolders();
     }
     else{
         Global::error("This message is unknown to me.");
     }
-}
-
-QString NonGuiManager::getCurrentWallpapersFolder(){
-    //read the default folder location
-    short currentFolderIndex=settings->value("currentFolder_index", 0).toInt();
-    settings->beginReadArray("pictures_locations");
-    settings->setArrayIndex(currentFolderIndex);
-    QString parentFolder = settings->value("item", DesktopEnvironment::getOSWallpaperPath()).toString();
-    settings->endArray();
-    return parentFolder;
 }
 
 void NonGuiManager::setDefaultFolderInSettings(const QString &folder){
@@ -1319,7 +1204,7 @@ void NonGuiManager::setDefaultFolderInSettings(const QString &folder){
         for(short i=0; i<count; i++)
         {
             settings->setArrayIndex(i);
-            if(Global::foldersAreSame(folder, settings->value("item").toString()))
+            if(fileManager_->foldersAreSame(folder, settings->value("item").toString()))
             {
                 settings->endArray();
                 settings->setValue("currentFolder_index", i);
@@ -1905,9 +1790,12 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
         QApplication app(argc, argv);
 
         globalParser_ = new Global();
+        timerManager_ = new TimerManager();
         imageFetcher_ = new ImageFetcher();
         connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineBackgroundReady(QString)));
         wallpaperManager_ = new WallpaperManager();
+        fileManager_ = new FileManager();
+        connect(fileManager_, SIGNAL(addFilesToWallpapers(QString)), this, SLOT(addFilesToWallpapers(QString)));
         viralSettingsOperations();
         QApplication::setQuitOnLastWindowClosed(false);
 
@@ -1929,4 +1817,14 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
         return app.exec();
     }
     return 0;
+}
+
+void NonGuiManager::addFilesToWallpapers(QString path){
+    QString cleanPath = path.endsWith('/') ? path.left(path.count()-1) : path;
+    QStringList currrentDirectory = QDir (cleanPath, QString(""), QDir::Name, QDir::Files).entryList(IMAGE_FILTERS);
+
+    Q_FOREACH(QString file, currrentDirectory){
+        QString fullPath= cleanPath + '/' + file;
+        wallpaperManager_->addWallpaper(fullPath);
+    }
 }

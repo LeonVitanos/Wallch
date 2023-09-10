@@ -71,7 +71,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define DEFAULT_SLIDER_DELAY 900
 #define WEBSITE_TIMEOUT 90
-#define RESEARCH_FOLDERS_TIMEOUT 1500
 
 #define LEAST_WALLPAPERS_FOR_START 2
 
@@ -209,7 +208,6 @@ public:
     static int websiteSliderValueToSeconds(short value);
     static bool remove(const QString &files);
     static QString getFilename(const QString &file);
-    static bool foldersAreSame(QString folder1, QString folder2);
     static void saveSecondsLeftNow(int secondsLeft, short forType);
     static QString base64Decode(const QString &string);
     static void rotateImageBasedOnExif(const QString &image);
@@ -232,6 +230,10 @@ public:
     static QPixmap roundedCorners(const QImage &image, const int radius);
     bool runsOnBattery();
 
+    // Clipboard management
+    static void copyImageToClipboard(const QString &image);
+    static void copyTextToClipboard(const QString &text);
+
 #ifndef Q_OS_LINUX
     private:
         Notification *notification_ = NULL;
@@ -240,10 +242,6 @@ public:
 #else
     static QString searchForFileInDir(QString folder, QString file);
 #endif
-
-    // Clipboard management
-    static void copyImageToClipboard(const QString &image);
-    static void copyTextToClipboard(const QString &text);
 
 Q_SIGNALS:
     void updateNotification(QString message, QString image);

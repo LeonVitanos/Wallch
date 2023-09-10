@@ -617,18 +617,6 @@ void Global::debug(const QString &message){
     cout << message.toLocal8Bit().data() << endl;
 }
 
-bool Global::foldersAreSame(QString folder1, QString folder2){
-    if(!folder1.endsWith('/')){
-        folder1+='/';
-    }
-
-    if(!folder2.endsWith('/')){
-        folder2+='/';
-    }
-
-    return (folder1 == folder2);
-}
-
 int Global::getSecondsTillHour(const QString &hour){
     int secsToPotd=QTime::currentTime().secsTo(QTime::fromString(hour, "hh:mm"));
     if(secsToPotd<0){

@@ -26,7 +26,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <QTimer>
 #include <QSettings>
-#include <QFileSystemWatcher>
 #include <QObject>
 #include <QPixmap>
 #include <QSharedMemory>
@@ -34,6 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QLocalServer>
 #include <QtGlobal>
 #include <QSystemTrayIcon>
+#include <QTranslator>
 
 #include "properties.h"
 #include "preferences.h"
@@ -60,10 +60,9 @@ protected:
 
 private:
     WallpaperManager *wallpaperManager_ = NULL;
+    FileManager *fileManager_ = NULL;
     TimerManager *timerManager_ = NULL;
-    QFileSystemWatcher *watchFoldersMain_ = NULL;
     Preferences *preferences_;
-    QTimer researchFoldersTimerMain_;
     QTimer *updateSecondsPassed_;
     QTimer *trayWheelTimer_;
     QTimer *generalTimer_ = NULL;
@@ -86,7 +85,6 @@ private:
     bool previousWasClicked_ = false;
     bool propertiesShown_ = false;
     bool justUpdatedPotd_ = false;
-    bool currentFolderIsAList_ = false;
     QSystemTrayIcon *trayIcon_;
     QMenu *trayIconMenu_;
     QMenu *currentImageMenu_;
@@ -110,7 +108,6 @@ private:
     QAction *aboutAction_;
     QAction *quitAction_;
     void setupTray();
-    bool currentSelectionIsASet();
     void viralSettingsOperations();
     bool getPicturesLocation(bool init);
     bool alreadyRuns();
@@ -120,9 +117,7 @@ private:
     void setIndependentInterval(const QString &independentInterval);
     void checkSettings(bool allSettings);
     void connectMainwindowWithExternalActions(MainWindow *w);
-    void resetWatchFolders(bool justDelete);
     void setDefaultFolderInSettings(const QString &folder);
-    QString getCurrentWallpapersFolder();
     std::string percentToProgressbar(short percentage);
     void clearCurrentLine(short previousOutputCount);
     bool loadWebsiteSnapshotPlugin();
@@ -143,8 +138,6 @@ private:
 
 private Q_SLOTS:
     void newSocketConnection();
-    void dirChanged();
-    void researchDirs();
     void onlineBackgroundReady(QString image);
     void trayActionShowWindow();
     void trayActionWallpapers();
@@ -171,6 +164,7 @@ private Q_SLOTS:
     void preferencesDestroyed();
     void liveWebsiteImageReady(QImage *image, short errorCode);
     void updateSecondsPassed();
+    void addFilesToWallpapers (QString path);
 
 Q_SIGNALS:
     void signalOnce();

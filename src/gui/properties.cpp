@@ -235,5 +235,5 @@ QString Properties::sizeToNiceString(qint64 fsize){
 
 void Properties::on_open_location_button_clicked()
 {
-    WallpaperManager::openFolderOf(currentFilename_);
+    FileManager::openFolderOf(currentFilename_);
 }

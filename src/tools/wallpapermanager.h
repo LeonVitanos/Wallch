@@ -24,6 +24,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define QT_NO_KEYWORDS
 
+#include "filemanager.h"
+
 #include <QStringList>
 #include <QColor>
 #include <QImage>
@@ -69,7 +71,6 @@ public:
     short indexOfCurrentBackgroundWallpaper();
     static QString currentBackgroundWallpaper();
     static bool currentBackgroundExists();
-    static void openFolderOf(QString image = "");
     static QColor getAverageColorOf(const QString &image);
     static QColor getAverageColorOf(const QImage &image);
     void setBackground(const QString &image, bool changeAverageColor, bool showNotification, short feature);

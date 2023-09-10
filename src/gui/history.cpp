@@ -242,7 +242,7 @@ void History::on_historyInfo_customContextMenuRequested()
 
 void History::openFolder(){
     if(ui->historyInfo->currentItem()->isSelected())
-        WallpaperManager::openFolderOf(ui->historyInfo->currentItem()->data(11).toString());
+        FileManager::openFolderOf(ui->historyInfo->currentItem()->data(11).toString());
 }
 
 void History::copyPath(){
