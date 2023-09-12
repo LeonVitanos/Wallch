@@ -115,11 +115,8 @@ private:
     void messageServer(const QString &message, bool quitAfterwards);
     void actionsOnWallpaperChange();
     void setIndependentInterval(const QString &independentInterval);
-    void checkSettings(bool allSettings);
     void connectMainwindowWithExternalActions(MainWindow *w);
     void setDefaultFolderInSettings(const QString &folder);
-    std::string percentToProgressbar(short percentage);
-    void clearCurrentLine(short previousOutputCount);
     bool loadWebsiteSnapshotPlugin();
     void connectToServer();
     void connectToUpdateSecondsSlot();

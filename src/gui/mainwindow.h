@@ -232,7 +232,6 @@ private:
     QPoint calculateSettingsMenuPos();
     void continueAlreadyRunningFeature();
     void applySettings();
-    void retrieveSettings();
     void initializePrivateVariables(Global *globalParser, ImageFetcher *imageFetcher);
     void setupMenu();
     void connectSignalSlots();

@@ -70,12 +70,14 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
 
     setupMenu();
     connectSignalSlots();
-    retrieveSettings();
+    globalParser_->loadSettings();
     setupTimers();
     setupKeyboardShortcuts();
     applySettings();
     continueAlreadyRunningFeature();
     setAcceptDrops(true);
+
+    currentShading = ColorManager::getColoringType();
 
     // Restore window's position and size
     if(settings->value("x").isValid()){
@@ -230,27 +232,6 @@ void MainWindow::connectSignalSlots(){
     connect(dconf , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(dconfChanges()));
     dconf->start("dconf watch /");
 #endif
-}
-
-void MainWindow::retrieveSettings()
-{
-    gv.potdOnlineUrl = settings->value("potd_online_url", POTD_ONLINE_URL).toString();
-    gv.potdOnlineUrlB = settings->value("potd_online_urlB", POTD_ONLINE_URL_B).toString();
-    gv.liveEarthOnlineUrl = settings->value("line_earth_online_url", LIVEARTH_ONLINE_URL).toString();
-    gv.liveEarthOnlineUrlB = settings->value("live_earth_online_urlB", LIVEARTH_ONLINE_URL_B).toString();
-    gv.independentIntervalEnabled = settings->value("independent_interval_enabled", true).toBool();
-    gv.rotateImages = settings->value("rotation", false).toBool();
-    gv.firstTimeout = settings->value("first_timeout", false).toBool();
-    gv.symlinks = settings->value("symlinks", false).toBool();
-    gv.showNotification = settings->value("notification", false).toBool();
-    gv.saveHistory = settings->value("history", true).toBool();
-    gv.pauseOnBattery = settings->value("pause_on_battery", false).toBool();
-    gv.setAverageColor = settings->value("average_color", false).toBool();
-    gv.typeOfInterval = settings->value("typeOfIntervals", 0).toInt();
-    gv.iconMode = settings->value("icon_style", true).toBool();
-    gv.randomImagesEnabled = settings->value("random_images_enabled", true).toBool();
-    gv.previewImagesOnScreen = settings->value("preview_images_on_screen", true).toBool();
-    currentShading = ColorManager::getColoringType();
 }
 
 void MainWindow::setupTimers(){
@@ -1409,19 +1390,14 @@ void MainWindow::startPauseWallpaperChangingProcess(){
             if(shuffleWasChecked_){
                 if(firstRandomImageIsntRandom_){
                     firstRandomImageIsntRandom_=false;
-                    if(ui->wallpapersList->currentItem()->isSelected()){
+                    if(ui->wallpapersList->currentItem()->isSelected())
                         wallpaperManager_->setRandomMode(true, -1, ui->wallpapersList->currentRow());
-                    }
                 }
                 else
-                {
                     wallpaperManager_->setRandomMode(true);
-                }
             }
             else
-            {
                 wallpaperManager_->setRandomMode(false);
-            }
         }
 
         if(gv.processPaused){
@@ -1641,15 +1617,10 @@ void MainWindow::changeImage(){
     if(shuffleWasChecked_!=ui->shuffle_images_checkbox->isChecked()){
         shuffleWasChecked_=ui->shuffle_images_checkbox->isChecked();
         //the shuffle has changed state!
-        if(ui->shuffle_images_checkbox->isChecked()){
-            //from normal to random. The first random image must not be the current image
+        if(ui->shuffle_images_checkbox->isChecked()) //from normal to random. The first random image must not be the current image
             wallpaperManager_->setRandomMode(true, wallpaperManager_->currentWallpaperIndex());
-        }
-        else
-        {
-            //from random it went to normal
+        else //from random to normal
             wallpaperManager_->convertRandomToNormal();
-        }
     }
 
     QString image=wallpaperManager_->getNextWallpaper();
@@ -2658,9 +2629,8 @@ void MainWindow::loadWallpapersPage(){
     if(loadedPages_[0])
         return;
 
-    if(wallpaperManager_==NULL){
+    if(wallpaperManager_==NULL)
         wallpaperManager_=new WallpaperManager();
-    }
 
     ui->previous_Button->setIcon(QIcon::fromTheme("media-seek-backward", QIcon(":/images/media-seek-backward.png")));
     ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
@@ -2739,7 +2709,6 @@ void MainWindow::loadWallpapersPage(){
         }
     }
 
-    gv.typeOfInterval=settings->value("typeOfIntervals", 0).toInt();
     ui->stackedWidget_2->setCurrentIndex(gv.typeOfInterval);
 
     ui->days_spinBox->setValue(settings->value("days_box", 0).toInt());
@@ -2764,8 +2733,6 @@ void MainWindow::loadLePage(){
     if(loadedPages_[1])
         return;
 
-    gv.leEnableTag = settings->value("le_enable_tag", false).toBool();
-
     ui->le_tag_checkbox->setChecked(gv.leEnableTag);
     ui->le_tag_button->setEnabled(gv.leEnableTag);
 }
@@ -2773,16 +2740,6 @@ void MainWindow::loadLePage(){
 void MainWindow::loadPotdPage(){
     if(loadedPages_[2])
         return;
-
-    gv.potdIncludeDescription = settings->value("potd_include_description", true).toBool();
-    gv.leEnableTag = settings->value("le_enable_tag", false).toBool();
-    gv.potdDescriptionBottom = settings->value("potd_description_bottom", true).toBool();
-    gv.potdDescriptionFont = settings->value("potd_description_font", "Arial").toString();
-    gv.potdDescriptionColor = settings->value("potd_text_color", "#FFFFFF").toString();
-    gv.potdDescriptionBackgroundColor = settings->value("potd_background_color", "#000000").toString();
-    gv.potdDescriptionRightMargin = settings->value("potd_description_right_margin", 0).toInt();
-    gv.potdDescriptionBottomTopMargin = settings->value("potd_description_bottom_top_margin", 0).toInt();
-    gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (0)).toInt();
 
     ui->label_5->setText("<span style=\"font-style:italic;\">"+tr("Style")+"</span><span style=\" font-weight:600; font-style:italic;\"> "+tr("Scale")+"</span><span style=\" font-style:italic;\"> "+tr("is highly recommended for this feature")+"</span>");
     ui->include_description_checkBox->setChecked(gv.potdIncludeDescription);
@@ -2803,61 +2760,37 @@ void MainWindow::loadLiveWebsitePage(){
     openCloseAddLogin_ = new QPropertyAnimation(ui->live_website_login_widget, "maximumHeight");
     connect(openCloseAddLogin_, SIGNAL(finished()), this, SLOT(openCloseAddLoginAnimationFinished()));
     openCloseAddLogin_->setDuration(GENERAL_ANIMATION_SPEED);
-    gv.websiteWebpageToLoad=settings->value("website", "http://google.com").toString();
-    gv.websiteInterval=settings->value("website_interval", 6).toInt();
-    gv.websiteCropEnabled=settings->value("website_crop", false).toBool();
-    gv.websiteCropArea=settings->value("website_crop_area", QRect(0, 0, gv.screenAvailableWidth, gv.screenAvailableHeight)).toRect();
-    gv.websiteLoginEnabled=settings->value("website_login", false).toBool();
-    gv.websiteLoginUsername=settings->value("website_username", "").toString();
-    gv.websiteLoginPasswd=settings->value("website_password", "").toString();
-    if(!gv.websiteLoginPasswd.isEmpty()){
-        gv.websiteLoginPasswd=globalParser_->base64Decode(gv.websiteLoginPasswd);
-    }
-    gv.websiteRedirect=settings->value("website_redirect", false).toBool();
-    gv.websiteFinalPageToLoad=settings->value("website_final_webpage", "").toString();
-    gv.websiteSimpleAuthEnabled=settings->value("website_simple_auth", false).toBool();
-    gv.websiteWaitAfterFinishSeconds=settings->value("website_wait_after_finish", 3).toInt();
-    gv.websiteJavascriptEnabled=settings->value("website_js_enabled", true).toBool();
-    gv.websiteJavascriptCanReadClipboard=settings->value("website_js_can_read_clipboard", false).toBool();
-    gv.websiteJavaEnabled=settings->value("website_java_enabled", false).toBool();
-    gv.websiteLoadImages=settings->value("website_load_images", true).toBool();
-    gv.websiteExtraUsernames=settings->value("website_extra_usernames", QStringList()).toStringList();
-    gv.websiteExtraPasswords=settings->value("website_extra_passwords", QStringList()).toStringList();
+    ui->add_login_details->setChecked(gv.websiteLoginEnabled);
+    if(gv.websiteLoginEnabled)
+        on_add_login_details_clicked(true);
+    ui->username->setText(gv.websiteLoginUsername);
+    ui->password->setText(gv.websiteLoginPasswd);
 
     ui->website->setText(gv.websiteWebpageToLoad);
     short old_website_slider_value=ui->website_slider->value();
     ui->website_slider->setValue(gv.websiteInterval);
-    if(gv.websiteInterval==old_website_slider_value){
+    if(gv.websiteInterval == old_website_slider_value)
         on_website_slider_valueChanged(gv.websiteInterval);
-    }
     ui->website_crop_checkbox->setChecked(gv.websiteCropEnabled);
     ui->edit_crop->setEnabled(ui->website_crop_checkbox->isEnabled() && gv.websiteCropEnabled);
-    ui->add_login_details->setChecked(gv.websiteLoginEnabled);
-    if(gv.websiteLoginEnabled){
-        on_add_login_details_clicked(true);
-    }
-    ui->username->setText(gv.websiteLoginUsername);
-    ui->password->setText(gv.websiteLoginPasswd);
     ui->redirect_checkBox->setChecked(gv.websiteRedirect);
     ui->final_webpage->setEnabled(gv.websiteRedirect);
     ui->final_webpage->setText(gv.websiteFinalPageToLoad);
     ui->timeout_text_label->hide();
     ui->website_timeout_label->hide();
-    if(gv.previewImagesOnScreen)
-    {
+
+    if(gv.previewImagesOnScreen){
         ui->verticalLayout_11->addWidget(ui->timeout_text_label);
         ui->verticalLayout_11->addWidget(ui->website_timeout_label);
     }
-    else
-    {
+    else {
         ui->horizontalLayout_23->addWidget(ui->timeout_text_label);
         ui->horizontalLayout_23->addWidget(ui->website_timeout_label);
     }
 
-    changedWebPage_=initialWebPage_=ui->website->text();
-    if(websiteSnapshot_==NULL){
+    changedWebPage_= initialWebPage_=ui->website->text();
+    if(websiteSnapshot_==NULL)
         websiteSnapshot_ = new WebsiteSnapshot();
-    }
 }
 
 void MainWindow::loadMelloriPage()

@@ -94,6 +94,47 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 extern QSettings *settings;
 
 struct GlobalVar {
+    // 'Wallpapers' Feature
+    bool wallpapersRunning;
+
+    // 'Live Earth' Feature
+    bool liveEarthRunning;
+    QString liveEarthOnlineUrl;
+    QString liveEarthOnlineUrlB;
+
+    // 'POTD' Feature
+    bool potdRunning;
+    bool potdIncludeDescription;
+    bool potdDescriptionBottom;
+    int potdDescriptionLeftMargin;
+    int potdDescriptionRightMargin;
+    int potdDescriptionBottomTopMargin;
+    QString potdDescriptionFont;
+    QString potdDescriptionColor;
+    QString potdDescriptionBackgroundColor;
+    QString potdOnlineUrl;
+    QString potdOnlineUrlB;
+
+    // 'Website' Feature
+    bool liveWebsiteRunning;
+    short websiteWaitAfterFinishSeconds;
+    bool websiteLoadImages;
+    bool websiteJavaEnabled;
+    bool websiteJavascriptCanReadClipboard;
+    bool websiteJavascriptEnabled;
+    bool websiteSimpleAuthEnabled;
+    bool websiteRedirect;
+    bool websiteLoginEnabled;
+    bool websiteCropEnabled;
+    int websiteInterval;
+    QString websiteWebpageToLoad;
+    QRect websiteCropArea;
+    QString websiteLoginUsername;
+    QString websiteLoginPasswd;
+    QString websiteFinalPageToLoad;
+
+
+
     QString homePath;
     QString wallchHomePath;
     QString currentDeDefaultWallpapersPath;
@@ -105,9 +146,6 @@ struct GlobalVar {
     bool firstTimeout;
     bool symlinks;
     bool processPaused;
-#ifdef Q_OS_LINUX
-    QStringList unacceptedDesktopValues;
-#endif
     bool saveHistory;
     int randomTimeFrom;
     int randomTimeTo;
@@ -117,57 +155,30 @@ struct GlobalVar {
     bool amPmEnabled;
     bool mainwindowLoaded;
     bool setAverageColor;
-    bool websiteLoginEnabled;
-    bool websiteCropEnabled;
     int wallpapersChangedCurrentSession;
     QDateTime timeLaunched;
     bool showNotification;
-    bool liveWebsiteRunning;
-    bool potdRunning;
-    bool liveEarthRunning;
-    bool wallpapersRunning;
     bool iconMode;
     bool rotateImages;
-    bool potdIncludeDescription;
     bool leEnableTag;
-    bool potdDescriptionBottom;
     short refreshhourinterval;
-    short websiteWaitAfterFinishSeconds;
-    bool websiteLoadImages;
-    bool websiteJavaEnabled;
-    bool websiteJavascriptCanReadClipboard;
-    bool websiteJavascriptEnabled;
-    bool websiteSimpleAuthEnabled;
-    int websiteInterval;
     int screenHeight;
     int screenWidth;
     int screenAvailableHeight;
     int screenAvailableWidth;
-    int potdDescriptionLeftMargin;
-    int potdDescriptionRightMargin;
-    int potdDescriptionBottomTopMargin;
     QString cachePath;
     QDateTime appStartTime;
-    QString websiteWebpageToLoad;
     QString defaultPicturesLocation;
-    QString potdDescriptionFont;
-    QString potdDescriptionColor;
-    QString potdDescriptionBackgroundColor;
     QStringList websiteExtraUsernames;
     QStringList websiteExtraPasswords;
     QString nextShortcut;
-    QString potdOnlineUrl;
-    QString potdOnlineUrlB;
-    QString liveEarthOnlineUrl;
-    QString liveEarthOnlineUrlB;
     QString onlineLinkForHistory;
-    QRect websiteCropArea;
-    QString websiteLoginUsername;
-    QString websiteLoginPasswd;
-    QString websiteFinalPageToLoad;
-    bool websiteRedirect;
     QDateTime runningTimeOfProcess;
-    QDateTime timeToFinishProcessInterval;   
+    QDateTime timeToFinishProcessInterval;
+
+#ifdef Q_OS_LINUX
+    QStringList unacceptedDesktopValues;
+#endif
 
     //variable initialization
 
@@ -233,6 +244,9 @@ public:
     // Clipboard management
     static void copyImageToClipboard(const QString &image);
     static void copyTextToClipboard(const QString &text);
+
+    // Settings
+    static void loadSettings();
 
 #ifndef Q_OS_LINUX
     private:

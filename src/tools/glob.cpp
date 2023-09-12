@@ -781,3 +781,58 @@ void Global::copyTextToClipboard(const QString &text){
     clipboard->setText(text);
 }
 
+void Global::loadSettings(){
+    // General
+    gv.setAverageColor = settings->value("average_color", false).toBool();
+    gv.showNotification=settings->value("notification", false).toBool();
+    gv.saveHistory=settings->value("history", true).toBool();
+    gv.symlinks=settings->value("symlinks", false).toBool();
+    gv.pauseOnBattery = settings->value("pause_on_battery", false).toBool();
+    gv.independentIntervalEnabled = settings->value("independent_interval_enabled", true).toBool();
+    gv.rotateImages = settings->value("rotation", false).toBool();
+    gv.firstTimeout = settings->value("first_timeout", false).toBool();
+    gv.previewImagesOnScreen = settings->value("preview_images_on_screen", true).toBool();
+
+    // 'Wallpapers' Feature
+    gv.typeOfInterval=settings->value("typeOfIntervals", 0).toInt();
+    gv.iconMode = settings->value("icon_style", true).toBool();
+    gv.randomImagesEnabled = settings->value("random_images_enabled", true).toBool();
+
+    // 'Live Earth' Feature
+    gv.leEnableTag = settings->value("le_enable_tag", false).toBool();
+    gv.liveEarthOnlineUrl=settings->value("line_earth_online_url", LIVEARTH_ONLINE_URL).toString();
+    gv.liveEarthOnlineUrlB=settings->value("live_earth_online_urlB", LIVEARTH_ONLINE_URL_B).toString();
+
+    // 'POTD' Settings
+    gv.potdIncludeDescription = settings->value("potd_include_description", true).toBool();
+    gv.potdDescriptionBottom = settings->value("potd_description_bottom", true).toBool();
+    gv.potdDescriptionFont = settings->value("potd_description_font", "Arial").toString();
+    gv.potdDescriptionColor = settings->value("potd_text_color", "#FFFFFF").toString();
+    gv.potdDescriptionBackgroundColor = settings->value("potd_background_color", "#000000").toString();
+    gv.potdDescriptionLeftMargin = settings->value("potd_description_left_margin", (0)).toInt();
+    gv.potdDescriptionRightMargin = settings->value("potd_description_right_margin", 0).toInt();
+    gv.potdDescriptionBottomTopMargin = settings->value("potd_description_bottom_top_margin", 0).toInt();
+    gv.potdOnlineUrl=settings->value("potd_online_url", POTD_ONLINE_URL).toString();
+    gv.potdOnlineUrlB=settings->value("potd_online_urlB", POTD_ONLINE_URL_B).toString();
+
+    // 'Website' Feature
+    gv.websiteWebpageToLoad=settings->value("website", "http://google.com").toString();
+    gv.websiteInterval=settings->value("website_interval", 6).toInt();
+    gv.websiteCropEnabled=settings->value("website_crop", false).toBool();
+    gv.websiteCropArea=settings->value("website_crop_area", QRect(0, 0, gv.screenAvailableWidth, gv.screenAvailableHeight)).toRect();
+    gv.websiteLoginEnabled=settings->value("website_login", false).toBool();
+    gv.websiteLoginUsername=settings->value("website_username", "").toString();
+    gv.websiteLoginPasswd=settings->value("website_password", "").toString();
+    if(!gv.websiteLoginPasswd.isEmpty())
+        gv.websiteLoginPasswd=base64Decode(gv.websiteLoginPasswd);
+    gv.websiteRedirect=settings->value("website_redirect", false).toBool();
+    gv.websiteFinalPageToLoad=settings->value("website_final_webpage", "").toString();
+    gv.websiteSimpleAuthEnabled=settings->value("website_simple_auth", false).toBool();
+    gv.websiteWaitAfterFinishSeconds=settings->value("website_wait_after_finish", 3).toInt();
+    gv.websiteJavascriptEnabled=settings->value("website_js_enabled", true).toBool();
+    gv.websiteJavascriptCanReadClipboard=settings->value("website_js_can_read_clipboard", false).toBool();
+    gv.websiteJavaEnabled=settings->value("website_java_enabled", false).toBool();
+    gv.websiteLoadImages=settings->value("website_load_images", true).toBool();
+    gv.websiteExtraUsernames=settings->value("website_extra_usernames", QStringList()).toStringList();
+    gv.websiteExtraPasswords=settings->value("website_extra_passwords", QStringList()).toStringList();
+}
