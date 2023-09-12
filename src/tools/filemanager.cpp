@@ -47,9 +47,6 @@ void FileManager::openMultipleFolders(QList<QListWidgetItem*> images){
 // File System Watcher
 
 void FileManager::resetWatchFolders(){
-    if(watchFolders_ && gv.mainwindowLoaded){
-        delete watchFolders_;
-    }
     monitoredFoldersList_.clear();
     watchFolders_ = new QFileSystemWatcher(this);
     connect(watchFolders_, SIGNAL(directoryChanged(QString)), this, SLOT(folderChanged()));

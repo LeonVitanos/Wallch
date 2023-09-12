@@ -70,9 +70,9 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
 
     setupMenu();
     connectSignalSlots();
-    globalParser_->loadSettings();
     setupTimers();
     setupKeyboardShortcuts();
+    changeCurrentTheme();
     applySettings();
     continueAlreadyRunningFeature();
     setAcceptDrops(true);
@@ -378,12 +378,9 @@ void MainWindow::setupMenu()
 
 void MainWindow::applySettings()
 {
-    changeCurrentTheme();
-
     int maxCacheIndex = settings->value("max_cache_size", 2).toInt();
-    if(maxCacheIndex < 0 || maxCacheIndex >= cacheManager_->maxCacheIndexes.size()){
+    if(maxCacheIndex < 0 || maxCacheIndex >= cacheManager_->maxCacheIndexes.size())
         maxCacheIndex = 2;
-    }
 
     cacheManager_->setMaxCache(cacheManager_->maxCacheIndexes.value(maxCacheIndex).second);
 
@@ -392,11 +389,8 @@ void MainWindow::applySettings()
         ui->wallpapersList->setUniformItemSizes(true);
     }
     else
-    {
         ui->wallpapersList->setViewMode(QListView::ListMode);
-    }
 
-    //setting the slider's value...
     timerManager_->secondsInWallpapersSlider_ = settings->value("delay", DEFAULT_SLIDER_DELAY).toInt();
 
     if(!gv.previewImagesOnScreen)
@@ -414,9 +408,8 @@ void MainWindow::applySettings()
         ui->widget_3->setMaximumHeight(0);
     }
 
-    if(gv.randomImagesEnabled){
+    if(gv.randomImagesEnabled)
         srand(time(0));
-    }
 
     ui->shuffle_images_checkbox->setChecked(gv.randomImagesEnabled);
 }
@@ -1374,7 +1367,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
 
         actAsStart_=false; //the next time act like pause is pressed
         gv.wallpapersRunning=true;
-        globalParser_->updateStartup();
+        SettingsManager::updateStartup();
         startWasJustClicked_=true;
 
         ui->startButton->setText(tr("Pau&se"));
@@ -1479,7 +1472,7 @@ void MainWindow::on_stopButton_clicked(){
 
     stopButtonsSetEnabled(false);
     gv.wallpapersRunning=false;
-    globalParser_->updateStartup();
+    SettingsManager::updateStartup();
 #ifdef Q_OS_LINUX
     if(gv.pauseOnBattery){
         if(batteryStatusChecker_->isActive()){
@@ -2196,7 +2189,7 @@ void MainWindow::on_activate_livearth_clicked()
     ui->activate_livearth->setEnabled(false);
     ui->deactivate_livearth->setEnabled(true);
     gv.liveEarthRunning=true;
-    globalParser_->updateStartup();
+    SettingsManager::updateStartup();
     Q_EMIT signalRecreateTray();
     setProgressbarsValue(100);
     startUpdateSeconds();
@@ -2212,7 +2205,7 @@ void MainWindow::on_deactivate_livearth_clicked()
     timerManager_->secondsRemaining_=0;
     imageFetcher_->abort();
     gv.liveEarthRunning=false;
-    globalParser_->updateStartup();
+    SettingsManager::updateStartup();
     processRequestStop();
 
     if(updateSecondsTimer_->isActive()){
@@ -2269,7 +2262,7 @@ void MainWindow::startPotd(bool launchNow){
     ui->deactivate_potd->setEnabled(true);
     ui->activate_potd->setEnabled(false);
     gv.potdRunning=true;
-    globalParser_->updateStartup();
+    SettingsManager::updateStartup();
     justUpdatedPotd_=false;
     if(launchNow){
         actionsOnWallpaperChange();
@@ -2291,7 +2284,7 @@ void MainWindow::on_deactivate_potd_clicked()
     processRequestStop();
     imageFetcher_->abort();
     gv.potdRunning=false;
-    globalParser_->updateStartup();
+    SettingsManager::updateStartup();
     if(updateSecondsTimer_->isActive()){
         updateSecondsTimer_->stop();
     }
@@ -2352,7 +2345,7 @@ void MainWindow::on_activate_website_clicked()
     QApplication::processEvents(QEventLoop::AllEvents);
 
     gv.liveWebsiteRunning=true;
-    globalParser_->updateStartup();
+    SettingsManager::updateStartup();
 
     Q_EMIT signalRecreateTray();
     setProgressbarsValue(100);
@@ -2373,7 +2366,7 @@ void MainWindow::on_deactivate_website_clicked()
 
     stoppedBecauseOnBattery_=false;
     gv.liveWebsiteRunning=false;
-    globalParser_->updateStartup();
+    SettingsManager::updateStartup();
     timerManager_->secondsRemaining_=0;
     if(updateSecondsTimer_->isActive()){
         updateSecondsTimer_->stop();
@@ -2585,6 +2578,8 @@ bool MainWindow::websiteConfiguredCorrectly(){
     return true;
 }
 
+
+
 void MainWindow::picturesLocationsChanged()
 {
     changingPicturesLocations_=true;
@@ -2622,6 +2617,8 @@ void MainWindow::picturesLocationsChanged()
     changingPicturesLocations_=false;
     ui->pictures_location_comboBox->setCurrentIndex(currentFolder);
 }
+
+
 
 //Pages code
 
@@ -2798,6 +2795,8 @@ void MainWindow::loadMelloriPage()
     if(loadedPages_[5])
         return;
 }
+
+
 
 void MainWindow::openCloseAddLoginAnimationFinished(){
     if(openCloseAddLogin_->endValue().toInt()==0){
@@ -3189,7 +3188,7 @@ void MainWindow::potdPreviewDestroyed()
     potdPreviewShown_=false;
 }
 
-//functions only to save settings
+// Settings
 void MainWindow::on_shuffle_images_checkbox_clicked()
 {
     settings->setValue("random_images_enabled", ui->shuffle_images_checkbox->isChecked());
@@ -3230,7 +3229,7 @@ void MainWindow::update_website_settings()
     settings->sync();
 }
 
-// Animations in case user changes preview screen to show/hide
+// Animations in case user shows/hides the preview screen
 void MainWindow::wait_preview_changed()
 {
     QTimer::singleShot(100, this, SLOT(preview_changed()));

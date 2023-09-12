@@ -43,6 +43,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "wallpapermanager.h"
 #include "imagefetcher.h"
 #include "timermanager.h"
+#include "settingsmanager.h"
 
 #define SOCKET_SERVER_NAME "Wallch Local Socket Server"
 
@@ -108,6 +109,7 @@ private:
     QAction *aboutAction_;
     QAction *quitAction_;
     void setupTray();
+    void installTranslator();
     void viralSettingsOperations();
     bool getPicturesLocation(bool init);
     bool alreadyRuns();
@@ -116,7 +118,6 @@ private:
     void actionsOnWallpaperChange();
     void setIndependentInterval(const QString &independentInterval);
     void connectMainwindowWithExternalActions(MainWindow *w);
-    void setDefaultFolderInSettings(const QString &folder);
     bool loadWebsiteSnapshotPlugin();
     void connectToServer();
     void connectToUpdateSecondsSlot();
@@ -132,6 +133,7 @@ private:
     void startStatisticsTimer();
     int processArguments(QApplication *app, QStringList arguments);
     void startProgramNormalGui();
+    void changeRunningFeature(int feature);
 
 private Q_SLOTS:
     void newSocketConnection();

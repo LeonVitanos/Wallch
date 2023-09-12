@@ -243,9 +243,8 @@ void Preferences::on_saveButton_clicked()
     settings->setValue("Once", ui->onceCheckBox->isChecked());
     settings->setValue("start_hidden", ui->hiddenTray_checkBox->isChecked());
 
-    if(ui->startupCheckBox->isChecked()){
-        Global::updateStartup();
-    }
+    if(ui->startupCheckBox->isChecked())
+        SettingsManager::updateStartup();
     else{
 #ifdef Q_OS_WIN
         QSettings settings2("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);

@@ -60,6 +60,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "pictures_locations.h"
 #include "timermanager.h"
 #include "filemanager.h"
+#include "settingsmanager.h"
 
 #ifndef Q_OS_LINUX
     #include "notification.h"

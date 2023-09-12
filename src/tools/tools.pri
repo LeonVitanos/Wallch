@@ -6,6 +6,7 @@ HEADERS += $$PWD/glob.h \
            $$PWD/desktopenvironment.h \
            $$PWD/filemanager.h \
            $$PWD/nonguimanager.h \
+           $$PWD/settingsmanager.h \
            $$PWD/timermanager.h \
            $$PWD/websitesnapshot.h \
            $$PWD/customwebpage.h \
@@ -20,6 +21,7 @@ SOURCES += $$PWD/glob.cpp \
            $$PWD/desktopenvironment.cpp \
            $$PWD/filemanager.cpp \
            $$PWD/nonguimanager.cpp \
+           $$PWD/settingsmanager.cpp \
            $$PWD/timermanager.cpp \
            $$PWD/websitesnapshot.cpp \
            $$PWD/wallpapermanager.cpp \

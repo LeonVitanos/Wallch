@@ -27,11 +27,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <iostream>
 #include <getopt.h>
-#include "desktopenvironment.h"
 
 #ifdef Q_OS_WIN
     #include <cmath>
     #include <Windows.h>
+#else
+# ifdef Q_OS_LINUX
+    #include "desktopenvironment.h"
+# endif
 #endif
 
 #define ARG_NOT_REQ 0
@@ -831,7 +834,6 @@ void NonGuiManager::doAction(const QString &message){
             return;
         }
 
-        Global::debug("Switching to Live Earth mode.");
         if(gv.liveWebsiteRunning){
             /*if(websiteSnapshot_->isLoading()){
                 websiteSnapshot_->stop();
@@ -841,13 +843,8 @@ void NonGuiManager::doAction(const QString &message){
             imageFetcher_->abort();
         }
 
-        gv.liveWebsiteRunning=gv.potdRunning=gv.wallpapersRunning=false;
-        gv.liveEarthRunning=true;
-        Global::updateStartup();
-        if(generalTimer_->isActive()){
-            generalTimer_->stop();
-        }
-        this->disconnectFromSlot();
+        changeRunningFeature(1);
+
         this->connectToUpdateSecondsSlot();
         imageFetcher_->setFetchType(FetchType::LE);
         imageFetcher_->fetch();
@@ -875,7 +872,6 @@ void NonGuiManager::doAction(const QString &message){
             return;
         }
 
-        Global::debug("Switching to Picture Of The Day mode.");
         if(gv.liveWebsiteRunning){
             /*if(websiteSnapshot_->isLoading()){
                 websiteSnapshot_->stop();
@@ -885,13 +881,8 @@ void NonGuiManager::doAction(const QString &message){
             imageFetcher_->abort();
         }
 
-        gv.liveEarthRunning=gv.liveWebsiteRunning=gv.wallpapersRunning=false;
-        gv.potdRunning = true;
-        Global::updateStartup();
-        if(generalTimer_->isActive()){
-            generalTimer_->stop();
-        }
-        this->disconnectFromSlot();
+        changeRunningFeature(2);
+
         this->continueWithPotd();
     }
     else if(message == "--website"){
@@ -917,18 +908,12 @@ void NonGuiManager::doAction(const QString &message){
             websiteSnapshot_ = new WebsiteSnapshot();
         }
 
-        Global::debug("Switching to Live Website mode.");
         if(gv.liveEarthRunning || gv.potdRunning){
             imageFetcher_->abort();
         }
 
-        gv.potdRunning=gv.liveEarthRunning=gv.wallpapersRunning=false;
-        gv.liveWebsiteRunning=true;
-        Global::updateStartup();
-        if(generalTimer_->isActive()){
-            generalTimer_->stop();
-        }
-        this->disconnectFromSlot();
+        changeRunningFeature(3);
+
         timerManager_->secondsRemaining_=0;
         this->continueWithWebsite();
     }
@@ -967,15 +952,8 @@ void NonGuiManager::doAction(const QString &message){
                     wallpaperManager_->setRandomMode(true);
                 }
             }
-            Global::debug("Switching to Wallpapers mode.");
-            gv.potdRunning=gv.liveEarthRunning=gv.liveWebsiteRunning=false;
-            gv.wallpapersRunning=true;
-            Global::updateStartup();
+            changeRunningFeature(0);
 
-            if(generalTimer_->isActive()){
-                generalTimer_->stop();
-            }
-            this->disconnectFromSlot();
             this->connectToUpdateSecondsSlot();
 
             getDelay();
@@ -1063,7 +1041,7 @@ void NonGuiManager::doAction(const QString &message){
         }
 
         gv.wallpapersRunning=gv.liveEarthRunning=gv.potdRunning=gv.liveWebsiteRunning=false;
-        Global::updateStartup();
+        SettingsManager::updateStartup();
     }
     else if(message == "--next"){
         if (gv.wallpapersRunning) {
@@ -1178,48 +1156,13 @@ void NonGuiManager::doAction(const QString &message){
         }
 
         //update the configuration to point to the new folder
-        setDefaultFolderInSettings(folder);
+        SettingsManager::setDefaultFolder(folder);
 
         if(gv.wallpapersRunning)
             fileManager_->researchFolders();
     }
     else{
         Global::error("This message is unknown to me.");
-    }
-}
-
-void NonGuiManager::setDefaultFolderInSettings(const QString &folder){
-    bool alreadyInSettings=false;
-    short count = settings->beginReadArray("pictures_locations");
-    if(QDir(folder).exists()){
-        for(short i=0; i<count; i++)
-        {
-            settings->setArrayIndex(i);
-            if(fileManager_->foldersAreSame(folder, settings->value("item").toString()))
-            {
-                settings->endArray();
-                settings->setValue("currentFolder_index", i);
-                alreadyInSettings=true;
-                break;
-            }
-        }
-        settings->sync();
-    }
-    else
-    {
-        settings->endArray();
-        Global::error("The folder "+folder+" does not exist!");
-        return;
-    }
-    if(!alreadyInSettings){
-        //Add the folder to the index and point to it as default
-        settings->endArray();
-        settings->beginWriteArray("pictures_locations");
-        settings->setArrayIndex(count);
-        settings->setValue("item", folder);
-        settings->endArray();
-        settings->setValue("currentFolder_index", count);
-        settings->sync();
     }
 }
 
@@ -1348,7 +1291,7 @@ void NonGuiManager::startStatisticsTimer(){
     updateSecondsPassed_->start(UPDATE_STATISTICS_SECONDS_INTERVAL);
 }
 
-void NonGuiManager::viralSettingsOperations(){
+void NonGuiManager::installTranslator(){
     if(QApplication::instance()){
         QTranslator *translator = new QTranslator(this);
         QString translationsFolder;
@@ -1360,60 +1303,25 @@ void NonGuiManager::viralSettingsOperations(){
 #endif
         QString currentLanguage = settings->value("language_file", "system_default").toString();
 
-        if(currentLanguage == "system_default"){
+        if(currentLanguage == "system_default")
             translator->load(QLocale::system(), "wallch", "_", translationsFolder, ".qm");
-        }
         else
-        {
             translator->load(translationsFolder+"wallch_"+currentLanguage+".qm");
-        }
 
         QApplication::installTranslator(translator);
     }
+}
 
-    if(settings->value("first-run", true).toBool()){
-        settings->setValue("first-run", false);
-#ifdef Q_OS_LINUX
-        if(!QDir(gv.homePath+"/.config/Wallch/").removeRecursively())
-            Global::error("I probably could not remove previous Wallch configurations!");
-#else
-        if(!QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)+"/Wallch/").removeRecursively())
-            Global::error("I probably could not remove previous Wallch configurations!");
+void NonGuiManager::viralSettingsOperations(){
+    installTranslator();
 
-# ifdef Q_OS_WIN
-        QSettings settings2("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\wallch.exe", QSettings::NativeFormat);
-        settings2.setValue("Default", QDir::currentPath()+"/wallch.exe");
-        settings2.setValue("Path", QDir::currentPath()+"/Wallch");
-        settings2.sync();
-# endif
-#endif
-    }
-
-    settings->setValue("times_launched", settings->value("times_launched", 0).toUInt()+1); //adding one to times launched
-    settings->sync();
-
-    if(startedWithLiveEarth_ || startedWithWebsite_ || !startedWithPotd_){
-        gv.independentIntervalEnabled = settings->value("independent_interval_enabled", true).toBool();
-        if(gv.independentIntervalEnabled) //check if there is an interval to follow
-            setIndependentInterval(settings->value("seconds_left_interval_independence", INTERVAL_INDEPENDENCE_DEFAULT_VALUE).toString());
-    }
-    else
-        gv.independentIntervalEnabled=false;
+    SettingsManager::initializeSettings();
 
 #ifdef Q_OS_LINUX
     DesktopEnvironment::setCurrentDE();
-    gv.wallchHomePath=gv.homePath+"/.wallch/";
-    gv.cachePath=gv.homePath+"/.cache/wallch/thumbs/";
-#else
-    gv.wallchHomePath = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)+"/Wallch/";
-    gv.cachePath = gv.wallchHomePath+"/.cache/thumbs/";
 #endif
-    if(!QDir(gv.wallchHomePath).exists())
-        QDir().mkpath(gv.wallchHomePath);
-    if(!QDir(gv.cachePath).exists())
-        QDir().mkpath(gv.cachePath);
 
-    Global::updateStartup();
+    SettingsManager::updateStartup();
 }
 
 void NonGuiManager::startProgramNormalGui(){
@@ -1455,7 +1363,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
             }
 
             gv.wallpapersRunning=true;
-            Global::updateStartup();
+            SettingsManager::updateStartup();
             connectToUpdateSecondsSlot();
         }
         connectToServer();
@@ -1479,7 +1387,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
             return app == NULL ? 0 : app->exec();
         }
         startedWithLiveEarth_=gv.liveEarthRunning=true;
-        Global::updateStartup();
+        SettingsManager::updateStartup();
         timerManager_->secondsRemaining_ = LIVEARTH_INTERVAL;
         Global::resetSleepProtection(timerManager_->secondsRemaining_);
 
@@ -1501,7 +1409,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
             return app == NULL ? 0 : app->exec();
         }
         startedWithPotd_=gv.potdRunning=true;
-        Global::updateStartup();
+        SettingsManager::updateStartup();
 
         connectToServer();
         setupTray();
@@ -1522,7 +1430,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
             return app == NULL ? 0 : app->exec();
         }
         gv.liveWebsiteRunning=startedWithWebsite_=true;
-        Global::updateStartup();
+        SettingsManager::updateStartup();
         timerManager_->secondsRemaining_=0;
         Global::resetSleepProtection(timerManager_->secondsRemaining_);
 
@@ -1610,7 +1518,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
                 else
                 {
                     //just set the folder as the default folder for monitoring
-                    setDefaultFolderInSettings(currentFolder);
+                    SettingsManager::setDefaultFolder(currentFolder);
                     Global::debug("Folder '"+currentFolder+"' is now the default folder for Wallch monitoring.");
                     globalParser_->desktopNotify(tr("The default folder has changed."), false, "info");
                     return 0;
@@ -1661,7 +1569,6 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
                  * correctly (it doesn't matter whether wallch is already running or not)
                 */
 
-                globalParser_->loadSettings();
                 viralSettingsOperations();
 
                 wallpaperManager_ = new WallpaperManager();
@@ -1691,8 +1598,8 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
                     wallpaperManager_->setBackground(wallpaperManager_->randomButNotCurrentWallpaper(), true, true, 1);
                 else
                     wallpaperManager_->setBackground(wallpaperManager_->randomButNotCurrentWallpaper(), true, true, 1);
+
                 return 0;
-                break;
             }
             }
         }
@@ -1707,7 +1614,6 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
         wallpaperManager_ = new WallpaperManager();
         fileManager_ = new FileManager();
         connect(fileManager_, SIGNAL(addFilesToWallpapers(QString)), this, SLOT(addFilesToWallpapers(QString)));
-        globalParser_->loadSettings();
         viralSettingsOperations();
         QApplication::setQuitOnLastWindowClosed(false);
 
@@ -1715,6 +1621,14 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
             wallpaperManager_->setRandomMode(false);
         else
             srand(QDateTime::currentMSecsSinceEpoch());
+
+        if(startedWithLiveEarth_ || startedWithWebsite_ || !startedWithPotd_){
+            gv.independentIntervalEnabled = settings->value("independent_interval_enabled", true).toBool();
+            if(gv.independentIntervalEnabled) //check if there is an interval to follow
+                setIndependentInterval(settings->value("seconds_left_interval_independence", INTERVAL_INDEPENDENCE_DEFAULT_VALUE).toString());
+        }
+        else
+            gv.independentIntervalEnabled=false;
 
         return processArguments(&app, QCoreApplication::arguments());
     }
@@ -1730,8 +1644,10 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
             return app.exec();
         }
         startProgramNormalGui();
+
         return app.exec();
     }
+
     return 0;
 }
 
@@ -1744,3 +1660,23 @@ void NonGuiManager::addFilesToWallpapers(QString path){
         wallpaperManager_->addWallpaper(fullPath);
     }
 }
+
+void NonGuiManager::changeRunningFeature(int feature){
+    gv.wallpapersRunning = feature == 0 ? true : false;
+    gv.liveEarthRunning = feature == 1 ? true : false;
+    gv.potdRunning = feature == 2 ? true : false;
+    gv.liveWebsiteRunning = feature == 3 ? true : false;
+
+    Global::debug("Switching to " + QString(gv.wallpapersRunning ? "Wallpapers" :
+                                            gv.liveEarthRunning ? "Live Earth" :
+                                            gv.potdRunning ? "Picture of the Day" :
+                                                            "Live Website") + " mode.");
+
+    SettingsManager::updateStartup();
+
+    if(generalTimer_->isActive())
+        generalTimer_->stop();
+
+    this->disconnectFromSlot();
+}
+

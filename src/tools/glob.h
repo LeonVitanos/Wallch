@@ -235,8 +235,7 @@ public:
         static int getSecondsTillHour(const QString &hour);
     static void openUrl(const QString &url);
     static QString monthInEnglish(short month);
-    static void updateStartup();
-    static bool createDesktopFile(const QString &path, const QString &command, const QString &comment);
+    static void createDesktopFile(const QString &path, const QString &command, const QString &comment);
     static bool isSubfolder(QString &subfolder, QString &parentFolder);
     static QPixmap roundedCorners(const QImage &image, const int radius);
     bool runsOnBattery();
@@ -244,9 +243,6 @@ public:
     // Clipboard management
     static void copyImageToClipboard(const QString &image);
     static void copyTextToClipboard(const QString &text);
-
-    // Settings
-    static void loadSettings();
 
 #ifndef Q_OS_LINUX
     private:

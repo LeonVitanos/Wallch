@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <QDialog>
 #include <QPropertyAnimation>
+#include "settingsmanager.h"
 
 namespace Ui {
     class preferences;
@@ -45,7 +46,6 @@ private:
     bool picturesLocationsChanged_ = false;
     bool maxCacheChanged_ = false;
     void setupShortcuts();
-    bool createDesktopFile(const QString &path, const QString &command, const QString &comment);
     QString getCommandOfDesktopFile(const QString &file);
     QString dataToNiceString(qint64 data);
     short oldTheme;
