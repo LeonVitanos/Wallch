@@ -64,7 +64,6 @@ private:
     FileManager *fileManager_ = NULL;
     TimerManager *timerManager_ = NULL;
     Preferences *preferences_;
-    QTimer *updateSecondsPassed_;
     QTimer *trayWheelTimer_;
     QTimer *generalTimer_ = NULL;
     QMimeData *myFile_;
@@ -130,7 +129,6 @@ private:
     void getDelay();
     void readPictures(const QString &folder);
     void potdSetSameImage();
-    void startStatisticsTimer();
     int processArguments(QApplication *app, QStringList arguments);
     void startProgramNormalGui();
     void changeRunningFeature(int feature);
@@ -162,7 +160,6 @@ private Q_SLOTS:
     void propertiesDestroyed();
     void preferencesDestroyed();
     void liveWebsiteImageReady(QImage *image, short errorCode);
-    void updateSecondsPassed();
     void addFilesToWallpapers (QString path);
 
 Q_SIGNALS:

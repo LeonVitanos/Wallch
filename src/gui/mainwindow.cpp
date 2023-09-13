@@ -350,7 +350,6 @@ void MainWindow::setupMenu()
     settingsMenu_->addMenu(currentBgMenu_);
     settingsMenu_->addSeparator();
     settingsMenu_->addAction(tr("History"), this, SLOT(on_actionHistory_triggered()), QKeySequence(tr("Ctrl+H")));
-    settingsMenu_->addAction(tr("Statistics"), this, SLOT(on_actionStatistics_triggered()));
     settingsMenu_->addAction(tr("What is my screen resolution?"), this, SLOT(on_actionWhat_is_my_screen_resolution_triggered()));
     settingsMenu_->addSeparator();
     settingsMenu_->addAction(tr("About Wallch"), this, SLOT(on_action_About_triggered()));
@@ -2986,25 +2985,6 @@ void MainWindow::on_actionProperties_triggered()
 
 void MainWindow::propertiesDestroyed(){
     propertiesShown_=false;
-}
-
-void MainWindow::on_actionStatistics_triggered()
-{
-    if(statisticsShown_){
-        return;
-    }
-
-    statisticsShown_=true;
-    statistics_ = new Statistics(this);
-    statistics_->setModal(true);
-    statistics_->setAttribute(Qt::WA_DeleteOnClose);
-    connect(statistics_, SIGNAL(destroyed()), this, SLOT(statisticsDestroyed()));
-    statistics_->setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowCloseButtonHint);
-    statistics_->show();
-}
-
-void MainWindow::statisticsDestroyed(){
-    statisticsShown_=false;
 }
 
 void MainWindow::on_actionHistory_triggered()

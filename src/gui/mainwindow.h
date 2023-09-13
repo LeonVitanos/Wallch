@@ -45,7 +45,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "properties.h"
 #include "preferences.h"
 #include "history.h"
-#include "statistics.h"
 #include "lepoint.h"
 #include "glob.h"
 #include "colors_gradients.h"
@@ -148,7 +147,6 @@ private:
     QRect availableGeometry_;
 
     LEPoint *lepoint_;
-    Statistics *statistics_;
     About *about_;
     Preferences *preferences_;
     Properties *properties_;
@@ -193,7 +191,6 @@ private:
     bool historyShown_ = false;
     bool aboutShown_ = false;
     bool propertiesShown_ = false;
-    bool statisticsShown_ = false;
     bool lePointShown_ = false;
     bool websitePreviewShown_ = false;
     bool colorsGradientsShown_ = false;
@@ -314,7 +311,6 @@ private Q_SLOTS:
     void hideOrShow();
     void picturesLocationsChanged();
     void preferencesDestroyed();
-    void statisticsDestroyed();
     void lePointDestroyed();
     void historyDestroyed();
     void aboutDestroyed();
@@ -339,7 +335,6 @@ private Q_SLOTS:
     void onlineRequestFailed();
     void onlineImageRequestReady(QString image);
     void on_actionHistory_triggered();
-    void on_actionStatistics_triggered();
     void on_actionContents_triggered();
     void on_previous_Button_clicked();
     void on_next_Button_clicked();

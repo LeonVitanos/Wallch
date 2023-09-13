@@ -41,7 +41,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define ARG_REQ 1
 #define ARG_OPT 2
 
-#define UPDATE_STATISTICS_SECONDS_INTERVAL 30000
 #define CHECK_INTERNET_INTERVAL 10000
 
 bool NonGuiManager::alreadyRuns(){
@@ -1280,17 +1279,6 @@ void NonGuiManager::liveWebsiteImageReady(QImage *image, short errorCode){
     }
 }
 
-void NonGuiManager::updateSecondsPassed()
-{
-    settings->setValue("seconds_passed", settings->value("seconds_passed", 0).toUInt()+UPDATE_STATISTICS_SECONDS_INTERVAL/1000);
-}
-
-void NonGuiManager::startStatisticsTimer(){
-    updateSecondsPassed_ = new QTimer(this);
-    connect(updateSecondsPassed_, SIGNAL(timeout()), this, SLOT(updateSecondsPassed()));
-    updateSecondsPassed_->start(UPDATE_STATISTICS_SECONDS_INTERVAL);
-}
-
 void NonGuiManager::installTranslator(){
     if(QApplication::instance()){
         QTranslator *translator = new QTranslator(this);
@@ -1332,7 +1320,6 @@ void NonGuiManager::startProgramNormalGui(){
     MainWindow *mainWindow = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_, 0, 0);
     connectMainwindowWithExternalActions(mainWindow);
     mainWindow->show();
-    startStatisticsTimer();
 }
 
 int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
@@ -1373,7 +1360,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
             generalTimer_->start(1000);
         }
 
-        startStatisticsTimer();
         return app == NULL ? 0 : app->exec();
     }
     else if(arguments.contains("--earth")){
@@ -1383,7 +1369,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         }
         if(alreadyRuns()){
             messageServer("--earth", true);
-            startStatisticsTimer();
             return app == NULL ? 0 : app->exec();
         }
         startedWithLiveEarth_=gv.liveEarthRunning=true;
@@ -1396,7 +1381,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
 
         continueWithLiveEarth();
 
-        startStatisticsTimer();
         return app == NULL ? 0 : app->exec();
     }
     else if(arguments.contains("--potd")){
@@ -1416,7 +1400,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
 
         continueWithPotd();
 
-        startStatisticsTimer();
         return app == NULL ? 0 : app->exec();
     }
     else if(arguments.contains("--website")){
@@ -1426,7 +1409,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         }
         if(alreadyRuns()){
             messageServer("--website", true);
-            startStatisticsTimer();
             return app == NULL ? 0 : app->exec();
         }
         gv.liveWebsiteRunning=startedWithWebsite_=true;
@@ -1440,7 +1422,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         websiteSnapshot_ = new WebsiteSnapshot();
 
         continueWithWebsite();
-        startStatisticsTimer();
         return app == NULL ? 0 : app->exec();
     }
     else if(arguments.contains("--quit") || arguments.contains("--stop") || arguments.contains("--next") || arguments.contains("--previous") || arguments.contains("--pause")){
@@ -1479,7 +1460,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         connectToServer();
         setupTray();
 
-        startStatisticsTimer();
         return app == NULL ? 0 : app->exec();
     }
     else if(arguments.contains("--focus")){
@@ -1490,10 +1470,8 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         else
         {
             //normally called with the --focus argument, attempt to send the message to the server
-            if(alreadyRuns()){
+            if(alreadyRuns())
                 messageServer("--focus", true);
-                startStatisticsTimer();
-            }
         }
         return app == NULL ? 0 : app->exec();
     }
@@ -1512,7 +1490,6 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
                 if(alreadyRuns()){
                     Global::debug("Folder '"+currentFolder+"' has been sent to the already running instance of Wallch for monitoring.");
                     messageServer("MONITOR:"+currentFolder, true);
-                    startStatisticsTimer();
                     return app == NULL ? 0 : app->exec();
                 }
                 else
@@ -1640,7 +1617,6 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
         QApplication::setQuitOnLastWindowClosed(false);
         if(alreadyRuns()){
             messageServer("--focus", true);
-            startStatisticsTimer();
             return app.exec();
         }
         startProgramNormalGui();
