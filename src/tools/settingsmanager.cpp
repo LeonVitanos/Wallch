@@ -124,7 +124,7 @@ void SettingsManager::updateStartup()
 
     windowsSettings.sync();
 #else
-# ifdef Q_OS_UNIX
+# ifdef Q_OS_LINUX
     if(!QDir(gv.homePath+AUTOSTART_DIR).exists()){
         if(!QDir().mkpath(gv.homePath+AUTOSTART_DIR)){
             Global::error("Failed to create ~"+QString(AUTOSTART_DIR)+" folder. Please check folder existence and permissions.");
@@ -142,16 +142,12 @@ void SettingsManager::updateStartup()
 
         QString desktopFileCommand = "/usr/bin/wallch " + arguments;
 
-#  ifdef Q_OS_LINUX
         short defaultValue=3;
-#  else
-        short defaultValue=0;
-#  endif
 
         if(settings->value("startup_timeout", defaultValue).toInt()!=0)
             desktopFileCommand="bash -c 'sleep "+QString::number(settings->value("startup_timeout", defaultValue).toInt())+" && "+desktopFileCommand+"'";
 
-        createDesktopFile(gv.homePath+AUTOSTART_DIR+"/"+BOOT_DESKTOP_FILE, desktopFileCommand, desktopFileComment);
+        FileManager::createDesktopFile(gv.homePath+AUTOSTART_DIR+"/"+BOOT_DESKTOP_FILE, desktopFileCommand, desktopFileComment);
     }
 # endif
 #endif

@@ -30,6 +30,10 @@ public:
     QString currentFolder_;
     QStringList currentFolderList_;
 
+#ifdef Q_OS_LINUX
+    static void createDesktopFile(const QString &path, const QString &command, const QString &comment);
+#endif
+
 private:
     QFileSystemWatcher *watchFolders_;
     QTimer *researchFoldersTimer_;

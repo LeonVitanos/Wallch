@@ -195,3 +195,15 @@ bool FileManager::foldersAreSame(QString folder1, QString folder2){
 
     return (folder1 == folder2);
 }
+
+#ifdef Q_OS_LINUX
+void FileManager::createDesktopFile(const QString &path, const QString &command, const QString &comment){
+    QFile desktopFile(path);
+    if(!desktopFile.open(QIODevice::WriteOnly | QIODevice::Text))
+        Global::error("There was probably an error while trying to create the desktop file "+gv.homePath+AUTOSTART_DIR+"/"+BOOT_DESKTOP_FILE);
+
+    QTextStream out(&desktopFile);
+    out << "\n[Desktop Entry]\nType=Application\nName=Wallch\nExec="+command+"\nTerminal=false\nIcon=wallch\nComment="+comment+"\nCategories=Utility;Application;\n";
+    desktopFile.close();
+}
+#endif
