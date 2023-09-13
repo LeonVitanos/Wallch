@@ -39,7 +39,6 @@ public:
     explicit WallpaperManager(QObject *parent = 0);
 
 private:
-    QStringList allWallpapers_;
     QStringList previousWallpapers_;
     static const short maxPreviousCount_=30;
     short currentPreviousCount_=0;
@@ -50,6 +49,7 @@ private:
     short randomWallpaperIndexButNot(short indexToExclude);
 
 public:
+    QStringList allWallpapers_;
     void addToPreviousWallpapers(const QString &wallpaper);
     QString getPreviousWallpaper();
     QString getNextWallpaper();
@@ -85,7 +85,6 @@ public:
     static void copyCurrentBackgroundImage();
     static void copyCurrentBackgroundPath();
     static void deleteCurrentBackgroundImage();
-    static void openCurrentBackgroundProperties();
 
 Q_SIGNALS:
     void updateImageStyle();

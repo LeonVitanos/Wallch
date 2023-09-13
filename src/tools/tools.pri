@@ -4,6 +4,7 @@ DEPENDPATH += $$PWD
 HEADERS += $$PWD/glob.h \
            $$PWD/colormanager.h \
            $$PWD/desktopenvironment.h \
+           $$PWD/dialoghelper.h \
            $$PWD/filemanager.h \
            $$PWD/nonguimanager.h \
            $$PWD/settingsmanager.h \
@@ -19,6 +20,7 @@ HEADERS += $$PWD/glob.h \
 SOURCES += $$PWD/glob.cpp \
            $$PWD/colormanager.cpp \
            $$PWD/desktopenvironment.cpp \
+           $$PWD/dialoghelper.cpp \
            $$PWD/filemanager.cpp \
            $$PWD/nonguimanager.cpp \
            $$PWD/settingsmanager.cpp \

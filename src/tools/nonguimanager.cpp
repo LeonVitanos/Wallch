@@ -524,7 +524,7 @@ void NonGuiManager::setupTray()
     connect(deleteCurrentImageAction_, &QAction::triggered, wallpaperManager_->deleteCurrentBackgroundImage);
 
     openCurrentImagePropertiesAction_ = new QAction(tr("Properties"), this);
-    connect(openCurrentImagePropertiesAction_, &QAction::triggered, wallpaperManager_->openCurrentBackgroundProperties);
+    connect(openCurrentImagePropertiesAction_, &QAction::triggered, this, [=] { dialogHelper_->showPropertiesDialog(); });
 
     wallpapersAction_ = new QAction(tr("Wallpapers"), this);
     connect(wallpapersAction_, SIGNAL(triggered()), this, SLOT(trayActionWallpapers()));
@@ -754,11 +754,6 @@ void NonGuiManager::uncheckRunningFeatureOnTray()
     liveWebsiteAction_->setCheckable(false);
 }
 //End of System tray icon code
-
-void NonGuiManager::propertiesDestroyed()
-{
-    propertiesShown_=false;
-}
 
 void NonGuiManager::preferencesDestroyed(){
     gv.preferencesDialogShown=false;
@@ -1101,19 +1096,8 @@ void NonGuiManager::doAction(const QString &message){
         connect(preferences_, SIGNAL(destroyed()), this, SLOT(preferencesDestroyed()));
         preferences_->show();
     }
-    else if(message == "--properties"){
-        if(propertiesShown_ || !WallpaperManager::currentBackgroundExists()){
-            return;
-        }
-        QString imageFilename = WallpaperManager::currentBackgroundWallpaper();
-
-        propertiesShown_=true;
-        properties_ = new Properties(imageFilename, false, 0, 0);
-        properties_->setModal(true);
-        properties_->setAttribute(Qt::WA_DeleteOnClose);
-        connect(properties_, SIGNAL(destroyed()), this, SLOT(propertiesDestroyed()));
-        properties_->show();
-    }
+    else if(message == "--properties")
+        dialogHelper_->showPropertiesDialog();
     else if(message == "--about"){
         if(mainWindowLaunched_){
             Q_EMIT signalShowAbout();

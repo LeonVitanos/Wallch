@@ -317,6 +317,7 @@ void MainWindow::initializePrivateVariables(Global *globalParser, ImageFetcher *
     opacityEffect2_ = new QGraphicsOpacityEffect(this);
     scaleWatcher_ = new QFutureWatcher<QImage>(this);
     fileManager_ = new FileManager();
+    dialogHelper_ = new DialogHelper();
 
     increaseOpacityAnimation = new QPropertyAnimation();
     increaseOpacityAnimation->setTargetObject(opacityEffect_);
@@ -346,7 +347,7 @@ void MainWindow::setupMenu()
     currentBgMenu_->addAction(tr("Copy Image"), this, wallpaperManager_->copyCurrentBackgroundImage);
     currentBgMenu_->addAction(tr("Copy Path"), this, wallpaperManager_->copyCurrentBackgroundPath);
     currentBgMenu_->addAction(tr("Delete"), this, wallpaperManager_->deleteCurrentBackgroundImage);
-    currentBgMenu_->addAction(tr("Properties"), this, wallpaperManager_->openCurrentBackgroundProperties);
+    currentBgMenu_->addAction(tr("Properties"), dialogHelper_, SLOT(showPropertiesDialog()));
     settingsMenu_->addMenu(currentBgMenu_);
     settingsMenu_->addSeparator();
     settingsMenu_->addAction(tr("History"), this, SLOT(on_actionHistory_triggered()), QKeySequence(tr("Ctrl+H")));
@@ -2968,25 +2969,6 @@ void MainWindow::getScreenAvailableResolution (QRect geometry){
 
 //Dialogs Code
 
-void MainWindow::on_actionProperties_triggered()
-{
-    if(propertiesShown_ || !WallpaperManager::currentBackgroundExists()){
-        return;
-    }
-    QString imageFilename=WallpaperManager::currentBackgroundWallpaper();
-
-    propertiesShown_=true;
-    properties_ = new Properties(imageFilename, false, 0, 0);
-    properties_->setModal(true);
-    properties_->setAttribute(Qt::WA_DeleteOnClose);
-    connect(properties_, SIGNAL(destroyed()), this, SLOT(propertiesDestroyed()));
-    properties_->show();
-}
-
-void MainWindow::propertiesDestroyed(){
-    propertiesShown_=false;
-}
-
 void MainWindow::on_actionHistory_triggered()
 {
     if(historyShown_){
@@ -3115,26 +3097,6 @@ void MainWindow::on_potd_viewer_Button_clicked()
 void MainWindow::potdViewerDestroyed()
 {
     potdViewerShown_=false;
-}
-
-void MainWindow::sendPropertiesNext(int current){
-    int listCount=wallpaperManager_->wallpapersCount();
-    if(current>=(listCount-1)){
-        if(listCount)
-            Q_EMIT givePropertiesRequest(getPathOfListItem(0), 0);
-    }
-    else
-        Q_EMIT givePropertiesRequest(getPathOfListItem(current+1), current+1);
-}
-
-void MainWindow::sendPropertiesPrevious(int current){
-    int listCount = wallpaperManager_->wallpapersCount();
-    if(current == 0){
-        if(listCount)
-            Q_EMIT givePropertiesRequest(getPathOfListItem(listCount-1), listCount-1);
-    }
-    else
-        Q_EMIT givePropertiesRequest(getPathOfListItem(current-1), current-1);
 }
 
 void MainWindow::on_include_description_checkBox_clicked(bool checked)
@@ -3710,29 +3672,8 @@ void MainWindow::showHideSearchBoxMenu(){
 
 void MainWindow::showProperties()
 {
-    if(propertiesShown_ || !ui->wallpapersList->currentItem()->isSelected() || ui->stackedWidget->currentIndex()!=0)
+    if(!ui->wallpapersList->currentItem()->isSelected() || ui->stackedWidget->currentIndex()!=0)
         return;
 
-    QString currentImage = getPathOfListItem();
-
-    if(WallpaperManager::imageIsNull(currentImage))
-    {
-        QMessageBox::warning(this, tr("Properties"), tr("This file maybe doesn't exist or it's not an image. Please perform a check for the file and try again."));
-        return;
-    }
-    else
-    {
-        propertiesShown_=true;
-        properties_ = new Properties(currentImage, true, ui->wallpapersList->currentRow(), wallpaperManager_, this);
-
-        properties_->setModal(true);
-        properties_->setAttribute(Qt::WA_DeleteOnClose);
-        connect(properties_, SIGNAL(destroyed()), this, SLOT(propertiesDestroyed()));
-        connect(properties_, SIGNAL(requestNext(int)), this, SLOT(sendPropertiesNext(int)));
-        connect(properties_, SIGNAL(requestPrevious(int)), this, SLOT(sendPropertiesPrevious(int)));
-        connect(properties_, SIGNAL(averageColorChanged()), this, SLOT(setButtonColor()));
-        connect(this, SIGNAL(givePropertiesRequest(QString, int)), properties_, SLOT(updateEntries(QString, int)));
-        properties_->show();
-        properties_->activateWindow();
-    }
+    dialogHelper_->showPropertiesDialog(ui->wallpapersList->currentRow(), wallpaperManager_);
 }

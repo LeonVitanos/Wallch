@@ -35,7 +35,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QSystemTrayIcon>
 #include <QTranslator>
 
-#include "properties.h"
 #include "preferences.h"
 #include "mainwindow.h"
 #include "glob.h"
@@ -44,6 +43,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "imagefetcher.h"
 #include "timermanager.h"
 #include "settingsmanager.h"
+#include "dialoghelper.h"
 
 #define SOCKET_SERVER_NAME "Wallch Local Socket Server"
 
@@ -64,18 +64,19 @@ private:
     FileManager *fileManager_ = NULL;
     TimerManager *timerManager_ = NULL;
     Preferences *preferences_;
+    DialogHelper *dialogHelper_;
+    WebsiteSnapshot *websiteSnapshot_=NULL;
+    Global *globalParser_ = NULL;
+    ImageFetcher *imageFetcher_ = NULL;
+
     QTimer *trayWheelTimer_;
     QTimer *generalTimer_ = NULL;
     QMimeData *myFile_;
-    Properties *properties_;
     QSharedMemory *alreadyRunsMem_;
     QLocalServer *localServer_;
     QLocalSocket *socket_;
     QString messageToSendToServer_;
-    WebsiteSnapshot *websiteSnapshot_=NULL;
     bool quitAfterMessagingMainApplication_;
-    Global *globalParser_ = NULL;
-    ImageFetcher *imageFetcher_ = NULL;
     bool mainWindowLaunched_ = false;
     bool startedWithNone_ = false;
     bool startedWithJustChange_ = false;
@@ -83,7 +84,6 @@ private:
     bool startedWithPotd_ = false;
     bool startedWithWebsite_ = false;
     bool previousWasClicked_ = false;
-    bool propertiesShown_ = false;
     bool justUpdatedPotd_ = false;
     QSystemTrayIcon *trayIcon_;
     QMenu *trayIconMenu_;
@@ -157,7 +157,6 @@ private Q_SLOTS:
     void waitForInternetConnection();
     void updateSeconds();
     void checkPicOfDay();
-    void propertiesDestroyed();
     void preferencesDestroyed();
     void liveWebsiteImageReady(QImage *image, short errorCode);
     void addFilesToWallpapers (QString path);

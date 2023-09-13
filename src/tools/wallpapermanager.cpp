@@ -719,12 +719,3 @@ void WallpaperManager::deleteCurrentBackgroundImage(){
             QMessageBox::warning(0, tr("Error"), tr("There was a problem deleting the current image. Please make sure you have the permission to delete the image or that the image exists."));
 }
 
-
-void WallpaperManager::openCurrentBackgroundProperties(){
-    if(!currentBackgroundExists())
-        return;
-
-    //openPropertiesOf(currentBackgroundWallpaper());
-}
-
-

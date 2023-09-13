@@ -42,7 +42,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "about.h"
 #include "ui_mainwindow.h"
 #include "website_preview.h"
-#include "properties.h"
+
 #include "preferences.h"
 #include "history.h"
 #include "lepoint.h"
@@ -60,6 +60,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "timermanager.h"
 #include "filemanager.h"
 #include "settingsmanager.h"
+#include "dialoghelper.h"
 
 #ifndef Q_OS_LINUX
     #include "notification.h"
@@ -149,7 +150,6 @@ private:
     LEPoint *lepoint_;
     About *about_;
     Preferences *preferences_;
-    Properties *properties_;
     ColorsGradients *colorsGradients_;
     PotdViewer *potdViewer_;
     History *history_;
@@ -157,6 +157,7 @@ private:
     PotdPreview *potdPreview_;
     WebsitePreview *webPreview_;
     TimerManager *timerManager_;
+    DialogHelper *dialogHelper_;
 
     QRegularExpression *match_;
     QMovie *processingRequestGif_;
@@ -190,7 +191,6 @@ private:
     bool addDialogShown_ = false;
     bool historyShown_ = false;
     bool aboutShown_ = false;
-    bool propertiesShown_ = false;
     bool lePointShown_ = false;
     bool websitePreviewShown_ = false;
     bool colorsGradientsShown_ = false;
@@ -281,8 +281,6 @@ private Q_SLOTS:
     void checkBatteryStatus();
     void addFolderForMonitor(const QString &folder);
     void updateTiming();
-    void sendPropertiesNext(int current);
-    void sendPropertiesPrevious(int current);
     void changePathsToIcons();
     void changeIconsToPaths();
     void launchTimerToUpdateIcons();
@@ -315,7 +313,6 @@ private Q_SLOTS:
     void historyDestroyed();
     void aboutDestroyed();
     void locationsDestroyed();
-    void propertiesDestroyed();
     void websitePreviewDestroyed();
     void colorsGradientsDestroyed();
     void potdViewerDestroyed();
@@ -359,7 +356,6 @@ private Q_SLOTS:
     void on_actionReport_A_Bug_triggered();
     void on_actionGet_Help_Online_triggered();
     void on_actionWhat_is_my_screen_resolution_triggered();
-    void on_actionProperties_triggered();
     void on_potd_viewer_Button_clicked();
     void on_add_login_details_clicked(bool checked);
     void on_action_About_triggered();
@@ -420,7 +416,6 @@ private Q_SLOTS:
 Q_SIGNALS:
      void fixLivewebsiteButtons();
      void noMatch();
-     void givePropertiesRequest(QString img, int current_index);
      void monitorCheck();
      void signalUncheckRunningFeatureOnTray();
      void signalRecreateTray();

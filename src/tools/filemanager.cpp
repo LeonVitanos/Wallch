@@ -1,8 +1,6 @@
 #include "filemanager.h"
 
 FileManager::FileManager(){
-    //wallpaperManager_ = (wallpaperManager == NULL) ? new WallpaperManager() : wallpaperManager;
-
     //Timer for folder monitoring
     researchFoldersTimer_ = new QTimer(this);
     connect(researchFoldersTimer_, SIGNAL(timeout()), this, SLOT(researchFolders()));

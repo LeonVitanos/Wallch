@@ -38,8 +38,8 @@ History::History(WallpaperManager *wallpaperManager, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::history)
 {
-    propertiesShown_=false;
     wallpaperManager_ = wallpaperManager;
+    dialogHelper_ = new DialogHelper();
     ui->setupUi(this);
     ui->keepHistory->setChecked(settings->value("history", true).toBool());
     readHistoryFiles();
@@ -256,27 +256,10 @@ void History::setAsBackground(){
 }
 
 void History::showProperties(){
-    if(propertiesShown_ || !ui->historyInfo->currentItem()->isSelected()){
+    if(!ui->historyInfo->currentItem()->isSelected())
         return;
-    }
-    QString imageFile = ui->historyInfo->currentItem()->data(11).toString();
 
-    if(WallpaperManager::imageIsNull(imageFile))
-    {
-        QMessageBox::warning(this, tr("Properties"), tr("This file maybe doesn't exist or it's not an image. Please perform a check for the file and try again."));
-        return;
-    }
-
-    propertiesShown_=true;
-    historyProperties_ = new Properties(imageFile, false, 0, wallpaperManager_, this);
-    historyProperties_->setModal(true);
-    historyProperties_->setAttribute(Qt::WA_DeleteOnClose);
-    connect(historyProperties_, SIGNAL(destroyed()), this, SLOT(historyPropertiesDestroyed()));
-    historyProperties_->show();
-}
-
-void History::historyPropertiesDestroyed(){
-    propertiesShown_=false;
+    dialogHelper_->showPropertiesDialog(-1, 0, ui->historyInfo->currentItem()->data(11).toString());
 }
 
 void History::launchInBrowser(){

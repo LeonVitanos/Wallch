@@ -43,7 +43,7 @@ class Properties : public QDialog
     Q_OBJECT
 
 public:
-    explicit Properties(const QString &image, bool showNextPrevious, int currentIndex, WallpaperManager *wallpaperManager, QWidget *parent = 0);
+    explicit Properties(int currentIndex, WallpaperManager *wallpaperManager, QString filePath, QWidget *parent = 0);
     ~Properties();
 
 protected:
@@ -61,6 +61,7 @@ private:
     QFutureWatcher<QImage> *propertiesReadyWatcher_;
     QString currentFilename_;
     int  currentIndex_;
+    QString filePath_;
     int currentImageWidth_;
     int currentImageHeight_;
     float resizeFactorX_;
@@ -79,12 +80,10 @@ private Q_SLOTS:
     void simulateNext();
     void simulatePrevious();
     void uncheckButtons();
-    void updateEntries(const QString &filename, int currentIndex);
+    void updateEntries(int currentIndex);
     void propertiesReady();
 
 Q_SIGNALS:
-    void requestNext(int currentIndex_);
-    void requestPrevious(int currentIndex_);
     void averageColorChanged();
 };
 

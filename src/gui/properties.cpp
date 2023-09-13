@@ -35,12 +35,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define BYTES_PER_KiB 1024.0
 #define BYTES_PER_MiB 1048576.0
 
-Properties::Properties(const QString &image, bool showNextPrevious, int currentIndex, WallpaperManager *wallpaperManager, QWidget *parent) :
+Properties::Properties(int currentIndex, WallpaperManager *wallpaperManager, QString filePath, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::properties)
 {
     ui->setupUi(this);
 
+    filePath_ = filePath;
     wallpaperManager_ = wallpaperManager;
 
     setWindowFlags(Qt::Dialog | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint);
@@ -48,38 +49,37 @@ Properties::Properties(const QString &image, bool showNextPrevious, int currentI
     propertiesReadyWatcher_ = new QFutureWatcher<QImage>(this);
     connect(propertiesReadyWatcher_, SIGNAL(finished()), this, SLOT(propertiesReady()));
 
-    nextPreviousTimer_ = new QTimer(this);
-    nextPreviousTimer_->setSingleShot(true);
-    connect(nextPreviousTimer_, SIGNAL(timeout()), this, SLOT(uncheckButtons()));
-
-    if(!showNextPrevious){
+    if(currentIndex < 0){
         ui->previous->hide();
         ui->next->hide();
     }
     else
     {
+        nextPreviousTimer_ = new QTimer(this);
+        nextPreviousTimer_->setSingleShot(true);
+        connect(nextPreviousTimer_, SIGNAL(timeout()), this, SLOT(uncheckButtons()));
+
         (void) new QShortcut(Qt::Key_Right, this, SLOT(simulateNext()));
         (void) new QShortcut(Qt::Key_Left, this, SLOT(simulatePrevious()));
+
+        ui->previous->setIcon(QIcon::fromTheme("media-seek-backward", QIcon(":/images/media-seek-backward.png")));
+        ui->next->setIcon(QIcon::fromTheme("media-seek-forward", QIcon(":/images/media-seek-forward.png")));
     }
 
-    ui->previous->setIcon(QIcon::fromTheme("media-seek-backward", QIcon(":/images/media-seek-backward.png")));
-    ui->next->setIcon(QIcon::fromTheme("media-seek-forward", QIcon(":/images/media-seek-forward.png")));
-
-    updateEntries(image, currentIndex);
+    updateEntries(currentIndex);
 }
 
 Properties::~Properties()
 {
-    if(nextPreviousTimer_->isActive()){
+    if(currentIndex_ > -1 && nextPreviousTimer_->isActive())
         nextPreviousTimer_->stop();
-    }
+
     delete ui;
 }
 
 void Properties::propertiesReady(){
-    if(currentImageWidth_ > 0 && currentImageHeight_ > 0){
+    if(currentImageWidth_ > 0 && currentImageHeight_ > 0)
         ui->dimensionsLabel->setText(QString::number(currentImageWidth_) + " x " + QString::number(currentImageHeight_));
-    }
 
     updatePropertiesImageLabel(propertiesReadyWatcher_->future().result());
 }
@@ -87,39 +87,34 @@ void Properties::propertiesReady(){
 QImage Properties::resizePreview(){
     QImageReader reader(currentFilename_);
     reader.setDecideFormatFromContent(true);
-    if(reader.canRead()){
-        currentImageWidth_ = reader.size().width();
-        currentImageHeight_ = reader.size().height();
 
-        if(currentImageWidth_>(gv.screenAvailableWidth) || currentImageHeight_>(gv.screenAvailableHeight)){
-            float scaleFactor;
-            if((currentImageWidth_-(gv.screenAvailableWidth)) > (currentImageHeight_-(gv.screenAvailableHeight))){
-                scaleFactor = (gv.screenAvailableWidth*1.0)/currentImageWidth_;
-            }
-            else
-            {
-                scaleFactor = (gv.screenAvailableHeight*1.0)/currentImageHeight_;
-            }
-            reader.setScaledSize(QSize(reader.size())*scaleFactor);
-        }
-
-        QImage image = reader.read();
-
-        if(image.isNull()){
-            image = QImage(currentFilename_);
-            if(image.isNull()){
-                return QIcon::fromTheme("dialog-error").pixmap(100).toImage();
-            }
-        }
-
-        return image;
-    }
-    else
-    {
+    if(!reader.canRead()){
         currentImageWidth_ = -1;
         currentImageHeight_ = -1;
         return QIcon::fromTheme("dialog-error").pixmap(100).toImage();
     }
+
+    currentImageWidth_ = reader.size().width();
+    currentImageHeight_ = reader.size().height();
+
+    if(currentImageWidth_>(gv.screenAvailableWidth) || currentImageHeight_>(gv.screenAvailableHeight)){
+        float scaleFactor;
+        if((currentImageWidth_-(gv.screenAvailableWidth)) > (currentImageHeight_-(gv.screenAvailableHeight)))
+            scaleFactor = (gv.screenAvailableWidth*1.0)/currentImageWidth_;
+        else
+            scaleFactor = (gv.screenAvailableHeight*1.0)/currentImageHeight_;
+        reader.setScaledSize(QSize(reader.size())*scaleFactor);
+    }
+
+    QImage image = reader.read();
+
+    if(image.isNull()){
+        image = QImage(currentFilename_);
+        if(image.isNull())
+            return QIcon::fromTheme("dialog-error").pixmap(100).toImage();
+    }
+
+    return image;
 
 }
 
@@ -152,8 +147,9 @@ void Properties::updatePropertiesImageLabel(QImage image)
                                                                        Qt::KeepAspectRatio, Qt::SmoothTransformation), 6));
 }
 
-void Properties::updateEntries(const QString &filename, int currentIndex){
-    currentFilename_ = filename;
+void Properties::updateEntries(int currentIndex){
+    currentFilename_ = !filePath_.isEmpty() ? filePath_ :
+        currentIndex > -1 ? wallpaperManager_->allWallpapers_.at(currentIndex) : wallpaperManager_->currentBackgroundWallpaper();
     currentIndex_ = currentIndex;
 
     ui->propertiesImage->clear();
@@ -174,18 +170,18 @@ void Properties::updateEntries(const QString &filename, int currentIndex){
 
 void Properties::on_next_clicked()
 {
-    if(propertiesReadyWatcher_->isRunning()){
+    if(propertiesReadyWatcher_->isRunning())
         propertiesReadyWatcher_->cancel();
-    }
-    Q_EMIT requestNext(currentIndex_);
+
+    updateEntries(currentIndex_ >= (wallpaperManager_->wallpapersCount() - 1) ? 0 : currentIndex_+1);
 }
 
 void Properties::on_previous_clicked()
 {
-    if(propertiesReadyWatcher_->isRunning()){
+    if(propertiesReadyWatcher_->isRunning())
         propertiesReadyWatcher_->cancel();
-    }
-    Q_EMIT requestPrevious(currentIndex_);
+
+    updateEntries(currentIndex_ == 0 ? wallpaperManager_->wallpapersCount() - 1 : currentIndex_ - 1);
 }
 
 void Properties::simulateNext(){
@@ -193,22 +189,22 @@ void Properties::simulateNext(){
     ui->previous->setDown(false);
     ui->next->setDown(false);
     ui->next->setDown(true);
+
     on_next_clicked();
-    if(nextPreviousTimer_->isActive()){
+    if(nextPreviousTimer_->isActive())
         nextPreviousTimer_->stop();
-    }
-    nextPreviousTimer_->start(200);
+    nextPreviousTimer_->start(150);
 }
 
 void Properties::simulatePrevious(){
     ui->previous->setDown(false);
     ui->next->setDown(false);
     ui->previous->setDown(true);
+
     on_previous_clicked();
-    if(nextPreviousTimer_->isActive()){
+    if(nextPreviousTimer_->isActive())
         nextPreviousTimer_->stop();
-    }
-    nextPreviousTimer_->start(200);
+    nextPreviousTimer_->start(150);
 }
 
 void Properties::uncheckButtons(){
@@ -219,18 +215,16 @@ void Properties::uncheckButtons(){
 void Properties::on_set_as_background_clicked()
 {
     wallpaperManager_->setBackground(currentFilename_, true, true, 1);
-    if(gv.setAverageColor){
+    if(gv.setAverageColor)
+        //TODO: Check on Linux/Windows
         Q_EMIT averageColorChanged();
-    }
 }
 
 QString Properties::sizeToNiceString(qint64 fsize){
-    if(fsize>=BYTES_PER_MiB){
+    if(fsize>=BYTES_PER_MiB)
         return QString::number(fsize/BYTES_PER_MiB, 'f', 1) + " MiB";
-    }
-    else{
+    else
         return QString::number(fsize/BYTES_PER_KiB, 'f', 1) + " KiB";
-    }
 }
 
 void Properties::on_open_location_button_clicked()

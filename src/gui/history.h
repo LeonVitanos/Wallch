@@ -22,8 +22,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef HISTORY_H
 #define HISTORY_H
 
-#include "properties.h"
 #include "wallpapermanager.h"
+#include "dialoghelper.h"
 #include "filemanager.h"
 
 #include <QTreeWidgetItem>
@@ -44,12 +44,11 @@ public:
 private:
     Ui::history *ui;
     WallpaperManager *wallpaperManager_;
+    DialogHelper *dialogHelper_;
     QGroupBox *optionsGroupBox_;
     QGridLayout *optionsGroupBoxLayout_;
     QVBoxLayout *mainLayout_;
     QHBoxLayout *buttonsLayout_;
-    Properties *historyProperties_;
-    bool propertiesShown_;
     void readHistoryFiles();
     void addHistoryEntry(QString time, QString path, short type);
     QString numberWithLeadingZero(QString number);
@@ -68,7 +67,6 @@ private Q_SLOTS:
     void setAsBackground();
     void copyLink();
     void launchInBrowser();
-    void historyPropertiesDestroyed();
     void on_keepHistory_clicked(bool checked);
 };
 
