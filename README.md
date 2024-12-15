@@ -1,6 +1,6 @@
 # Wallch
 
-This is my first project, in which i took my first steps of programming together with a friend, at the age of 15. The development was active from 2010 until 2015 and was stopped mainly because we didn't admire the code we've written while learning to program and also wanted to move to other projects. 
+This is my first project, in which i took my first steps of programming together with [Alexandros Solanos](https://github.com/hytromo), at the age of 15. The development was active from 2010 until 2015 and was stopped mainly because we didn't admire the code we've written while learning to program and also wanted to move to other projects. 
 
 ![alt text](https://i.imgur.com/j6vWRv1.jpg)
 
