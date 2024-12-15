@@ -217,7 +217,7 @@ void MainWindow::connectSignalSlots(){
     connect(ui->hours_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(ui->minutes_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(ui->seconds_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
-    connect(btn_group, SIGNAL(buttonClicked(int)), this, SLOT(page_button_clicked(int)));
+    connect(btn_group, SIGNAL(idClicked(int)), this, SLOT(page_button_clicked(int)));
     connect(wallpaperManager_, SIGNAL(updateImageStyle()), this, SLOT(updateImageStyleCombo()));
     connect(fileManager_, SIGNAL(prepareToSearchFolders()), this, SLOT(prepareToSearchFolders()));
     connect(fileManager_, SIGNAL(monitoredFoldersChanged()), this, SLOT(monitoredFoldersUpdated()));
@@ -503,7 +503,7 @@ void MainWindow::closeWhatsRunning(){
 }
 
 QString MainWindow::base64Encode(const QString &string){
-    return QByteArray().append(string).toBase64();
+    return QByteArray(string.toUtf8()).toBase64();
 }
 
 void MainWindow::onlineRequestFailed(){
@@ -564,7 +564,8 @@ void MainWindow::imageTransition(const QString &filename /*=QString()*/)
         scaleWatcher_->cancel();
     }
 
-    scaleWatcher_->setFuture(QtConcurrent::run(this, &MainWindow::scaleWallpapersPreview, filename));
+    // Call scaleWallpapersPreview() in a separate thread
+    scaleWatcher_->setFuture(QtConcurrent::run([this, filename]() {return this->scaleWallpapersPreview(filename);}));
 }
 
 QImage MainWindow::scaleWallpapersPreview(QString filename){
@@ -1517,7 +1518,8 @@ void MainWindow::on_previous_Button_clicked()
 }
 
 void MainWindow::beginFixCacheForFolders(){
-    QtConcurrent::run(cacheManager_, &CacheManager::fixCacheSizeWithCurrentFoldersBeing, fileManager_->getCurrentWallpaperFolders());
+    // Call fixCacheSizeWithCurrentFoldersBeing() in a separate thread
+    QtConcurrent::run([this]() {cacheManager_->fixCacheSizeWithCurrentFoldersBeing(fileManager_->getCurrentWallpaperFolders());});
 }
 
 void MainWindow::clearWallpapersList(){

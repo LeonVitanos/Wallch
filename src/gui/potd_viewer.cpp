@@ -122,7 +122,7 @@ void PotdViewer::startRequestAlternative(QUrl url)
     replyAlt_ = new QProcess(this);
     replyAlt_->start("wget", QStringList() << "-O" << QDir(QDir::currentPath()).filePath("potd") << url.toString());
     connect(replyAlt_ , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(httpFinished()));
-    connect(replyAlt_ , SIGNAL(error(QProcess::ProcessError)), this, SLOT(httpErrorOccured()));
+    connect(replyAlt_, SIGNAL(errorOccurred(QProcess::ProcessError)), this, SLOT(httpErrorOccured()));
 }
 
 void PotdViewer::movieDestroyed(){
@@ -133,7 +133,9 @@ void PotdViewer::httpErrorOccured(){
     enableWidgets(true);
     ui->label->setText(tr("Check your internet connection or try another date. Maybe Wikipedia\nhasn't selected a picture of the day for")+" "+ui->dateEdit->date().toString());
     ui->potdDescription->clear();
-    QMessageBox::information(this, "HTTPS",tr("Download failed")+": "+reply_->errorString()+".");
+
+    if (reply_ && reply_->error())
+        QMessageBox::information(this, "HTTPS",tr("Download failed")+": "+reply_->errorString()+".");
 }
 
 void PotdViewer::httpFinished()

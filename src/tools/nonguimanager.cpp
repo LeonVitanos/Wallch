@@ -453,7 +453,7 @@ void NonGuiManager::messageServer(const QString &message, bool quitAfterwards){
     socket_ = new QLocalSocket(this);
     socket_->abort();
     connect(socket_, SIGNAL(connected()), this, SLOT(socketConnected()));
-    connect(socket_, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(socketError()));
+    connect(socket_, SIGNAL(errorOccurred(QLocalSocket::LocalSocketError)), this, SLOT(socketError()));
     socket_->connectToServer(QString(SOCKET_SERVER_NAME));
 }
 
@@ -584,7 +584,7 @@ bool NonGuiManager::eventFilter(QObject *object, QEvent *event){
         //allow another scroll event in 0.5 seconds (aka 2 changes per second limit)
         trayWheelTimer_->start(500);
 
-        bool scrolledUp = ((QWheelEvent*) event)->delta() > 0;
+        bool scrolledUp = static_cast<QWheelEvent*>(event)->angleDelta().y() > 0;
 
         if(scrolledUp){
             doAction("--previous");
@@ -1324,7 +1324,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
             Global::debug("Your Desktop Background will change every "+QString::number(timerManager_->totalSeconds_)+" seconds.");
 
             if(wallpaperManager_->wallpapersCount()<LEAST_WALLPAPERS_FOR_START){
-                Global::error("Too few pictures for image changing. You need at least "+QString(LEAST_WALLPAPERS_FOR_START)+".");
+                Global::error("Too few pictures for image changing. You need at least " + QString::number(LEAST_WALLPAPERS_FOR_START) + ".");
                 globalParser_->desktopNotify(tr("You cannot change wallpapers if they are less than 2!"), false, "info");
                 return 1;
             }

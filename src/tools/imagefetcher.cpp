@@ -333,7 +333,9 @@ void ImageFetcher::getPotdDescription(QNetworkReply *reply){
         return;
     }
     potdDescription.replace("/wiki", "https://en.wikipedia.org/wiki").remove(QRegularExpression("<[^>]*>")).replace("\n", " ");
-    QtConcurrent::run(this, &ImageFetcher::writePotdDescription, replaceSpecialHtml(potdDescription));
+
+    // Call writePotdDescription() in a separate thread
+    QtConcurrent::run([this, potdDescription]() {writePotdDescription(replaceSpecialHtml(potdDescription));});
 }
 
 void ImageFetcher::writePotdDescription(const QString &description){
@@ -417,7 +419,7 @@ void ImageFetcher::readFileContainingImage(QNetworkReply *reply){
 
     if(fetchType_ == FetchType::POTD){
         //potd has multiple links in it
-        QStringList linksDates = onlineLink.split(QRegularExpression("[ \n]"),QString::SkipEmptyParts);
+        QStringList linksDates = onlineLink.split(QRegularExpression("[ \n]"),Qt::SkipEmptyParts);
         if(linksDates.count() != 6){
             if(!alreadyTriedAlternativeLinkToDropbox_){
                 tryDownloadingImagesFromAlternativeLink();

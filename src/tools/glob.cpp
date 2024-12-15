@@ -591,7 +591,7 @@ void Global::saveSecondsLeftNow(int secondsLeft, short forType){
 }
 
 QString Global::base64Decode(const QString &string){
-    return QByteArray::fromBase64(QByteArray().append(string));
+    return QByteArray::fromBase64(QByteArray().append(string.toUtf8()));
 }
 
 void Global::resetSleepProtection(int timeoutCount){

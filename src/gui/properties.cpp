@@ -157,7 +157,7 @@ void Properties::updateEntries(int currentIndex){
 
     QFileInfo imageInfo(currentFilename_);
     ui->type_label->setText(imageInfo.suffix().toUpper());
-    ui->created_label->setText(imageInfo.created().toString("ddd, MMM d yyyy hh:mm:ss"));
+    ui->created_label->setText(imageInfo.birthTime().toString("ddd, MMM d yyyy hh:mm:ss"));
     ui->modified_label->setText(imageInfo.lastModified().toString("ddd, MMM d yyyy hh:mm:ss"));
 
     ui->nameLineEdit->setText(Global::basenameOf(currentFilename_));
@@ -165,7 +165,10 @@ void Properties::updateEntries(int currentIndex){
     ui->location_label->setText(Global::dirnameOf(currentFilename_));
     ui->dimensionsLabel->setText("-");
 
-    propertiesReadyWatcher_->setFuture(QtConcurrent::run(this, &Properties::resizePreview));
+    // Call resizePreview() in a separate thread
+    propertiesReadyWatcher_->setFuture(QtConcurrent::run([this]() {return this->resizePreview();}));
+
+
 }
 
 void Properties::on_next_clicked()
