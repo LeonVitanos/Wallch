@@ -216,8 +216,7 @@ short ColorManager::getCurrentTheme(){
             theme = DesktopEnvironment::gsettingsGet("org.gnome.desktop.interface", "gtk-theme");
         else
             return 1;
-#else
-# ifdef Q_OS_WIN
+#elif defined(Q_OS_WIN)
         QSettings appsUseLightTheme("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", QSettings::NativeFormat);
         if(appsUseLightTheme.value("AppsUseLightTheme").isValid())
             return appsUseLightTheme.value("AppsUseLightTheme").toInt();
@@ -228,7 +227,14 @@ short ColorManager::getCurrentTheme(){
             else
                 return 1;
         }
-# endif
+#elif defined(Q_OS_MAC)
+        if (QOperatingSystemVersion::current().majorVersion() >= 10) {
+            return QPalette().color(QPalette::Window).lightness() >= 128;
+        }
+        else
+            return 1;
+#else
+        return 1;
 #endif
     }
 

@@ -3,6 +3,7 @@
 #define COLORMANAGER_H
 
 #include <QColor>
+#include <QOperatingSystemVersion>
 
 #include "glob.h"
 
