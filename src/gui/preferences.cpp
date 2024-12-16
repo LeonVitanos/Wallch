@@ -145,16 +145,16 @@ void Preferences::changeEvent(QEvent *e)
 
 void Preferences::setupShortcuts(){
     (void) new QShortcut(Qt::Key_Escape, this, SLOT(close()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_1, this, SLOT(on_page_0_general_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_2, this, SLOT(on_page_1_wallpapers_page_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_3, this, SLOT(on_page_2_live_website_clicked()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_4, this, SLOT(on_page_3_advanced_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_1, this, SLOT(on_page_0_general_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_2, this, SLOT(on_page_1_wallpapers_page_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_3, this, SLOT(on_page_2_live_website_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_4, this, SLOT(on_page_3_advanced_clicked()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_PageUp, this, SLOT(previousPage()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_PageDown, this, SLOT(nextPage()));
+    (void) new QShortcut(Qt::ALT | Qt::Key_1, this, SLOT(on_page_0_general_clicked()));
+    (void) new QShortcut(Qt::ALT | Qt::Key_2, this, SLOT(on_page_1_wallpapers_page_clicked()));
+    (void) new QShortcut(Qt::ALT | Qt::Key_3, this, SLOT(on_page_2_live_website_clicked()));
+    (void) new QShortcut(Qt::ALT | Qt::Key_4, this, SLOT(on_page_3_advanced_clicked()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_1, this, SLOT(on_page_0_general_clicked()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_2, this, SLOT(on_page_1_wallpapers_page_clicked()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_3, this, SLOT(on_page_2_live_website_clicked()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_4, this, SLOT(on_page_3_advanced_clicked()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_PageUp, this, SLOT(previousPage()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_PageDown, this, SLOT(nextPage()));
 }
 
 void Preferences::previousPage(){
@@ -441,7 +441,7 @@ QString Preferences::getCommandOfDesktopFile(const QString &file){
         }
     }
     if(found){
-        return curLine.right(curLine.count()-5);
+        return curLine.right(curLine.length()-5);
     }
     else
     {

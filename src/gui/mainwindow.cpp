@@ -263,12 +263,12 @@ void MainWindow::setupTimers(){
 void MainWindow::setupKeyboardShortcuts(){
     (void) new QShortcut(Qt::Key_Escape, this, SLOT(escapePressed()));
     (void) new QShortcut(Qt::Key_Delete, this, SLOT(deletePressed()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_Return, this, SLOT(showProperties()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_F, this, SLOT(showHideSearchBox()));
+    (void) new QShortcut(Qt::ALT | Qt::Key_Return, this, SLOT(showProperties()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_F, this, SLOT(showHideSearchBox()));
     (void) new QShortcut(Qt::Key_Return, this, SLOT(enterPressed()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_PageUp, this, SLOT(previousPage()));
-    (void) new QShortcut(Qt::CTRL + Qt::Key_PageDown, this, SLOT(nextPage()));
-    (void) new QShortcut(Qt::ALT + Qt::Key_F4, this, SLOT(escapePressed()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_PageUp, this, SLOT(previousPage()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_PageDown, this, SLOT(nextPage()));
+    (void) new QShortcut(Qt::ALT | Qt::Key_F4, this, SLOT(escapePressed()));
 }
 
 #ifdef Q_OS_LINUX
@@ -339,7 +339,7 @@ void MainWindow::setupMenu()
     //We decided this is better than having a menubar
     settingsMenu_ = new QMenu(this);
     currentBgMenu_ = new QMenu(this);
-    settingsMenu_->addAction(tr("Preferences"), this, SLOT(on_action_Preferences_triggered()), QKeySequence(tr("Ctrl+P")));
+    settingsMenu_->addAction(tr("Preferences"), QKeySequence(tr("Ctrl+P")), this, &MainWindow::on_action_Preferences_triggered);
     settingsMenu_->addSeparator();
     currentBgMenu_->setTitle(tr("Current Background"));
     currentBgMenu_->addAction(tr("Open Image"), this, wallpaperManager_->openCurrentBackgroundImage);
@@ -350,19 +350,19 @@ void MainWindow::setupMenu()
     currentBgMenu_->addAction(tr("Properties"), dialogHelper_, SLOT(showPropertiesDialog()));
     settingsMenu_->addMenu(currentBgMenu_);
     settingsMenu_->addSeparator();
-    settingsMenu_->addAction(tr("History"), this, SLOT(on_actionHistory_triggered()), QKeySequence(tr("Ctrl+H")));
+    settingsMenu_->addAction(tr("History"), QKeySequence(tr("Ctrl+H")), this, &MainWindow::on_actionHistory_triggered);
     settingsMenu_->addAction(tr("What is my screen resolution?"), this, SLOT(on_actionWhat_is_my_screen_resolution_triggered()));
     settingsMenu_->addSeparator();
     settingsMenu_->addAction(tr("About Wallch"), this, SLOT(on_action_About_triggered()));
     helpMenu_ = new QMenu(this);
     helpMenu_->setTitle(tr("Help"));
-    helpMenu_->addAction(tr("How to use Wallch?"), this, SLOT(on_actionContents_triggered()), QKeySequence(tr("F1")));
+    helpMenu_->addAction(tr("How to use Wallch?"), QKeySequence(tr("F1")), this, &MainWindow::on_actionContents_triggered);
     helpMenu_->addAction(tr("Ask a question"), this, SLOT(on_actionGet_Help_Online_triggered()));
     helpMenu_->addAction(tr("Report a bug"), this, SLOT(on_actionReport_A_Bug_triggered()));
     settingsMenu_->addMenu(helpMenu_);
     settingsMenu_->addAction(tr("Donate"), this, SLOT(on_actionDonate_triggered()));
     settingsMenu_->addSeparator();
-    settingsMenu_->addAction(tr("Quit"), this, SLOT(doQuit()), QKeySequence(tr("Ctrl+Q")));
+    settingsMenu_->addAction(tr("Quit"), QKeySequence(tr("Ctrl+Q")), this, &MainWindow::doQuit);
     settingsMenu_->installEventFilter(this);
 
     ui->menubarMenu->setMenu(settingsMenu_);
@@ -601,11 +601,17 @@ void MainWindow::animateScreenLabel(bool onlyHide){
 }
 
 void MainWindow::unhoverMenuButton(){
-    /*todo how to make this shiet work*/
-    QMouseEvent *event1 = new QMouseEvent(QEvent::MouseMove, QCursor::pos()+QPoint(1, 1), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+    /*TODO how to make this shiet work*/
+    QPoint globalPos = QCursor::pos() + QPoint(1, 1);
+    QPointF localPos = QPointF(globalPos);
+    QMouseEvent *event1 = new QMouseEvent(QEvent::MouseMove, localPos, globalPos, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
     QApplication::postEvent(ui->menubarMenu, event1, Qt::HighEventPriority);
     QApplication::sendEvent(ui->menubarMenu, event1);
-    QHoverEvent *event2 = new QHoverEvent(QEvent::HoverLeave, QPoint(-1, -1), QPoint(1, 1));
+
+    QPointF scenePos = QPointF(0, 0);
+    QPointF globalPosHover = QPointF(1, 1);
+    QPointF oldPos = QPointF(-1, -1);
+    QHoverEvent *event2 = new QHoverEvent(QEvent::HoverLeave, scenePos, globalPosHover, oldPos, Qt::NoModifier, QPointingDevice::primaryPointingDevice());
     QApplication::postEvent(ui->menubarMenu, event2, Qt::HighEventPriority);
     QApplication::sendEvent(ui->menubarMenu, event2);
 }
@@ -1519,7 +1525,7 @@ void MainWindow::on_previous_Button_clicked()
 
 void MainWindow::beginFixCacheForFolders(){
     // Call fixCacheSizeWithCurrentFoldersBeing() in a separate thread
-    QtConcurrent::run([this]() {cacheManager_->fixCacheSizeWithCurrentFoldersBeing(fileManager_->getCurrentWallpaperFolders());});
+    (void)QtConcurrent::run([this]() {cacheManager_->fixCacheSizeWithCurrentFoldersBeing(fileManager_->getCurrentWallpaperFolders());});
 }
 
 void MainWindow::clearWallpapersList(){
@@ -1670,7 +1676,7 @@ void MainWindow::searchFor(const QString &term){
 
 void MainWindow::continueToNextMatch(){
     ui->wallpapersList->clearSelection();
-    if(currentSearchItemIndex >= wallpaperManager_->wallpapersCount()+1){
+    if(static_cast<unsigned int>(currentSearchItemIndex) >= wallpaperManager_->wallpapersCount() + 1){
         //restart the search...
         currentSearchItemIndex=searchList_.indexOf(*match_, 0);
         if(currentSearchItemIndex<0){
@@ -1791,7 +1797,7 @@ void MainWindow::previousAndNextButtonsSetEnabled(bool enabled){
 }
 
 void MainWindow::addFilesToWallpapers(const QString path){
-    QString cleanPath = path.endsWith('/') ? path.left(path.count()-1) : path;
+    QString cleanPath = path.endsWith('/') ? path.left(path.length()-1) : path;
     QStringList currrentDirectory = QDir (cleanPath, QString(""), QDir::Name, QDir::Files).entryList(IMAGE_FILTERS);
 
     Q_FOREACH(QString file, currrentDirectory){
@@ -2140,7 +2146,7 @@ void MainWindow::doesMatch(){
 }
 
 void MainWindow::showHideSearchBox(){
-    if(!ui->stackedWidget->currentIndex()==0)
+    if (ui->stackedWidget->currentIndex() != 0)
         return;
 
     openCloseSearch_->setStartValue(ui->search_widget->maximumHeight());
@@ -2566,7 +2572,7 @@ bool MainWindow::websiteConfiguredCorrectly(){
         ui->website->setText("http://"+ui->website->text());
     }
 
-    if(ui->website->text().count()<=4 || !ui->website->text().contains(".")){
+    if(ui->website->text().length()<=4 || !ui->website->text().contains(".")){
         QMessageBox::warning(this, tr("Error"), tr("Invalid address specified!"));
         return false;
     }

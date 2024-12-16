@@ -335,7 +335,7 @@ void ImageFetcher::getPotdDescription(QNetworkReply *reply){
     potdDescription.replace("/wiki", "https://en.wikipedia.org/wiki").remove(QRegularExpression("<[^>]*>")).replace("\n", " ");
 
     // Call writePotdDescription() in a separate thread
-    QtConcurrent::run([this, potdDescription]() {writePotdDescription(replaceSpecialHtml(potdDescription));});
+    (void)QtConcurrent::run([this, potdDescription]() {writePotdDescription(replaceSpecialHtml(potdDescription));});
 }
 
 void ImageFetcher::writePotdDescription(const QString &description){

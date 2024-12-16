@@ -72,6 +72,7 @@ bool Global::runsOnBattery(){
     return !(pwr.BatteryFlag & 8);
 # endif
 #endif
+    return 0;
 }
 
 QString Global::monthInEnglish(short month)
@@ -372,7 +373,7 @@ QString Global::basenameOf(const QString &path){
      * This can be done with the QFileInfo as well, but it is too time&resource consuming
      */
 
-    short pathCount=path.count();
+    short pathCount=path.length();
     bool isItselfDir=false;
     for(short i=pathCount-1; i>=0; i--){
         if(path.at(i)=='/' || path.at(i)=='\\' ){
@@ -382,7 +383,7 @@ QString Global::basenameOf(const QString &path){
             }
             if(isItselfDir){
                 QString withDirSeparator = path.right(pathCount-i-1);
-                return withDirSeparator.left(withDirSeparator.count()-1);
+                return withDirSeparator.left(withDirSeparator.length()-1);
             }
             else
             {
@@ -396,12 +397,12 @@ QString Global::basenameOf(const QString &path){
 
 QString Global::dirnameOf(const QString &path){
     //returns the absolute folder path of the file
-    return QDir::toNativeSeparators(path.left(path.count()-(basenameOf(path).count()+1)));//the +1 so as to remove the trailing '/'
+    return QDir::toNativeSeparators(path.left(path.length()-(basenameOf(path).length()+1)));//the +1 so as to remove the trailing '/'
 }
 
 QString Global::suffixOf(const QString &path){
     // returns the extension, without the dot
-    short pathCount=path.count();
+    short pathCount=path.length();
     for(short i=pathCount-1; i>=0; i--){
         if(path.at(i)=='.'){
             return path.right(pathCount-i-1);

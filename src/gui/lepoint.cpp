@@ -361,7 +361,7 @@ QString LEPoint::basenameOf(const QString &path){
      * This can be done with the QFileInfo as well, but it is too time&resource consuming
      */
 
-    short pathCount=path.count();
+    short pathCount=path.length();
     bool isItselfDir=false;
     for(short i=pathCount-1; i>=0; i--){
         if(path.at(i)=='/' || path.at(i)=='\\' ){
@@ -371,7 +371,7 @@ QString LEPoint::basenameOf(const QString &path){
             }
             if(isItselfDir){
                 QString withDirSeparator = path.right(pathCount-i-1);
-                return withDirSeparator.left(withDirSeparator.count()-1);
+                return withDirSeparator.left(withDirSeparator.length()-1);
             }
             else
             {

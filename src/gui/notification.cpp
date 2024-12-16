@@ -85,7 +85,7 @@ void Notification::lessOpacity()
         close();
 }
 
-void Notification::enterEvent(QEvent *) {
+void Notification::enterEvent(QEnterEvent *) {
     mouseOnMe=true;
     if(opacityTimer_->isActive())
     {

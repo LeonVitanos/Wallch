@@ -129,16 +129,16 @@ QString CacheManager::originalToCacheName(QString imagePath){
 
 QString CacheManager::cacheExcludeMd5(const QString &cacheName){
     QChar mchar;
-    short i = 0, extrasCount = 1, cacheNameCount = cacheName.count();
+    short i = 0, extrasCount = 1, cacheNameCount = cacheName.length();
     for(mchar = cacheName.at(i); mchar != cacheCheckSumChar_ && i < cacheNameCount; i++, mchar = cacheName.at(i)){
         extrasCount++;
     }
-    return cacheName.right(cacheName.count()-extrasCount);
+    return cacheName.right(cacheName.length()-extrasCount);
 }
 
 QString CacheManager::cacheToOriginalName(QString cacheName){
     cacheName = cacheExcludeMd5(cacheName);
-    short cacheNameCount = cacheName.count();
+    short cacheNameCount = cacheName.length();
 
     if(!cacheName.startsWith(cacheToChar_)){
         //the rare case where the original filename already included the cacheToChar
@@ -181,7 +181,7 @@ QString CacheManager::cacheToOriginalName(QString cacheName){
 QString CacheManager::extractMd5OfCachedName(const QString &cacheName){
     //returns the size of the original image of cacheName, which is included inside cacheName
     QChar curChar;
-    short i = 0, extraCount = 0, cacheNameCount = cacheName.count();
+    short i = 0, extraCount = 0, cacheNameCount = cacheName.length();
     for(curChar = cacheName.at(i); curChar != cacheCheckSumChar_ && i < cacheNameCount; curChar = cacheName.at(++i))
         extraCount++;
     return cacheName.left(extraCount);

@@ -57,7 +57,7 @@ void PicturesLocations::on_add_location_clicked()
 
     QTreeWidgetItem *item = new QTreeWidgetItem;
     item->setText(0, Global::basenameOf(folder));
-    item->setText(1, (folder.endsWith('/') || folder.endsWith('\\')) ? folder.left(folder.count()-1) : folder );
+    item->setText(1, (folder.endsWith('/') || folder.endsWith('\\')) ? folder.left(folder.length()-1) : folder );
     ui->foldersTreeWidget->addTopLevelItem(item);
 }
 

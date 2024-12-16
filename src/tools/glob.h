@@ -95,80 +95,78 @@ extern QSettings *settings;
 
 struct GlobalVar {
     // 'Wallpapers' Feature
-    bool wallpapersRunning;
+    bool wallpapersRunning = false;
 
     // 'Live Earth' Feature
-    bool liveEarthRunning;
+    bool liveEarthRunning = false;
     QString liveEarthOnlineUrl;
     QString liveEarthOnlineUrlB;
 
     // 'POTD' Feature
-    bool potdRunning;
-    bool potdIncludeDescription;
-    bool potdDescriptionBottom;
-    int potdDescriptionLeftMargin;
-    int potdDescriptionRightMargin;
-    int potdDescriptionBottomTopMargin;
-    QString potdDescriptionFont;
+    bool potdRunning = false;
+    bool potdIncludeDescription = true;
+    bool potdDescriptionBottom = true;
+    int potdDescriptionLeftMargin = 100;
+    int potdDescriptionRightMargin = 0;
+    int potdDescriptionBottomTopMargin = 0;
+    QString potdDescriptionFont = "Arial";
     QString potdDescriptionColor;
     QString potdDescriptionBackgroundColor;
     QString potdOnlineUrl;
     QString potdOnlineUrlB;
 
     // 'Website' Feature
-    bool liveWebsiteRunning;
-    short websiteWaitAfterFinishSeconds;
-    bool websiteLoadImages;
-    bool websiteJavaEnabled;
-    bool websiteJavascriptCanReadClipboard;
-    bool websiteJavascriptEnabled;
-    bool websiteSimpleAuthEnabled;
-    bool websiteRedirect;
-    bool websiteLoginEnabled;
-    bool websiteCropEnabled;
-    int websiteInterval;
-    QString websiteWebpageToLoad;
+    bool liveWebsiteRunning = false;
+    short websiteWaitAfterFinishSeconds = 3;
+    bool websiteLoadImages = true;
+    bool websiteJavaEnabled = false;
+    bool websiteJavascriptCanReadClipboard = false;
+    bool websiteJavascriptEnabled = true;
+    bool websiteSimpleAuthEnabled = false;
+    bool websiteRedirect = false;
+    bool websiteLoginEnabled = false;
+    bool websiteCropEnabled = false;
+    int websiteInterval = 6;
+    QString websiteWebpageToLoad = "http://google.com";
     QRect websiteCropArea;
     QString websiteLoginUsername;
     QString websiteLoginPasswd;
     QString websiteFinalPageToLoad;
 
-
-
-    QString homePath;
+    QString homePath = QDir::homePath();
     QString wallchHomePath;
     QString currentDeDefaultWallpapersPath;
     QString currentOSName;
-    bool preferencesDialogShown;
-    bool independentIntervalEnabled;
-    int typeOfInterval;
-    bool randomImagesEnabled;
-    bool firstTimeout;
-    bool symlinks;
-    bool processPaused;
-    bool saveHistory;
-    int randomTimeFrom;
-    int randomTimeTo;
-    bool doNotToggleRadiobuttonFallback;
-    bool previewImagesOnScreen;
-    bool pauseOnBattery;
-    bool amPmEnabled;
-    bool mainwindowLoaded;
-    bool setAverageColor;
-    int wallpapersChangedCurrentSession;
-    QDateTime timeLaunched;
-    bool showNotification;
-    bool iconMode;
-    bool rotateImages;
-    bool leEnableTag;
-    short refreshhourinterval;
-    int screenHeight;
-    int screenWidth;
-    int screenAvailableHeight;
-    int screenAvailableWidth;
+    bool preferencesDialogShown = false;
+    bool independentIntervalEnabled = true;
+    int typeOfInterval = 0;
+    bool randomImagesEnabled = false;
+    bool firstTimeout = false;
+    bool symlinks = false;
+    bool processPaused = false;
+    bool saveHistory = true;
+    int randomTimeFrom = 300;
+    int randomTimeTo = 1200;
+    bool doNotToggleRadiobuttonFallback = false;
+    bool previewImagesOnScreen = true;
+    bool pauseOnBattery = false;
+    bool amPmEnabled = false;
+    bool mainwindowLoaded = false;
+    bool setAverageColor = false;
+    int wallpapersChangedCurrentSession = 0;
+    QDateTime timeLaunched = QDateTime::currentDateTime();
+    bool showNotification = false;
+    bool iconMode = true;
+    bool rotateImages = false;
+    bool leEnableTag = false;
+    short refreshhourinterval = 0;
+    int screenHeight = 0;
+    int screenWidth = 0;
+    int screenAvailableHeight = 0;
+    int screenAvailableWidth = 0;
     QString cachePath;
-    QDateTime appStartTime;
-    QString defaultPicturesLocation;
+    QDateTime appStartTime = QDateTime::currentDateTime();
+    QString defaultPicturesLocation = homePath + "/" + QStandardPaths::displayName(QStandardPaths::PicturesLocation);
     QStringList websiteExtraUsernames;
     QStringList websiteExtraPasswords;
     QString nextShortcut;
@@ -177,24 +175,8 @@ struct GlobalVar {
     QDateTime timeToFinishProcessInterval;
 
 #ifdef Q_OS_LINUX
-    QStringList unacceptedDesktopValues;
+    QStringList unacceptedDesktopValues = QStringList() << "" << "default.desktop" << "X-Cinnamon" << "default";
 #endif
-
-    //variable initialization
-
-    GlobalVar() : homePath(QDir::homePath()), preferencesDialogShown(false), independentIntervalEnabled(true),
-        typeOfInterval(0), randomImagesEnabled(false), firstTimeout(false), symlinks(false), processPaused(false),
-#ifdef Q_OS_LINUX
-    unacceptedDesktopValues(QStringList() << "" << "default.desktop" << "X-Cinnamon" << "default"),
-#endif
-        saveHistory(true), randomTimeFrom(300), randomTimeTo(1200), doNotToggleRadiobuttonFallback(false), previewImagesOnScreen(true), pauseOnBattery(false), amPmEnabled(false),
-        mainwindowLoaded(false), setAverageColor(false), websiteLoginEnabled(false), websiteCropEnabled(false), wallpapersChangedCurrentSession(0), timeLaunched(QDateTime::currentDateTime()),
-        showNotification(false), liveWebsiteRunning(false), potdRunning(false), liveEarthRunning(false), wallpapersRunning(false),
-        iconMode(true), rotateImages(false), potdIncludeDescription(true), leEnableTag(false), potdDescriptionBottom(true), refreshhourinterval(0), websiteWaitAfterFinishSeconds(3),
-        websiteLoadImages(true), websiteJavaEnabled(false), websiteJavascriptCanReadClipboard(false), websiteJavascriptEnabled(true), websiteSimpleAuthEnabled(false),
-        websiteInterval(6), screenHeight(0), screenWidth(0), potdDescriptionLeftMargin(100), potdDescriptionRightMargin(0), potdDescriptionBottomTopMargin(0), appStartTime(QDateTime::currentDateTime()),
-        websiteWebpageToLoad("http://google.com"), defaultPicturesLocation(homePath+"/"+QStandardPaths::displayName(QStandardPaths::PicturesLocation)), potdDescriptionFont("Arial")
-        {}
 };
 
 extern struct GlobalVar gv;

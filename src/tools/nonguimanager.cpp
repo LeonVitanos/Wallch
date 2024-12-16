@@ -1191,7 +1191,7 @@ void NonGuiManager::setIndependentInterval(const QString &independentInterval){
         return;
     }
 
-    time_then.addSecs(independence_change_seconds_left);
+    (void)time_then.addSecs(independence_change_seconds_left);
 
     int secs_diff = time_then.secsTo(QDateTime::currentDateTime());
     independence_change_seconds_left-=secs_diff;
@@ -1276,9 +1276,9 @@ void NonGuiManager::installTranslator(){
         QString currentLanguage = settings->value("language_file", "system_default").toString();
 
         if(currentLanguage == "system_default")
-            translator->load(QLocale::system(), "wallch", "_", translationsFolder, ".qm");
+            (void)translator->load(QLocale::system(), "wallch", "_", translationsFolder, ".qm");
         else
-            translator->load(translationsFolder+"wallch_"+currentLanguage+".qm");
+            (void)translator->load(translationsFolder+"wallch_"+currentLanguage+".qm");
 
         QApplication::installTranslator(translator);
     }
@@ -1612,7 +1612,7 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
 }
 
 void NonGuiManager::addFilesToWallpapers(QString path){
-    QString cleanPath = path.endsWith('/') ? path.left(path.count()-1) : path;
+    QString cleanPath = path.endsWith('/') ? path.left(path.length()-1) : path;
     QStringList currrentDirectory = QDir (cleanPath, QString(""), QDir::Name, QDir::Files).entryList(IMAGE_FILTERS);
 
     Q_FOREACH(QString file, currrentDirectory){

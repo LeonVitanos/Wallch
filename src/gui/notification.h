@@ -53,7 +53,7 @@ private Q_SLOTS:
     void lessOpacity();
 
 protected:
-    void enterEvent(QEvent *);
+    void enterEvent(QEnterEvent *);
     void leaveEvent(QEvent *);
     void mousePressEvent(QMouseEvent *);
 };

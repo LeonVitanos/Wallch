@@ -149,7 +149,7 @@ void CropImage::mouseMoveEvent(QMouseEvent *e)
     }
 }
 
-void CropImage::mouseReleaseEvent()
+void CropImage::mouseReleaseEvent(QMouseEvent *)
 {
     selectionStarted_=false;
 }

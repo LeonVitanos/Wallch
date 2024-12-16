@@ -68,7 +68,7 @@ void History::readHistoryFiles(){
         short tempMonthsCount=tempMonths.count();
         for(int i=0; i<tempMonthsCount; i++)
         {
-            if(tempMonths.at(i).count()==1)
+            if(tempMonths.at(i).length()==1)
             {
                 months.append("0"+tempMonths.at(i));
             }
@@ -210,7 +210,7 @@ void History::addHistoryEntry(QString time, QString path, short type){
 void History::on_historyInfo_customContextMenuRequested()
 {
     if (ui->historyInfo->count() > 0){
-        if(ui->historyInfo->currentIndex().isValid() && ui->historyInfo->currentItem()->isSelected() && ui->historyInfo->currentItem()->text().count()>2)
+        if(ui->historyInfo->currentIndex().isValid() && ui->historyInfo->currentItem()->isSelected() && ui->historyInfo->currentItem()->text().length()>2)
         {
             QMenu *infoMenu = new QMenu(this);
             infoMenu->connect(infoMenu, SIGNAL(aboutToHide()), infoMenu, SLOT(deleteLater()));
@@ -275,7 +275,7 @@ void History::copyLink(){
 void History::on_historyInfo_doubleClicked()
 {
     if (ui->historyInfo->count() > 0){
-        if(ui->historyInfo->currentIndex().isValid() && ui->historyInfo->currentItem()->isSelected() && ui->historyInfo->currentItem()->text().count()>2)
+        if(ui->historyInfo->currentIndex().isValid() && ui->historyInfo->currentItem()->isSelected() && ui->historyInfo->currentItem()->text().length()>2)
         {
             QString type=ui->historyInfo->currentItem()->data(12).toString();
             if(type=="file")

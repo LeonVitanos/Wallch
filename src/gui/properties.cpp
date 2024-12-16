@@ -176,7 +176,7 @@ void Properties::on_next_clicked()
     if(propertiesReadyWatcher_->isRunning())
         propertiesReadyWatcher_->cancel();
 
-    updateEntries(currentIndex_ >= (wallpaperManager_->wallpapersCount() - 1) ? 0 : currentIndex_+1);
+    updateEntries(currentIndex_ >= static_cast<int>(wallpaperManager_->wallpapersCount()) - 1 ? 0 : currentIndex_ + 1);
 }
 
 void Properties::on_previous_clicked()
