@@ -7,8 +7,10 @@ HEADERS += $$PWD/glob.h \
            $$PWD/dialoghelper.h \
            $$PWD/filemanager.h \
            $$PWD/nonguimanager.h \
+           $$PWD/searchimages.h \
            $$PWD/settingsmanager.h \
            $$PWD/timermanager.h \
+           $$PWD/wallpaperhelper.h \
            $$PWD/websitesnapshot.h \
            $$PWD/customwebpage.h \
            $$PWD/wallpapermanager.h \
@@ -23,8 +25,10 @@ SOURCES += $$PWD/glob.cpp \
            $$PWD/dialoghelper.cpp \
            $$PWD/filemanager.cpp \
            $$PWD/nonguimanager.cpp \
+           $$PWD/searchimages.cpp \
            $$PWD/settingsmanager.cpp \
            $$PWD/timermanager.cpp \
+           $$PWD/wallpaperhelper.cpp \
            $$PWD/websitesnapshot.cpp \
            $$PWD/wallpapermanager.cpp \
            $$PWD/cachemanager.cpp \

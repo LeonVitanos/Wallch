@@ -58,7 +58,6 @@ public:
     QString randomButNotCurrentWallpaper();
     void setCurrentWallpapers(const QStringList &wallpapers);
     void addWallpaper(const QString &wallpaper);
-    void addWallpapers(const QString &wallpapers);
     QStringList getCurrentWallpapers();
     void clearWallpapers();
     unsigned int wallpapersCount();

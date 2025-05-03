@@ -94,10 +94,6 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     processingRequestGif_->setFileName(":/images/process_request.gif");
     ui->process_request_label->setMovie(processingRequestGif_);
 
-    //for manually searching for files or re-selecting a picture after a folder contents have changed
-    match_ = new QRegularExpression();
-    match_->setPatternOptions(QRegularExpression::CaseInsensitiveOption);
-
     QTimer::singleShot(10, this, SLOT(setButtonColor()));
     QTimer::singleShot(20, this, SLOT(findAvailableWallpaperStyles()));
 }
@@ -264,7 +260,6 @@ void MainWindow::setupKeyboardShortcuts(){
     (void) new QShortcut(Qt::Key_Escape, this, SLOT(escapePressed()));
     (void) new QShortcut(Qt::Key_Delete, this, SLOT(deletePressed()));
     (void) new QShortcut(Qt::ALT | Qt::Key_Return, this, SLOT(showProperties()));
-    (void) new QShortcut(Qt::CTRL | Qt::Key_F, this, SLOT(showHideSearchBox()));
     (void) new QShortcut(Qt::Key_Return, this, SLOT(enterPressed()));
     (void) new QShortcut(Qt::CTRL | Qt::Key_PageUp, this, SLOT(previousPage()));
     (void) new QShortcut(Qt::CTRL | Qt::Key_PageDown, this, SLOT(nextPage()));
@@ -318,6 +313,7 @@ void MainWindow::initializePrivateVariables(Global *globalParser, ImageFetcher *
     scaleWatcher_ = new QFutureWatcher<QImage>(this);
     fileManager_ = new FileManager();
     dialogHelper_ = new DialogHelper();
+    wallpaperHelper_ = new WallpaperHelper(wallpaperManager_, ui->wallpapersList);
 
     increaseOpacityAnimation = new QPropertyAnimation();
     increaseOpacityAnimation->setTargetObject(opacityEffect_);
@@ -521,8 +517,8 @@ void MainWindow::onlineImageRequestReady(QString image){
 }
 
 void MainWindow::escapePressed(){
-    if(ui->stackedWidget->currentIndex() == 0 && ui->search_box->hasFocus() && searchIsOn_)
-        on_search_close_clicked();
+    if(ui->stackedWidget->currentIndex() == 0 && searchImages_->hideSearch())
+        return;
     else
         this->hide();
 }
@@ -1020,6 +1016,21 @@ void MainWindow::updateImageStyleCombo(){
         ui->image_style_combo->setCurrentIndex(index);
 }
 
+void MainWindow::setImage(bool addToPrevious, const QString &image, int index){
+    if(wallpaperManager_->imageIsNull(image))
+        return;
+
+    if (addToPrevious)
+        wallpaperManager_->addToPreviousWallpapers(image);
+
+    wallpaperManager_->setBackground(image, true, true, 1);
+    if(gv.setAverageColor)
+        setButtonColor();
+
+    if(gv.rotateImages && gv.iconMode)
+        forceUpdateIconOf(index);
+}
+
 void MainWindow::setButtonColor(){
     QImage image(40, 19, QImage::Format_RGB32);
 
@@ -1345,6 +1356,15 @@ void MainWindow::changeTextOfScreenLabelTo(const QString &text)
     ui->screen_label_text->setText(text);
 }
 
+
+
+
+
+
+
+
+
+
 //Wallpapers code
 
 void MainWindow::justChangeWallpaper(){
@@ -1510,12 +1530,7 @@ void MainWindow::on_previous_Button_clicked()
 
     updateSecondsTimer_->stop();
 
-    wallpaperManager_->setBackground(wallpaperManager_->getPreviousWallpaper(), true, true, 1);
-    if(gv.setAverageColor)
-        setButtonColor();
-
-    if(gv.rotateImages && gv.iconMode)
-        forceUpdateIconOf(wallpaperManager_->currentWallpaperIndex()-2);
+    setImage(false, wallpaperManager_->getPreviousWallpaper(), wallpaperManager_->currentWallpaperIndex()-2);
 
     timerManager_->findSeconds(true);
 
@@ -1571,29 +1586,6 @@ void MainWindow::currentFolderDoesNotExist()
     }
 }
 
-QString MainWindow::getPathOfListItem(int index /* = -1*/){
-    /*
-     * Returns the full path of the listwidget item at 'index'
-     * Returns the full path of the selected item's path if index==-1
-     */
-    if(index==-1){
-        index=ui->wallpapersList->currentRow();
-    }
-    if(gv.iconMode){
-        if(ui->wallpapersList->item(index)->statusTip().isEmpty()){
-            return ui->wallpapersList->item(index)->toolTip();
-        }
-        else
-        {
-            return ui->wallpapersList->item(index)->statusTip();
-        }
-    }
-    else
-    {
-        return ui->wallpapersList->item(index)->text();
-    }
-}
-
 void MainWindow::addFolderForMonitor(const QString &folder){
     if(QDir(folder).exists()){
         short count = ui->pictures_location_comboBox->count();
@@ -1624,111 +1616,12 @@ void MainWindow::changeImage(){
             wallpaperManager_->convertRandomToNormal();
     }
 
-    QString image=wallpaperManager_->getNextWallpaper();
-
-    wallpaperManager_->addToPreviousWallpapers(image);
-
-    wallpaperManager_->setBackground(image, true, true, 1);
-    if(gv.setAverageColor)
-        setButtonColor();
-
-    if(gv.rotateImages && gv.iconMode)
-        forceUpdateIconOf(wallpaperManager_->currentWallpaperIndex());
+    setImage(true, wallpaperManager_->getNextWallpaper(), wallpaperManager_->currentWallpaperIndex());
 }
 
-void MainWindow::searchFor(const QString &term){
-    if(term.isEmpty())
-        return;
 
-    ui->wallpapersList->clearSelection();
-    searchList_.clear();
-    int listCount=wallpaperManager_->wallpapersCount();
-    if(gv.iconMode){
-        for(int i=0;i<listCount;i++){
-            if(ui->wallpapersList->item(i)->statusTip().isEmpty()){
-                searchList_ << globalParser_->basenameOf(ui->wallpapersList->item(i)->toolTip());
-            }
-            else
-            {
-                searchList_ << globalParser_->basenameOf(ui->wallpapersList->item(i)->statusTip());
-            }
-        }
-    }
-    else
-    {
-        for(int i=0; i<listCount; i++){
-            searchList_ << globalParser_->basenameOf(ui->wallpapersList->item(i)->text());
-        }
-    }
-    match_->setPattern(QRegularExpression::wildcardToRegularExpression("*"+term+"*"));
-    currentSearchItemIndex = searchList_.indexOf(*match_, 0);
-    if(currentSearchItemIndex < 0){
-        doesntMatch();
-    }
-    else
-    {
-        ui->wallpapersList->scrollToItem(ui->wallpapersList->item(currentSearchItemIndex));
-        ui->wallpapersList->setCurrentItem(ui->wallpapersList->item(currentSearchItemIndex));
-        ui->wallpapersList->item(currentSearchItemIndex)->setSelected(true);
-        doesMatch();
-    }
-}
 
-void MainWindow::continueToNextMatch(){
-    ui->wallpapersList->clearSelection();
-    if(static_cast<unsigned int>(currentSearchItemIndex) >= wallpaperManager_->wallpapersCount() + 1){
-        //restart the search...
-        currentSearchItemIndex=searchList_.indexOf(*match_, 0);
-        if(currentSearchItemIndex<0){
-            return;
-        }
-        ui->wallpapersList->scrollToItem(ui->wallpapersList->item(currentSearchItemIndex));
-        ui->wallpapersList->setCurrentItem(ui->wallpapersList->item(currentSearchItemIndex));
-    }
-    else
-    {
-        //continue the search..
-        currentSearchItemIndex = searchList_.indexOf(*match_, currentSearchItemIndex+1);
-        if(currentSearchItemIndex<0){
-            //restart the search...
-            currentSearchItemIndex=searchList_.indexOf(*match_, 0);
-            if(currentSearchItemIndex<0){
-                return;
-            }
-        }
-        ui->wallpapersList->scrollToItem(ui->wallpapersList->item(currentSearchItemIndex));
-        ui->wallpapersList->setCurrentItem(ui->wallpapersList->item(currentSearchItemIndex));
-        ui->wallpapersList->item(currentSearchItemIndex)->setSelected(true);
-    }
-}
 
-void MainWindow::continueToPreviousMatch(){
-    ui->wallpapersList->clearSelection();
-    if(currentSearchItemIndex < 0){
-        //restart the search...
-        currentSearchItemIndex=searchList_.lastIndexOf(*match_, searchList_.count()-1);
-        if(currentSearchItemIndex<0){
-            return;
-        }
-        ui->wallpapersList->scrollToItem(ui->wallpapersList->item(currentSearchItemIndex));
-        ui->wallpapersList->setCurrentItem(ui->wallpapersList->item(currentSearchItemIndex));
-    }
-    else
-    {
-        //continue the search..
-        currentSearchItemIndex = searchList_.lastIndexOf(*match_, currentSearchItemIndex-1);
-        if(currentSearchItemIndex < 0){
-            //restart the search...
-            currentSearchItemIndex=searchList_.lastIndexOf(*match_, searchList_.count()-1);
-            if(currentSearchItemIndex<0){
-                return;
-            }
-        }
-        ui->wallpapersList->scrollToItem(ui->wallpapersList->item(currentSearchItemIndex));
-        ui->wallpapersList->setCurrentItem(ui->wallpapersList->item(currentSearchItemIndex));
-        ui->wallpapersList->item(currentSearchItemIndex)->setSelected(true);
-    }
-}
 
 void MainWindow::on_timerSlider_valueChanged(int value)
 {
@@ -1873,7 +1766,7 @@ void MainWindow::iconsPathsChanged(){
         animateScreenLabel(true);
         updateScreenLabel();
     }
-    clearSearchBox();
+    searchImages_->clearSearchBox();
 }
 
 void MainWindow::launchTimerToUpdateIcons(){
@@ -1929,6 +1822,7 @@ bool MainWindow::updateIconOf(int index){
 
     QImage image = cacheManager_->controlCache(originalImagePath);
 
+    //TODO: Should be checked with actually broken images, because it's very buggy
     if(image.isNull()){
         if(wallpaperManager_->wallpapersCount() > 1){
             delete ui->wallpapersList->item(index);
@@ -1988,15 +1882,10 @@ void MainWindow::on_browse_folders_clicked()
 }
 
 void MainWindow::enterPressed(){
-    if(ui->search_box->hasFocus()){
-        if(ui->search_box->text().isEmpty()){
-            return;
-        }
-        continueToNextMatch();
-    }
-    else if(ui->stackedWidget->currentIndex()==0){
+    if(ui->search_box->hasFocus())
+        searchImages_->enterPressed();
+    else if(ui->stackedWidget->currentIndex()==0)
         on_wallpapersList_itemDoubleClicked();
-    }
 }
 
 void MainWindow::delayed_pictures_location_change()
@@ -2004,19 +1893,14 @@ void MainWindow::delayed_pictures_location_change()
     ui->pictures_location_comboBox->setCurrentIndex(tempForDelayedPicturesLocationChange_);
 }
 
-void MainWindow::clearSearchBox(){
-    if(searchIsOn_){
-        on_search_close_clicked();
-    }
-    ui->search_box->clear();
-}
+
 
 void MainWindow::on_pictures_location_comboBox_currentIndexChanged(int index)
 {
     if(changingPicturesLocations_)
         return;
 
-    clearSearchBox();
+    searchImages_->clearSearchBox();
 
     fileManager_->resetWatchFolders();
 
@@ -2111,79 +1995,63 @@ void MainWindow::savePicturesLocations()
     settings->sync();
 }
 
-void MainWindow::on_search_box_textChanged(const QString &arg1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void MainWindow::picturesLocationsChanged()
 {
-    if(!arg1.isEmpty()){
-        searchFor(arg1);
+    changingPicturesLocations_=true;
+    short currentFolder=settings->value("currentFolder_index", 0).toInt();
+    short count=ui->pictures_location_comboBox->count();
+    for(short i=count-1;i>1;i--){
+        ui->pictures_location_comboBox->removeItem(i);
     }
-}
-
-void MainWindow::on_search_up_clicked()
-{
-    if(ui->search_box->text().isEmpty()){
-        return;
+    short size=settings->beginReadArray("pictures_locations");
+    for(short i=2;i<size;i++){
+        settings->setArrayIndex(i);
+        if(settings->value("type").toBool()){
+            short list_size=settings->beginReadArray(QString::number(i));
+            QString all_folders;
+            for(short i=0;i<list_size;i++){
+                settings->setArrayIndex(i);
+                all_folders+=settings->value("item").toString();
+                if(i!=list_size-1){
+                    all_folders+="\n";
+                }
+            }
+            settings->endArray();
+            ui->pictures_location_comboBox->addItem(settings->value("item").toString());
+            ui->pictures_location_comboBox->setItemData(ui->pictures_location_comboBox->count()-1, 1, Qt::UserRole+1);
+            ui->pictures_location_comboBox->setItemData(ui->pictures_location_comboBox->count()-1, settings->value("item").toString(), Qt::UserRole);
+            ui->pictures_location_comboBox->setItemData(ui->pictures_location_comboBox->count()-1, all_folders, Qt::UserRole+2);
+        }
+        else {
+            QString qpath=settings->value("item").toString();
+            ui->pictures_location_comboBox->addItem(globalParser_->basenameOf(qpath));
+            ui->pictures_location_comboBox->setItemData(ui->pictures_location_comboBox->count()-1, qpath, Qt::UserRole);
+        }
     }
-    ui->search_box->setFocus();
-    continueToPreviousMatch();
+    settings->endArray();
+    changingPicturesLocations_=false;
+    ui->pictures_location_comboBox->setCurrentIndex(currentFolder);
 }
 
-void MainWindow::on_search_down_clicked()
-{
-    ui->search_box->setFocus();
-    enterPressed();
-}
 
-void MainWindow::doesntMatch(){
-    QPalette pal;
-    pal.setColor(QPalette::Text, Qt::red);
-    ui->search_box->setPalette(pal);
-}
 
-void MainWindow::doesMatch(){
-    QPalette pal;
-    pal.setColor(QPalette::Text, Qt::black);
-    ui->search_box->setPalette(pal);
-}
 
-void MainWindow::showHideSearchBox(){
-    if (ui->stackedWidget->currentIndex() != 0)
-        return;
 
-    openCloseSearch_->setStartValue(ui->search_widget->maximumHeight());
-
-    if(!searchIsOn_)
-    {
-        ui->search_widget->show();
-        openCloseSearch_->setEndValue(30);
-        ui->search_box->setFocus();
-        on_search_box_textChanged(ui->search_box->text()); //in case a previous search exists
-    }
-    else
-    {
-        //seach to be closed
-        searchList_.clear();
-        openCloseSearch_->setEndValue(0);
-        //more icons may become available once the search box closes
-        launchTimerToUpdateIcons();
-    }
-    openCloseSearch_->start();
-    searchIsOn_=!searchIsOn_;
-}
-
-void MainWindow::openCloseSearchAnimationFinished()
-{
-    if(openCloseSearch_->endValue()==0){
-        ui->search_widget->hide();
-    }
-}
-
-void MainWindow::on_search_close_clicked()
-{
-    if(ui->stackedWidget->currentIndex()!=0){
-        return;
-    }
-    showHideSearchBox();
-}
 
 //Live Earth code
 
@@ -2253,6 +2121,16 @@ void MainWindow::on_le_tag_button_clicked()
 void MainWindow::lePointDestroyed(){
     lePointShown_=false;
 }
+
+
+
+
+
+
+
+
+
+
 
 //Picture of they day code
 
@@ -2326,6 +2204,15 @@ void MainWindow::restartLeIfRunningAfterSettingChange()
     on_deactivate_livearth_clicked();
     on_activate_livearth_clicked();
 }
+
+
+
+
+
+
+
+
+
 
 //Live Website Code
 void MainWindow::on_activate_website_clicked()
@@ -2588,43 +2475,9 @@ bool MainWindow::websiteConfiguredCorrectly(){
 
 
 
-void MainWindow::picturesLocationsChanged()
-{
-    changingPicturesLocations_=true;
-    short currentFolder=settings->value("currentFolder_index", 0).toInt();
-    short count=ui->pictures_location_comboBox->count();
-    for(short i=count-1;i>1;i--){
-        ui->pictures_location_comboBox->removeItem(i);
-    }
-    short size=settings->beginReadArray("pictures_locations");
-    for(short i=2;i<size;i++){
-        settings->setArrayIndex(i);
-        if(settings->value("type").toBool()){
-            short list_size=settings->beginReadArray(QString::number(i));
-            QString all_folders;
-            for(short i=0;i<list_size;i++){
-                settings->setArrayIndex(i);
-                all_folders+=settings->value("item").toString();
-                if(i!=list_size-1){
-                    all_folders+="\n";
-                }
-            }
-            settings->endArray();
-            ui->pictures_location_comboBox->addItem(settings->value("item").toString());
-            ui->pictures_location_comboBox->setItemData(ui->pictures_location_comboBox->count()-1, 1, Qt::UserRole+1);
-            ui->pictures_location_comboBox->setItemData(ui->pictures_location_comboBox->count()-1, settings->value("item").toString(), Qt::UserRole);
-            ui->pictures_location_comboBox->setItemData(ui->pictures_location_comboBox->count()-1, all_folders, Qt::UserRole+2);
-        }
-        else {
-            QString qpath=settings->value("item").toString();
-            ui->pictures_location_comboBox->addItem(globalParser_->basenameOf(qpath));
-            ui->pictures_location_comboBox->setItemData(ui->pictures_location_comboBox->count()-1, qpath, Qt::UserRole);
-        }
-    }
-    settings->endArray();
-    changingPicturesLocations_=false;
-    ui->pictures_location_comboBox->setCurrentIndex(currentFolder);
-}
+
+
+
 
 
 
@@ -2654,6 +2507,16 @@ void MainWindow::loadWallpapersPage(){
     ui->pictures_location_comboBox->setItemData(0, DesktopEnvironment::getOSWallpaperPath(), Qt::UserRole);
     ui->pictures_location_comboBox->setItemText(1, tr("My Pictures"));
     ui->pictures_location_comboBox->setItemData(1, gv.defaultPicturesLocation, Qt::UserRole);
+
+    searchImages_ = new SearchImages(ui->wallpapersList, ui->search_box, ui->search_widget, &wallpaperManager_->allWallpapers_);
+    connect(searchImages_, SIGNAL(launchTimerToUpdateIcons()), this, SLOT(launchTimerToUpdateIcons()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_F, this, SLOT(handleSearchShortcut()));
+
+    connect(ui->search_up, SIGNAL(clicked()), searchImages_, SLOT(on_search_up_clicked()));
+    connect(ui->search_down, SIGNAL(clicked()), searchImages_, SLOT(on_search_down_clicked()));
+    connect(ui->search_close, SIGNAL(clicked()), searchImages_, SLOT(hideSearch()));
+
+
 
     short size=settings->beginReadArray("pictures_locations");
     for(short i=2;i<size;i++){
@@ -2727,10 +2590,6 @@ void MainWindow::loadWallpapersPage(){
     }
     launchTimerToUpdateIcons();
 
-    openCloseSearch_ = new QPropertyAnimation(ui->search_widget, "maximumHeight");
-    connect(openCloseSearch_, SIGNAL(finished()), this, SLOT(openCloseSearchAnimationFinished()));
-    openCloseSearch_->setDuration(GENERAL_ANIMATION_SPEED);
-
     startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
 }
 
@@ -2764,7 +2623,7 @@ void MainWindow::loadLiveWebsitePage(){
     //add login details information
     openCloseAddLogin_ = new QPropertyAnimation(ui->live_website_login_widget, "maximumHeight");
     connect(openCloseAddLogin_, SIGNAL(finished()), this, SLOT(openCloseAddLoginAnimationFinished()));
-    openCloseAddLogin_->setDuration(GENERAL_ANIMATION_SPEED);
+    openCloseAddLogin_->setDuration(GENERAL_ANIMATION_DURATION);
     ui->add_login_details->setChecked(gv.websiteLoginEnabled);
     if(gv.websiteLoginEnabled)
         on_add_login_details_clicked(true);
@@ -2803,8 +2662,6 @@ void MainWindow::loadMelloriPage()
     if(loadedPages_[5])
         return;
 }
-
-
 
 void MainWindow::openCloseAddLoginAnimationFinished(){
     if(openCloseAddLogin_->endValue().toInt()==0){
@@ -2923,6 +2780,13 @@ void MainWindow::nextPage(){
         page_button_clicked(ui->stackedWidget->currentIndex()+1);
 }
 
+
+
+
+
+
+
+
 //Actions code
 
 void MainWindow::doQuit()
@@ -2974,6 +2838,12 @@ void MainWindow::getScreenAvailableResolution (QRect geometry){
     gv.screenAvailableWidth = geometry.width();
     gv.screenAvailableHeight = geometry.height();
 }
+
+
+
+
+
+
 
 //Dialogs Code
 
@@ -3370,6 +3240,11 @@ void MainWindow::on_seconds_spinBox_valueChanged(int arg1)
     settings->setValue("seconds_box", arg1);
 }
 
+
+
+
+
+
 // 'Wallpapers' ListWidget functions
 
 void MainWindow::on_wallpapersList_customContextMenuRequested()
@@ -3403,7 +3278,7 @@ void MainWindow::on_wallpapersList_customContextMenuRequested()
 
         QAction *findAction = new QAction(tr("Find an image by name"), listwidgetMenu_);
         findAction->setShortcut(QKeySequence("Ctrl+F"));
-        connect(findAction, SIGNAL(triggered()), this, SLOT(showHideSearchBoxMenu()));
+        connect(findAction, SIGNAL(triggered()), searchImages_, SLOT(showHideSearchBoxMenu()));
         listwidgetMenu_->addAction(findAction);
 
         QAction *deleteAction = new QAction(tr("Delete image from disk"), listwidgetMenu_);
@@ -3432,32 +3307,15 @@ void MainWindow::on_wallpapersList_customContextMenuRequested()
 
 void MainWindow::on_wallpapersList_itemDoubleClicked()
 {
-    if(!wallpaperManager_->wallpapersCount())
+    if (!wallpaperManager_->wallpapersCount())
         return;
 
-    int curRow = ui->wallpapersList->currentRow();
-    if(curRow < 0)
-        return;
-
-    QString picture = getPathOfListItem(curRow);
-
-    if(WallpaperManager::imageIsNull(picture))
-        return;
-
-    wallpaperManager_->addToPreviousWallpapers(picture);
-    wallpaperManager_->setBackground(picture, true, true, 1);
-
-    if(gv.setAverageColor)
-        setButtonColor();
-
-    if(gv.rotateImages && gv.iconMode)
-        forceUpdateIconOf(curRow);
+    setImage(true, wallpaperHelper_->getPathOfListItem(), ui->wallpapersList->currentRow());
 
 #ifdef Q_OS_LINUX
-    if(currentDE == DE::LXDE){
-        DesktopStyle desktopStyle = qvariant_cast<DesktopStyle>(ui->image_style_combo->currentData());
-        if(desktopStyle == NoneStyle)
-           ui->image_style_combo->setCurrentIndex(2);
+    if (currentDE == DE::LXDE) {
+        if (currentStyle == NoneStyle)
+            QMetaObject::invokeMethod(uiImageStyleCombo, "setCurrentIndex", Q_ARG(int, 2));
     }
 #endif
 }
@@ -3469,7 +3327,7 @@ void MainWindow::on_wallpapersList_itemSelectionChanged()
 
     if(ui->wallpapersList->selectedItems().count()==1){
 
-        QString filename = getPathOfListItem();
+        QString filename = wallpaperHelper_->getPathOfListItem();
 
         if(!processingOnlineRequest_)
            ui->screen_label_info->setText(fixBasenameSize(globalParser_->basenameOf(filename)));
@@ -3486,6 +3344,14 @@ void MainWindow::deletePressed(){
            removeImageFromDisk();
     }
 }
+
+
+
+
+
+
+
+
 
 // File System Watcher
 void MainWindow::prepareToSearchFolders(){
@@ -3504,12 +3370,12 @@ void MainWindow::prepareToSearchFolders(){
         }
     }
     clearWallpapersList();
-    clearSearchBox();
+    searchImages_->clearSearchBox();
 }
 
 void MainWindow::monitoredFoldersUpdated(){
     //TODO: Fix bug where deleting the current picture freezes app
-    int itemCount =ui->wallpapersList->count();
+    int itemCount = ui->wallpapersList->count();
     startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
 
     if(gv.iconMode)
@@ -3542,11 +3408,17 @@ void MainWindow::monitoredFoldersUpdated(){
         startButtonsSetEnabled(true);
 
     if(gv.previewImagesOnScreen && ui->stackedWidget->currentIndex()==0){
-        searchFor(nameOfSelectionPriorFolderChange_);
+        searchImages_->searchFor(nameOfSelectionPriorFolderChange_);
         ui->screen_label_info->clear();
         updateScreenLabel();
     }
 }
+
+
+
+
+
+
 
 
 // 'Wallpapers' ListWidget right-click menu functions
@@ -3556,14 +3428,14 @@ void MainWindow::openImage()
     if(!ui->wallpapersList->currentItem()->isSelected())
         return;
 
-    Global::openUrl("file:///" + getPathOfListItem());
+    Global::openUrl("file:///" + wallpaperHelper_->getPathOfListItem());
 }
 
 void MainWindow::openImageFolder(){
     if(!ui->wallpapersList->currentItem()->isSelected())
         return;
 
-    FileManager::openFolderOf(getPathOfListItem());
+    FileManager::openFolderOf(wallpaperHelper_->getPathOfListItem());
 }
 
 void MainWindow::openImageFolderMassive(){
@@ -3583,7 +3455,7 @@ void MainWindow::removeImageFromDisk(){
     if (QMessageBox::question(this, tr("Confirm deletion"), tr("Are you sure you want to permanently delete the selected image?")) != QMessageBox::Yes)
         return;
 
-    QString imageFilename = getPathOfListItem(ui->wallpapersList->currentRow());
+    QString imageFilename = wallpaperHelper_->getPathOfListItem();
 
     if(!QFile::remove(imageFilename))
         QMessageBox::warning(this, tr("Error!"), tr("Image deletion failed possibly because you don't have the permissions to delete the image or the image doesn't exist"));
@@ -3627,7 +3499,7 @@ void MainWindow::rotateRight(){
     if(!ui->wallpapersList->currentItem()->isSelected())
         return;
 
-    QString path = getPathOfListItem();
+    QString path = wallpaperHelper_->getPathOfListItem();
 
     if(!QFile::exists(path) || QImage(path).isNull())
         return;
@@ -3641,7 +3513,7 @@ void MainWindow::rotateLeft(){
     if(!ui->wallpapersList->currentItem()->isSelected())
         return;
 
-    QString path = getPathOfListItem();
+    QString path = wallpaperHelper_->getPathOfListItem();
 
     if(!QFile::exists(path) || QImage(path).isNull())
         return;
@@ -3662,26 +3534,21 @@ void MainWindow::rotationCompleted(QString &imagePath){
 }
 
 void MainWindow::copyImagePath(){
-    globalParser_->copyTextToClipboard(getPathOfListItem());
+    globalParser_->copyTextToClipboard(wallpaperHelper_->getPathOfListItem());
 }
 
 void MainWindow::copyImage(){
-    globalParser_->copyImageToClipboard(getPathOfListItem());
+    globalParser_->copyImageToClipboard(wallpaperHelper_->getPathOfListItem());
 }
 
-void MainWindow::showHideSearchBoxMenu(){
-    if(searchIsOn_){
-        ui->search_box->setFocus();
-        return;
-    }
-
-    showHideSearchBox();
-}
-
-void MainWindow::showProperties()
-{
+void MainWindow::showProperties(){
     if(!ui->wallpapersList->currentItem()->isSelected() || ui->stackedWidget->currentIndex()!=0)
         return;
 
     dialogHelper_->showPropertiesDialog(ui->wallpapersList->currentRow(), wallpaperManager_);
+}
+
+void MainWindow::handleSearchShortcut() {
+    if (ui->stackedWidget->currentIndex() == 0)
+        searchImages_->showHideSearchBox();
 }

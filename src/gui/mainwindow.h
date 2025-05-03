@@ -25,7 +25,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define MAINWINDOW_H
 
 #define IMAGE_TRANSITION_SPEED 700
-#define GENERAL_ANIMATION_SPEED 150
 
 #define SCREEN_LABEL_SIZE_X 285
 #define SCREEN_LABEL_SIZE_Y 172
@@ -61,6 +60,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "filemanager.h"
 #include "settingsmanager.h"
 #include "dialoghelper.h"
+#include "wallpaperhelper.h"
+#include "searchimages.h"
 
 #ifndef Q_OS_LINUX
     #include "notification.h"
@@ -83,11 +84,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QButtonGroup>
 #include <QShortcut>
 #include <QSharedMemory>
-
-typedef enum {
-    NoneStyle, Center, Tile, Stretch, Scale, Zoom, Span
-} DesktopStyle;
-Q_DECLARE_METATYPE(DesktopStyle);
 
 namespace Ui {
     class MainWindow;
@@ -158,10 +154,10 @@ private:
     WebsitePreview *webPreview_;
     TimerManager *timerManager_;
     DialogHelper *dialogHelper_;
+    WallpaperHelper *wallpaperHelper_;
+    SearchImages *searchImages_;
 
-    QRegularExpression *match_;
     QMovie *processingRequestGif_;
-    QPropertyAnimation *openCloseSearch_;
     QPropertyAnimation *rightWidgetAnimation_;
     QPropertyAnimation *widget3Animation_;
     QPropertyAnimation *openCloseAddLogin_;
@@ -180,7 +176,6 @@ private:
     int previouslyRunningFeature_ = 0;
     double imagePreviewResizeFactorX_;
     double imagePreviewResizeFactorY_;
-    int currentSearchItemIndex;
     short timePassedForLiveWebsiteRequest_;
     short tempForDelayedPicturesLocationChange_;
 
@@ -201,7 +196,6 @@ private:
     bool actAsStart_ = true;
     bool startWasJustClicked_ = false;
     bool justUpdatedPotd_ = false;
-    bool searchIsOn_ = false;
     bool loadedPages_[6] = {false,false,false,false,false,false};
     bool firstRandomImageIsntRandom_ = false;
     bool shuffleWasChecked_ = false;
@@ -209,14 +203,12 @@ private:
     bool manuallyStartedOnBattery_ = false;
     QString initialWebPage_;
     QString changedWebPage_;
-    QStringList searchList_;
     QShortcut *menubarShortcut_ = NULL;
     QShortcut *preferencesShortcut_ = NULL;
     QShortcut *quitShortcut_ = NULL;
     QShortcut *contentsShortcut_ = NULL;
     QShortcut *historyShortcut_ = NULL;
 
-    QString getPathOfListItem(int index = -1);
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
     void actionsOnClose();
@@ -233,10 +225,7 @@ private:
     void initializePrivateVariables(Global *globalParser, ImageFetcher *imageFetcher);
     void setupMenu();
     void connectSignalSlots();
-    void startUpdateSeconds();
-    void searchFor(const QString &term);
-    void continueToNextMatch();
-    void continueToPreviousMatch();
+    void startUpdateSeconds();    
     void animateProgressbarOpacity(bool show);
     void startPauseWallpaperChangingProcess();
     void animateScreenLabel(bool onlyHide);
@@ -249,8 +238,6 @@ private:
     void savePicturesLocations();
     void processRequestStart();
     void processRequestStop();
-    void doesMatch();
-    void doesntMatch();
     void setProgressbarsValue(short value);
     void imageTransition(const QString &filename = QString());
     void changeTextOfScreenLabelTo(const QString &text);
@@ -275,6 +262,7 @@ private Q_SLOTS:
 #ifdef Q_OS_LINUX
     void dconfChanges();
 #endif
+    void handleSearchShortcut();
     void timeSpinboxChanged();
     void intervalTypeChanged();
     void closeWhatsRunning();
@@ -288,17 +276,16 @@ private Q_SLOTS:
     void readCoordinates(const QRect &cropArea);
     void findAvailableWallpaperStyles();
     void setWebsitePreviewImage(QImage *image);
+    void setImage(bool addToPrevious, const QString &image, int index);
     void setButtonColor();
     void enterPressed();
     void openCloseAddLoginAnimationFinished();
     void updateSeconds();
     void liveWebsiteImageCreated(QImage *image, short errorCode);
     void changeCurrentTheme();
-    void showHideSearchBox();
     void escapePressed();
     void previousPage();
     void nextPage();
-    void openCloseSearchAnimationFinished();
     void hideTimeForNext();
     void hidePreview();
     void showPreview();
@@ -348,10 +335,6 @@ private Q_SLOTS:
     void on_le_tag_checkbox_clicked(bool checked);
     void on_le_tag_button_clicked();
     void on_pictures_location_comboBox_currentIndexChanged(int index);
-    void on_search_box_textChanged(const QString &arg1);
-    void on_search_close_clicked();
-    void on_search_up_clicked();
-    void on_search_down_clicked();
     void on_actionDonate_triggered();
     void on_actionReport_A_Bug_triggered();
     void on_actionGet_Help_Online_triggered();
@@ -383,9 +366,6 @@ private Q_SLOTS:
     void on_seconds_spinBox_valueChanged(int arg1);
     void clearWallpapersList();
 
-    // Search Box
-    void clearSearchBox();
-
     // File System Watcher
     void prepareToSearchFolders();
     void monitoredFoldersUpdated();
@@ -411,11 +391,9 @@ private Q_SLOTS:
     void openImageFolder();
     void openImageFolderMassive();
     void showProperties();
-    void showHideSearchBoxMenu();
 
 Q_SIGNALS:
      void fixLivewebsiteButtons();
-     void noMatch();
      void monitorCheck();
      void signalUncheckRunningFeatureOnTray();
      void signalRecreateTray();

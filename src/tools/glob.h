@@ -71,6 +71,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define DEFAULT_SLIDER_DELAY 900
 #define WEBSITE_TIMEOUT 90
+#define GENERAL_ANIMATION_DURATION 150
 
 #define LEAST_WALLPAPERS_FOR_START 2
 
@@ -78,7 +79,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define INTERVAL_INDEPENDENCE_DEFAULT_VALUE "p-1.0000:00:00:00:00:00"
 
-#define IMAGE_FILTERS QStringList() << "*.png" << "*.PNG" << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG" << "*.gif" << "*.GIF" << "*.bmp" << "*.BMP" << "*.svg" << "*.SVG" << "*.heic" << "*.HEIC"
+//TODO: Add support for heic images (libheic)
+#define IMAGE_FILTERS QStringList() << "*.png" << "*.PNG" << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG" << "*.gif" << "*.GIF" << "*.bmp" << "*.BMP" << "*.svg" << "*.SVG"
 
 #define MENU_POPUP_POS QPoint(QCursor::pos()) + QPoint(2, 0)
 
@@ -86,6 +88,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define AUTOSTART_DIR "/.config/autostart/"
 #define BOOT_DESKTOP_FILE "wallch.desktop"
+
+typedef enum {
+    NoneStyle, Center, Tile, Stretch, Scale, Zoom, Span
+} DesktopStyle;
+Q_DECLARE_METATYPE(DesktopStyle);
 
 #ifndef Q_OS_LINUX
     #include "notification.h"

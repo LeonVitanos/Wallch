@@ -200,10 +200,6 @@ void WallpaperManager::addWallpaper(const QString &wallpaper){
     allWallpapers_ << wallpaper;
 }
 
-void WallpaperManager::addWallpapers(const QString &wallpapers){
-    allWallpapers_ << wallpapers;
-}
-
 void WallpaperManager::clearWallpapers(){
     allWallpapers_.clear();
 }
