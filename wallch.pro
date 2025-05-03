@@ -20,7 +20,7 @@ win32 {
 }
 
 unix:!macx {
-    CONFIG += link_pkgconfig
+    CONFIG += link_pkgconfig no_keywords
     PKGCONFIG += libnotify libexif
 }
 

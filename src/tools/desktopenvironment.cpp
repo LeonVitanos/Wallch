@@ -87,15 +87,14 @@ QString DesktopEnvironment::getCurrentDEprettyName(){
     switch(detected){
     case DE::Gnome:
         return "Gnome";
-        break;
     case DE::LXDE:
         return "LXDE";
-        break;
     case DE::XFCE:
         return "XFCE";
-        break;
     case DE::Mate:
         return "Mate";
+    default:
+        return "Unknown";
     }
 }
 

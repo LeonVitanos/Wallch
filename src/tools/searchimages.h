@@ -1,6 +1,7 @@
 #ifndef SEARCHIMAGES_H
 #define SEARCHIMAGES_H
 
+#include "qpropertyanimation.h"
 #include <QListWidget>
 #include <QLineEdit>
 #include <QRegularExpression>

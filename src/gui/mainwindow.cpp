@@ -3314,8 +3314,9 @@ void MainWindow::on_wallpapersList_itemDoubleClicked()
 
 #ifdef Q_OS_LINUX
     if (currentDE == DE::LXDE) {
-        if (currentStyle == NoneStyle)
-            QMetaObject::invokeMethod(uiImageStyleCombo, "setCurrentIndex", Q_ARG(int, 2));
+        DesktopStyle desktopStyle = qvariant_cast<DesktopStyle>(ui->image_style_combo->currentData());
+        if (desktopStyle == NoneStyle)
+            QMetaObject::invokeMethod(ui->image_style_combo, "setCurrentIndex", Q_ARG(int, 2));
     }
 #endif
 }
