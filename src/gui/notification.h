@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QDialog>
 #include <QGraphicsOpacityEffect>
 #include <QPropertyAnimation>
+#include <QEnterEvent>
 
 namespace Ui {
 class Notification;

@@ -335,7 +335,12 @@ void MainWindow::setupMenu()
     //We decided this is better than having a menubar
     settingsMenu_ = new QMenu(this);
     currentBgMenu_ = new QMenu(this);
-    settingsMenu_->addAction(tr("Preferences"), QKeySequence(tr("Ctrl+P")), this, &MainWindow::on_action_Preferences_triggered);
+
+    QAction *preferencesAction = new QAction(tr("Preferences"), this);
+    preferencesAction->setShortcut(QKeySequence(tr("Ctrl+P")));
+    settingsMenu_->addAction(preferencesAction);
+    connect(preferencesAction, &QAction::triggered, this, &MainWindow::on_action_Preferences_triggered);
+
     settingsMenu_->addSeparator();
     currentBgMenu_->setTitle(tr("Current Background"));
     currentBgMenu_->addAction(tr("Open Image"), this, wallpaperManager_->openCurrentBackgroundImage);
@@ -345,20 +350,33 @@ void MainWindow::setupMenu()
     currentBgMenu_->addAction(tr("Delete"), this, wallpaperManager_->deleteCurrentBackgroundImage);
     currentBgMenu_->addAction(tr("Properties"), dialogHelper_, SLOT(showPropertiesDialog()));
     settingsMenu_->addMenu(currentBgMenu_);
+
     settingsMenu_->addSeparator();
-    settingsMenu_->addAction(tr("History"), QKeySequence(tr("Ctrl+H")), this, &MainWindow::on_actionHistory_triggered);
+    QAction *historyAction = new QAction(tr("History"), this);
+    historyAction->setShortcut(QKeySequence(tr("Ctrl+H")));
+    settingsMenu_->addAction(historyAction);
+    connect(historyAction, &QAction::triggered, this, &MainWindow::on_actionHistory_triggered);
     settingsMenu_->addAction(tr("What is my screen resolution?"), this, SLOT(on_actionWhat_is_my_screen_resolution_triggered()));
+
     settingsMenu_->addSeparator();
     settingsMenu_->addAction(tr("About Wallch"), this, SLOT(on_action_About_triggered()));
+
     helpMenu_ = new QMenu(this);
     helpMenu_->setTitle(tr("Help"));
-    helpMenu_->addAction(tr("How to use Wallch?"), QKeySequence(tr("F1")), this, &MainWindow::on_actionContents_triggered);
+    QAction *helpAction = new QAction(tr("How to use Wallch?"), this);
+    helpAction->setShortcut(QKeySequence(tr("F1")));
+    helpMenu_->addAction(helpAction);
+    connect(helpAction, &QAction::triggered, this, &MainWindow::on_actionContents_triggered);
     helpMenu_->addAction(tr("Ask a question"), this, SLOT(on_actionGet_Help_Online_triggered()));
     helpMenu_->addAction(tr("Report a bug"), this, SLOT(on_actionReport_A_Bug_triggered()));
     settingsMenu_->addMenu(helpMenu_);
     settingsMenu_->addAction(tr("Donate"), this, SLOT(on_actionDonate_triggered()));
+
     settingsMenu_->addSeparator();
-    settingsMenu_->addAction(tr("Quit"), QKeySequence(tr("Ctrl+Q")), this, &MainWindow::doQuit);
+    QAction *quitAction = new QAction(tr("Quit"), this);
+    quitAction->setShortcut(QKeySequence(tr("Ctrl+Q")));
+    settingsMenu_->addAction(quitAction);
+    connect(quitAction, &QAction::triggered, this, &MainWindow::doQuit);
     settingsMenu_->installEventFilter(this);
 
     ui->menubarMenu->setMenu(settingsMenu_);
@@ -597,19 +615,20 @@ void MainWindow::animateScreenLabel(bool onlyHide){
 }
 
 void MainWindow::unhoverMenuButton(){
-    /*TODO how to make this shiet work*/
+    /*TODO Probably needs fix in the future*/
     QPoint globalPos = QCursor::pos() + QPoint(1, 1);
     QPointF localPos = QPointF(globalPos);
     QMouseEvent *event1 = new QMouseEvent(QEvent::MouseMove, localPos, globalPos, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
     QApplication::postEvent(ui->menubarMenu, event1, Qt::HighEventPriority);
     QApplication::sendEvent(ui->menubarMenu, event1);
 
-    QPointF scenePos = QPointF(0, 0);
+    // Commenting this for now, as it breaks 5.15 compatibility
+    /*QPointF scenePos = QPointF(0, 0);
     QPointF globalPosHover = QPointF(1, 1);
     QPointF oldPos = QPointF(-1, -1);
     QHoverEvent *event2 = new QHoverEvent(QEvent::HoverLeave, scenePos, globalPosHover, oldPos, Qt::NoModifier, QPointingDevice::primaryPointingDevice());
     QApplication::postEvent(ui->menubarMenu, event2, Qt::HighEventPriority);
-    QApplication::sendEvent(ui->menubarMenu, event2);
+    QApplication::sendEvent(ui->menubarMenu, event2);*/
 }
 
 void MainWindow::setPreviewImage(){
