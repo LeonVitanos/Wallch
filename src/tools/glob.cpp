@@ -35,7 +35,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QTextDocument>
 
 #include <iostream>
-using namespace std;
 
 #ifdef Q_OS_LINUX
     #include <libnotify/notify.h>
@@ -611,11 +610,11 @@ void Global::addPreviousBackground(QStringList &previous_backgrounds, const QStr
 }
 
 void Global::error(const QString &message){
-    cerr << "(" << QDateTime::currentDateTime().toString("dd/MM/yy HH:mm:ss").toLocal8Bit().data() << ") Error: " << message.toLocal8Bit().data() << endl;
+    std::cerr << "(" << QDateTime::currentDateTime().toString("dd/MM/yy HH:mm:ss").toLocal8Bit().data() << ") Error: " << message.toLocal8Bit().data() << std::endl;
 }
 
 void Global::debug(const QString &message){
-    cout << message.toLocal8Bit().data() << endl;
+    std::cout << message.toLocal8Bit().data() << std::endl;
 }
 
 int Global::getSecondsTillHour(const QString &hour){
