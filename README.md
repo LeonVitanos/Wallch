@@ -1,6 +1,32 @@
 # Wallch
 
-This is my first project, in which i took my first steps of programming together with [Alexandros Solanos](https://github.com/hytromo), at the age of 15. The development was active from 2010 until 2015 and was stopped mainly because we didn't admire the code we've written while learning to program and also wanted to move to other projects. 
+This is my first project, in which i took my first steps of programming together with [Alexandros Solanos](https://github.com/hytromo), at the age of 15.
+
+## Development Status: Wallch 5
+
+Wallch 5 is currently under active development. This version represents a significant rewrite, primarily aimed at achieving broad compatibility across Linux, Windows, and macOS, as the methods for changing wallpapers have evolved and diverged significantly since v4 was originally developed.
+
+The original Live Earth and Wikipedia Picture of the Day features are currently non-functional.
+
+Below is a snapshot of the current compatibility status based on recent testing:
+
+| OS/DE | Status | Change Image (Local) | Solid Color   | Style/Sizing | Notes                                                                 |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **macOS** |        |                      |               |              |                                                                       |
+| macOS Monterey v12.7.6             | ➖     | ✅                    | ❌            | ❌           | compatibility on other macOS versions unknown. |
+| **Windows** |        |                      |               |              |                                                                       |
+| Windows 11                         | ➖     | ✅                    | ➖            | ✅           | Currently changes wallpaper only on the active desktop. Full multi-desktop support is planned. |
+| **Linux** |        |                      |               |              | *Specific DE/OS versions heavily impact compatibility.* |
+| Ubuntu 22.04 and 25.04 (GNOME)        | ✅     | ✅                    | ✅            | ✅           |                                                                       |
+| Linux Mint 21.1 XFCE 4.16.4        | ➖     | ✅                    | ❌            | ❌           |                                |
+| Fedora 37 LXDE PCManFM 1.3.2       | ❌     | ❌                    | ❌            | ❌           |           |
+| Lubuntu 18.04 LXDE PCManFM 1.2.5   | ❌     | ❌                    | ❌            | ❌           |       |
+| Kubuntu 22.04 KDE Plasma 5.24.7    | ❌     | ❌                    | ❌            | ❌           |  |
+| Lubuntu 22.04 LXQt 0.17            | ➖     | ✅                    | ❌            | ❌           |                      |
+
+### About
+
+The development was active from 2010 until 2015 and was stopped mainly because we didn't admire the code we've written while learning to program and also wanted to move to other projects. 
 
 ![alt text](https://i.imgur.com/j6vWRv1.jpg)
 
