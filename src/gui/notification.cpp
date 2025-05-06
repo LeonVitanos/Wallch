@@ -83,7 +83,8 @@ void Notification::lessOpacity()
         close();
 }
 
-void Notification::enterEvent(QEnterEvent *) {
+void Notification::handleEnterEventLogic()
+{
     mouseOnMe=true;
     if(opacityTimer_->isActive())
     {
@@ -93,7 +94,22 @@ void Notification::enterEvent(QEnterEvent *) {
     setWindowOpacity(0.50);
 }
 
-void Notification::leaveEvent(QEvent *) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+void Notification::enterEvent(QEnterEvent *event)
+{
+    handleEnterEventLogic();
+    QDialog::enterEvent(event);
+}
+#else
+void Notification::enterEvent(QEvent *event)
+{
+    handleEnterEventLogic();
+    QDialog::enterEvent(event);
+}
+#endif
+
+void Notification::leaveEvent(QEvent *event)
+{
     mouseOnMe=false;
     if(opacityTimerWaiting){
         opacityTimerWaiting=false;
@@ -103,9 +119,14 @@ void Notification::leaveEvent(QEvent *) {
     else{
         setWindowOpacity(1.0);
     }
+
+    QDialog::leaveEvent(event);
 }
 
-void Notification::mousePressEvent(QMouseEvent* ) {
+void Notification::mousePressEvent(QMouseEvent* event)
+{
     //if (mode_ == Mode_Popup)
     close();
+
+    QDialog::mousePressEvent(event);
 }

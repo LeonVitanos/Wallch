@@ -25,7 +25,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QDialog>
 #include <QGraphicsOpacityEffect>
 #include <QPropertyAnimation>
+#include <QEvent>
+#include <QMouseEvent>
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QEnterEvent>
+#endif
 
 namespace Ui {
 class Notification;
@@ -47,6 +52,7 @@ private:
     QTimer *closeTimer_;
     QTimer *opacityTimer_;
     QGraphicsOpacityEffect* opacityEffect_;
+    void handleEnterEventLogic();
 
 private Q_SLOTS:
     void setupNotification(QString message, QString image);
@@ -54,9 +60,14 @@ private Q_SLOTS:
     void lessOpacity();
 
 protected:
-    void enterEvent(QEnterEvent *);
-    void leaveEvent(QEvent *);
-    void mousePressEvent(QMouseEvent *);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    void enterEvent(QEnterEvent *event) override;
+#else
+    void enterEvent(QEvent *event) override;
+#endif
+
+    void leaveEvent(QEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
 };
 
 #endif // NOTIFICATION_H
