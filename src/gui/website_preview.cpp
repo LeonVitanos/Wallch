@@ -41,6 +41,8 @@ WebsitePreview::WebsitePreview(WebsiteSnapshot *websiteSnapshotP, bool showCropD
     }
 
     (void) new QShortcut(Qt::Key_Escape, this, SLOT(on_cancel_or_close_clicked()));
+    (void)websiteSnapshotP;
+    (void)crop;
 
     /*websiteSnapshot_=websiteSnapshotP;
 

@@ -274,7 +274,7 @@ QString WallpaperManager::currentBackgroundWallpaper(){
     if(currentDE == DE::Gnome || currentDE == DE::Mate){
         currentImage = DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", DesktopEnvironment::getPictureUriName());
         if(currentImage.startsWith("file://")){
-            currentImage=currentImage.right(currentImage.count()-7);
+            currentImage=currentImage.right(currentImage.size()-7);
         }
     }
     else if(currentDE == DE::XFCE){
