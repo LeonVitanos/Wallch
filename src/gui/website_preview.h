@@ -22,8 +22,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef WEBSITE_PREVIEW_H
 #define WEBSITE_PREVIEW_H
 
-#define QT_NO_KEYWORDS
-
 #include <QDialog>
 #include <QTimer>
 

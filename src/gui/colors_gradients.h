@@ -22,8 +22,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef COLORS_GRADIENTS_H
 #define COLORS_GRADIENTS_H
 
-#define QT_NO_KEYWORDS
-
 #include <QDialog>
 #include <QColorDialog>
 #include <QFile>

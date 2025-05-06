@@ -22,8 +22,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef NONGUI_H
 #define NONGUI_H
 
-#define QT_NO_KEYWORDS
-
 #include <QTimer>
 #include <QSettings>
 #include <QObject>

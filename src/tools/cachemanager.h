@@ -1,6 +1,5 @@
 #ifndef CACHEMANAGER_H
 #define CACHEMANAGER_H
-#define QT_NO_KEYWORDS
 
 #include <QObject>
 #include <QStringList>

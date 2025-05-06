@@ -2,7 +2,6 @@
 #ifndef TIMERMANAGER_H
 #define TIMERMANAGER_H
 
-#define QT_NO_KEYWORDS
 #include <QObject>
 
 #include "glob.h"
