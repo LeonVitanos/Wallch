@@ -24,6 +24,10 @@ unix:!macx {
     PKGCONFIG += libnotify libexif
 }
 
+macx {
+    CONFIG += sdk_no_version_check
+}
+
 isEmpty(PREFIX) {
     PREFIX = /usr
 }
