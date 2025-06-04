@@ -33,6 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "mainwindow.h"
 #include "math.h"
 #include "desktopenvironment.h"
+#include "imageorientationhandler.h"
 
 MainWindow *mainWindowInstance;
 
@@ -3522,7 +3523,7 @@ void MainWindow::rotateRight(){
     if(!QFile::exists(path) || QImage(path).isNull())
         return;
 
-    globalParser_->rotateImg(path, 6, false);
+    ImageOrientationHandler::rotateImg(path, 6, false);
 
     rotationCompleted(path);
 }
@@ -3536,7 +3537,7 @@ void MainWindow::rotateLeft(){
     if(!QFile::exists(path) || QImage(path).isNull())
         return;
 
-    globalParser_->rotateImg(path, 8, false);
+    ImageOrientationHandler::rotateImg(path, 8, false);
 
     rotationCompleted(path);
 }

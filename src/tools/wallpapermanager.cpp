@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
     #include "windows.h"
 #else
     #include "desktopenvironment.h"
+    #include "imageorientationhandler.h"
 #endif
 
 #include <QMessageBox>
@@ -328,7 +329,7 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
 
 #ifdef Q_OS_LINUX
     if(gv.rotateImages){
-        Global::rotateImageBasedOnExif(image);
+        ImageOrientationHandler::rotateImageBasedOnExif(image);
     }
 
     switch(currentDE){

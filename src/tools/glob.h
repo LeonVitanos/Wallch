@@ -194,7 +194,6 @@ public:
     Global();
     ~Global();
     static void saveHistory(const QString &image, short feature);
-    static void rotateImg(const QString &filename, short rotation_type, bool show_messagebox);
     void desktopNotify(const QString text, bool checkImage, const QString &image);
     static QString setAverageColor(const QString &image);
     static QStringList listFolders(const QString &parentFolder, bool recursively, bool includeParent);
@@ -208,8 +207,6 @@ public:
     static QString getFilename(const QString &file);
     static void saveSecondsLeftNow(int secondsLeft, short forType);
     static QString base64Decode(const QString &string);
-    static void rotateImageBasedOnExif(const QString &image);
-    static short getExifRotation(const QString &filename);
     static void resetSleepProtection(int timeoutCount);
     static void addPreviousBackground(QStringList &previous_backgrounds, const QString &image);
     static void error(const QString &message);

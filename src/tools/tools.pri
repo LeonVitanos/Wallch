@@ -6,6 +6,7 @@ HEADERS += $$PWD/glob.h \
            $$PWD/desktopenvironment.h \
            $$PWD/dialoghelper.h \
            $$PWD/filemanager.h \
+           $$PWD/imageorientationhandler.h \
            $$PWD/nonguimanager.h \
            $$PWD/searchimages.h \
            $$PWD/settingsmanager.h \
@@ -24,6 +25,7 @@ SOURCES += $$PWD/glob.cpp \
            $$PWD/desktopenvironment.cpp \
            $$PWD/dialoghelper.cpp \
            $$PWD/filemanager.cpp \
+           $$PWD/imageorientationhandler.cpp \
            $$PWD/nonguimanager.cpp \
            $$PWD/searchimages.cpp \
            $$PWD/settingsmanager.cpp \
