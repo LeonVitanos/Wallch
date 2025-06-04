@@ -237,7 +237,8 @@ void Global::notificationDestroyed(){
 void Global::rotateImg(const QString &filename, short rotation_type, bool show_messagebox){
     /*
      * A function for rotating the image 'filename' based on its 'rotation_type'
-     * Rotation_type is corresponding to the exif values of the image.
+     * Rotation_type corresponds to the exif orientation values (1-8) as defined at:
+     * https://exiftool.org/TagNames/EXIF.html
      */
     QString ext=filename.right(3);
     if(ext == "gif" || ext == "GIF"){
@@ -260,40 +261,71 @@ void Global::rotateImg(const QString &filename, short rotation_type, bool show_m
     else if(ext=="bmp" || ext=="BMP"){
         extension="BMP";
     }
+
     /*
-     *     'switching', based on the Exif data "orientation"
+     * ASCII art table representing the Exif orientation values
      *     1        2       3      4         5            6           7          8
      *
-     *   888888  888888      88  88      8888888888  88                  88  8888888888
-     *   88          88      88  88      88  88      88  88          88  88      88  88
-     *   8888      8888    8888  8888    88          8888888888  8888888888          88
+     *   888888  888888      88  88      8888888888  8888888888          88  88
+     *   88          88      88  88      88  88          88  88      88  88  88  88
+     *   8888      8888    8888  8888    88                  88  8888888888  8888888888
      *   88          88      88  88
      *   88          88  888888  888888
      *
      */
+
+    QImage image(filename);
+    enum MirrorType { None, Horizontal, Vertical };
+    MirrorType mirror = None;
+    short rotate=0;
+
     switch (rotation_type){
-    case 2:
-        QImage(filename).mirrored(true, false).save(filename, extension.toLocal8Bit().data(), 100);
+    default: // Original (no transformation)
         break;
-    case 3:
-        QImage(filename).mirrored(true, true).save(filename, extension.toLocal8Bit().data(), 100);
+    case 2: // Mirror Horizontal
+        mirror=Horizontal;
         break;
-    case 4:
-        QImage(filename).mirrored(false, true).save(filename, extension.toLocal8Bit().data(), 100);
+    case 3: // Rotate 180
+        rotate=180;
         break;
-    case 5:
-        QImage(filename).transformed(QTransform().rotate(90), Qt::SmoothTransformation).mirrored(true, false).save(filename, extension.toLocal8Bit().data(), 100);
+    case 4: // Mirror Vertical
+        mirror=Vertical;
         break;
-    case 6:
-        QImage(filename).transformed(QTransform().rotate(90), Qt::SmoothTransformation).save(filename, extension.toLocal8Bit().data(), 100);
+    case 5: // Mirror horizontal and rotate 270 CW
+        mirror=Horizontal;
+        rotate=270;
         break;
-    case 7:
-        QImage(filename).transformed(QTransform().rotate(-90), Qt::SmoothTransformation).mirrored(true, false).save(filename, extension.toLocal8Bit().data(), 100);
+    case 6: // Rotate 90 CW
+        rotate=90;
         break;
-    case 8:
-        QImage(filename).transformed(QTransform().rotate(-90), Qt::SmoothTransformation).save(filename, extension.toLocal8Bit().data(), 100);
+    case 7: // Mirror horizontal and rotate 90 CW
+        mirror=Horizontal;
+        rotate=90;
+        break;
+    case 8: // Rotate 270 CW
+        rotate=270;
         break;
     }
+
+    if(mirror==Horizontal){
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 9, 0))
+        image = image.flipped(Qt::Horizontal);
+#else
+        image = image.mirrored(true, false);
+#endif
+    }
+    else if(mirror==Vertical){
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 9, 0))
+        image = image.flipped(Qt::Vertical);
+#else
+        image = image.mirrored(false, true);
+#endif
+    }
+
+    if(rotate)
+        image = image.transformed(QTransform().rotate(rotate), Qt::SmoothTransformation);
+
+    image.save(filename, extension.toLocal8Bit().data(), 100);
 }
 
 QStringList Global::listFolders(const QString &parentFolder, bool recursively, bool includeParent){
