@@ -28,7 +28,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QShortcut>
 #include <QImageReader>
 #include <QImage>
-#include <QtConcurrent/QtConcurrentRun>
+#include "silenced_qtconcurrentrun.h" // IWYU pragma: keep
 
 #define BYTES_PER_KiB 1024.0
 #define BYTES_PER_MiB 1048576.0

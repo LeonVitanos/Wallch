@@ -20,8 +20,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 #include "nonguimanager.h"
+#include "silenced_qtconcurrentrun.h" // IWYU pragma: keep
 
-#include <QtConcurrent/QtConcurrentRun>
 #include <QScreen>
 #include <QActionGroup>
 

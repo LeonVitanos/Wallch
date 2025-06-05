@@ -28,7 +28,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QShortcut>
 #include <QFontMetrics>
 #include <QPainter>
-#include <QtConcurrent/QtConcurrent>
 
 PotdPreview::PotdPreview(QWidget *parent) :
     QDialog(parent),

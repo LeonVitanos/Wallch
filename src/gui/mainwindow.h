@@ -75,7 +75,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QMovie>
 #include <QPropertyAnimation>
 #include <QGraphicsOpacityEffect>
-#include <QFutureWatcher>
 #include <QDragEnterEvent>
 #include <QPainter>
 #include <QStyledItemDelegate>

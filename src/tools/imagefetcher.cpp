@@ -23,8 +23,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "wallpapermanager.h"
 #include "markitem.h"
 #include "glob.h"
+#include "silenced_qtconcurrentrun.h" // IWYU pragma: keep
 
-#include <QtConcurrent/QtConcurrentRun>
 #include <QTextDocument>
 #include <QImage>
 #include <QPainter>

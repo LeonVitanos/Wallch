@@ -19,7 +19,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#include <QtConcurrent/QtConcurrentRun>
 #include <QMimeData>
 #include <QRadioButton>
 #include <QFileDialog>
@@ -34,6 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "math.h"
 #include "desktopenvironment.h"
 #include "imageorientationhandler.h"
+#include "silenced_qtconcurrentrun.h" // IWYU pragma: keep
 
 MainWindow *mainWindowInstance;
 
