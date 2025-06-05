@@ -21,11 +21,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "nonguimanager.h"
 #include "silenced_qtconcurrentrun.h" // IWYU pragma: keep
+#include "settingsmanager.h"
 
 #include <QScreen>
 #include <QActionGroup>
 
-#include <iostream>
 #include <getopt.h>
 
 #ifdef Q_OS_WIN

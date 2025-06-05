@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "potd_viewer.h"
 #include "ui_potd_viewer.h"
 #include "glob.h"
+#include "settingsmanager.h"
 
 #include <QShortcut>
 #include <QMessageBox>

@@ -26,7 +26,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QColorDialog>
 #include <QFile>
 #include <QIcon>
-#include "glob.h"
 #include "wallpapermanager.h"
 
 namespace Ui {

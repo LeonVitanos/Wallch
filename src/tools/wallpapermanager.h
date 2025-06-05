@@ -22,8 +22,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef WALLPAPERMANAGER_H
 #define WALLPAPERMANAGER_H
 
-#include "filemanager.h"
-
 #include <QStringList>
 #include <QColor>
 #include <QImage>

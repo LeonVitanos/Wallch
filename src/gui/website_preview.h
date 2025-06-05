@@ -27,7 +27,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "crop_image.h"
 #include "websitesnapshot.h"
-#include "glob.h"
 
 namespace Ui {
 class website_preview;

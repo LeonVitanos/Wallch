@@ -4,8 +4,7 @@
 
 #include <QColor>
 #include <QOperatingSystemVersion>
-
-#include "glob.h"
+#include <QImage>
 
 #ifdef Q_OS_WIN
 #include <stdio.h>

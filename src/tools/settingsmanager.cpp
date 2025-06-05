@@ -1,4 +1,8 @@
 #include "settingsmanager.h"
+#include "glob.h"
+#include "filemanager.h"
+
+QSettings *settings = new QSettings("wallch", "Settings");
 
 SettingsManager::SettingsManager()
 {

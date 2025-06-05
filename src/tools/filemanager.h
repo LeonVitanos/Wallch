@@ -1,7 +1,6 @@
 #ifndef FILEMANAGER_H
 #define FILEMANAGER_H
 
-#include "glob.h"
 #include "desktopenvironment.h"
 
 #include <QMessageBox>

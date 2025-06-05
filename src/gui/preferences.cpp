@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ui_preferences.h"
 #include "cachemanager.h"
 #include "glob.h"
+#include "settingsmanager.h"
 
 #include "math.h"
 

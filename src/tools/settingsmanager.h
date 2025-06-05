@@ -2,8 +2,8 @@
 #define SETTINGSMANAGER_H
 
 #include <QSettings>
-#include "glob.h"
-#include "filemanager.h"
+
+extern QSettings *settings;
 
 class SettingsManager
 {

@@ -4,8 +4,6 @@
 
 #include <QObject>
 
-#include "glob.h"
-
 class TimerManager : public QObject
 {
     Q_OBJECT

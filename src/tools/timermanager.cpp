@@ -1,5 +1,7 @@
 
 #include "timermanager.h"
+#include "settingsmanager.h"
+#include "glob.h"
 
 TimerManager::TimerManager(QObject *parent):
     QObject(parent)

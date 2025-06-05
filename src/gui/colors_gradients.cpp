@@ -26,6 +26,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QFileDialog>
 
 #include "colormanager.h"
+#include "settingsmanager.h"
+#include "glob.h"
 
 #ifdef Q_OS_WIN
     #include <stdio.h>

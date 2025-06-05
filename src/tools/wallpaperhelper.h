@@ -3,7 +3,6 @@
 
 #include <QString>
 #include <QObject>
-#include "glob.h"
 #include <QListWidget>
 #include "wallpapermanager.h"
 

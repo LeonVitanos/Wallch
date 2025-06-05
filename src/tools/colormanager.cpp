@@ -1,5 +1,7 @@
 
 #include "colormanager.h"
+#include "settingsmanager.h"
+
 #include <QPainter>
 
 #ifdef Q_OS_LINUX

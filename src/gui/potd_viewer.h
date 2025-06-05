@@ -22,12 +22,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef POTD_VIEWER_H
 #define POTD_VIEWER_H
 
-#include "glob.h"
 #include <QDialog>
 #include <QNetworkAccessManager>
 #include <QUrl>
 #include <QFile>
 #include <QMovie>
+#include <QProcess>
 
 namespace Ui {
     class potd_viewer;

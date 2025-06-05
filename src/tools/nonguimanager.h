@@ -40,7 +40,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "wallpapermanager.h"
 #include "imagefetcher.h"
 #include "timermanager.h"
-#include "settingsmanager.h"
 #include "dialoghelper.h"
 
 #define SOCKET_SERVER_NAME "Wallch Local Socket Server"

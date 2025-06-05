@@ -24,7 +24,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "wallpapermanager.h"
 #include "dialoghelper.h"
-#include "filemanager.h"
 
 #include <QTreeWidgetItem>
 #include <QMenu>

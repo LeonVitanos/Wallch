@@ -1,6 +1,7 @@
 
 #include "desktopenvironment.h"
 #include "glob.h"
+#include "settingsmanager.h"
 
 #include <QMessageBox>
 

@@ -32,10 +32,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QProcess>
 #include <QNetworkAccessManager>
 #include <QStandardPaths>
-#include <QSettings>
 #include <QClipboard>
 
-#include "time.h"
 #include "math.h"
 
 #define HELP_URL "http://melloristudio.com/wallch/help"
@@ -95,8 +93,6 @@ Q_DECLARE_METATYPE(DesktopStyle);
 #ifndef Q_OS_LINUX
     #include "notification.h"
 #endif
-
-extern QSettings *settings;
 
 struct GlobalVar {
     // 'Wallpapers' Feature

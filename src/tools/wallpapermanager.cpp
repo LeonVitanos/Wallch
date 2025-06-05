@@ -21,6 +21,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "wallpapermanager.h"
 #include "glob.h"
+#include "settingsmanager.h"
+#include "filemanager.h"
 
 #ifdef Q_OS_WIN
     #include "windows.h"

@@ -30,6 +30,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QEvent>
 #include <QDesktopServices>
 #include <QTextDocument>
+#include <QRegularExpression>
+#include <QApplication>
 
 #include <iostream>
 
@@ -42,9 +44,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #endif
 
 #include "glob.h"
-#include "mainwindow.h"
-
-QSettings *settings = new QSettings("wallch", "Settings");
+#include "settingsmanager.h"
+#include "wallpapermanager.h"
+#include "colormanager.h"
 
 Global::Global(){}
 Global::~Global(){}

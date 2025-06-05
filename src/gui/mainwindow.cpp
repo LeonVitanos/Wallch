@@ -34,6 +34,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "desktopenvironment.h"
 #include "imageorientationhandler.h"
 #include "silenced_qtconcurrentrun.h" // IWYU pragma: keep
+#include "settingsmanager.h"
 
 MainWindow *mainWindowInstance;
 

@@ -1,8 +1,5 @@
 #include "wallpaperhelper.h"
-
-#ifdef Q_OS_LINUX
-    #include "desktopenvironment.h"
-#endif
+#include "glob.h"
 
 WallpaperHelper::WallpaperHelper(WallpaperManager* wallpaperManager, QListWidget* wallpapersList)
     : wallpaperManager_(wallpaperManager), wallpapersList_(wallpapersList) {}

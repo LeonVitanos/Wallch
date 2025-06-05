@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ui_pictures_locations.h"
 #include "glob.h"
 #include "desktopenvironment.h"
+#include "settingsmanager.h"
 
 PicturesLocations::PicturesLocations(QWidget *parent) :
     QDialog(parent),

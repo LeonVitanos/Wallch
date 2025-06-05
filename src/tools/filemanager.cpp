@@ -1,4 +1,6 @@
 #include "filemanager.h"
+#include "settingsmanager.h"
+#include "glob.h"
 
 FileManager::FileManager(){
     //Timer for folder monitoring

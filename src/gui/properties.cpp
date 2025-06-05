@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ui_properties.h"
 #include "glob.h"
 #include "wallpapermanager.h"
+#include "filemanager.h"
 
 #include <QDir>
 #include <QShortcut>

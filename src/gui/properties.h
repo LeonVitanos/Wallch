@@ -31,7 +31,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QPainter>
 
 #include "wallpapermanager.h"
-#include "filemanager.h"
 #include "silenced_qfuturewatcher.h" // IWYU pragma: keep
 
 namespace Ui {
