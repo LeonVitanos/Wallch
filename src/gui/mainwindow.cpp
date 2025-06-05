@@ -225,7 +225,7 @@ void MainWindow::connectSignalSlots(){
     dconf = new QProcess(this);
     connect(dconf, SIGNAL(readyReadStandardOutput()), this, SLOT(dconfChanges()));
     connect(dconf , SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(dconfChanges()));
-    dconf->start("dconf watch /");
+    dconf->start("dconf", QStringList() << "watch" << "/");
 #endif
 }
 
