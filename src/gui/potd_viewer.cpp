@@ -23,8 +23,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ui_potd_viewer.h"
 #include "glob.h"
 
-#include <QtWidgets>
-#include <QtNetwork>
+#include <QShortcut>
+#include <QMessageBox>
+#include <QFileDialog>
+#include <QBuffer>
 
 PotdViewer::PotdViewer(QWidget *parent) :
     QDialog(parent),
