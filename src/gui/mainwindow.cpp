@@ -3161,7 +3161,11 @@ void MainWindow::removeBottomwidgets()
 //This is much better than the timer way, because qt recieves these messages with or without this function.
 
 #ifdef Q_OS_WIN
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
+#else
 bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, long* result)
+#endif
 {
    (void)eventType;
    (void)result;
