@@ -66,6 +66,10 @@ void ColorManager::setPrimaryColor(const QString &colorName){
     DWORD NewColors[1];
     NewColors[0] = RGB(color.red(), color.green(), color.blue());
     SetSysColors(1, Elements, NewColors);
+# else
+#  ifdef Q_OS_MAC
+    (void) colorName;
+#  endif
 # endif
 #endif
 }

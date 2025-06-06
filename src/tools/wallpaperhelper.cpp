@@ -23,4 +23,7 @@ QString WallpaperHelper::getPathOfListItem(){
     }
     else
         return wallpapersList_->item(index)->text();
+
+    //TODO
+    (void) wallpaperManager_;
 }

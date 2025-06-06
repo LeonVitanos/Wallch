@@ -674,6 +674,10 @@ void WallpaperManager::setCurrentFit(short index){
         setBackground(settings->value("last_wallpaper", getPreviousWallpaper()).toString(), false, false, 0);
     else
        setBackground(currentBg, false, false, 0);
+#else
+#  ifdef Q_OS_MAC
+    (void) index;
+#  endif
 # endif
 #endif
 }
