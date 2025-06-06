@@ -21,6 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "nonguimanager.h"
 #include "glob.h"
+#include <QLoggingCategory>
 
 struct GlobalVar gv;
 
@@ -28,6 +29,9 @@ NonGuiManager *nongui;
 
 int main(int argc, char *argv[])
 {
+    // Disable warnings about corrupt ICC color profiles in user images.
+    QLoggingCategory::setFilterRules("qt.gui.icc.warning=false");
+
     nongui = new NonGuiManager();
     return nongui->startProgram(argc, argv);
 }
