@@ -31,6 +31,8 @@ WebsitePreview::WebsitePreview(WebsiteSnapshot *websiteSnapshotP, bool showCropD
     ui(new Ui::website_preview)
 {
     ui->setupUi(this);
+    connect(ui->cancel_or_close, &QPushButton::clicked, this, &WebsitePreview::handleCancelOrCloseClick);
+
     ui->secondary_label->hide();
 
     forCropDialog_=showCropDialog;
@@ -40,7 +42,7 @@ WebsitePreview::WebsitePreview(WebsiteSnapshot *websiteSnapshotP, bool showCropD
         this->setWindowTitle(tr("Crop Live Website Image"));
     }
 
-    (void) new QShortcut(Qt::Key_Escape, this, SLOT(on_cancel_or_close_clicked()));
+    (void) new QShortcut(Qt::Key_Escape, this, SLOT(handleCancelOrCloseClick()));
     (void)websiteSnapshotP;
     (void)crop;
 
@@ -121,7 +123,7 @@ void WebsitePreview::imageReady(QImage *image, short errorCode){
 
 void WebsitePreview::closeDialog(){
     ui->main_label->setText(tr("Done!"));
-    QTimer::singleShot(500, this, SLOT(on_cancel_or_close_clicked()));
+    QTimer::singleShot(500, this, SLOT(handleCancelOrCloseClick()));
 }
 
 void WebsitePreview::failWithMessage(const QString &further_info){
@@ -135,7 +137,7 @@ void WebsitePreview::failWithMessage(const QString &further_info){
     this->adjustSize();
 }
 
-void WebsitePreview::on_cancel_or_close_clicked()
+void WebsitePreview::handleCancelOrCloseClick()
 {
     /*if(websiteSnapshot_->isLoading()){
         websiteSnapshot_->stop();

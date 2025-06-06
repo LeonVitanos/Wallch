@@ -36,12 +36,12 @@ public:
     ~PicturesLocations();
 
 private Q_SLOTS:
-    void on_add_location_clicked();
-    void on_remove_location_clicked();
-    void on_foldersTreeWidget_currentItemChanged(QTreeWidgetItem *current);
-    void on_cancel_pushButton_clicked();
-    void on_save_pushButton_clicked();
-    void on_reset_pushButton_clicked();
+    void handleAddLocationClick();
+    void handleRemoveLocationClick();
+    void handleFoldersTreeItemChange(QTreeWidgetItem *current);
+    void handleCancelClick();
+    void handleSaveClick();
+    void handleResetClick();
 
 private:
     Ui::pictures_locations *ui;

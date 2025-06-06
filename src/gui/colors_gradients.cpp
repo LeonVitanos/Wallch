@@ -42,6 +42,17 @@ ColorsGradients::ColorsGradients(WallpaperManager *wallpaperManager, QWidget *pa
     ui(new Ui::colors_gradients)
 {
     ui->setupUi(this);
+    connect(ui->average_color_checkbox, &QCheckBox::clicked, this, &ColorsGradients::handleAverageColorCheck);
+    connect(ui->saveButton, &QPushButton::clicked, this, &ColorsGradients::handleSaveButtonClick);
+    connect(ui->primary_color_button, &QPushButton::clicked, this, &ColorsGradients::handlePrimaryColorButtonClick);
+    connect(ui->secondary_color_button, &QPushButton::clicked, this, &ColorsGradients::handleSecondaryColorButtonClick);
+    connect(ui->change_order, &QPushButton::clicked, this, &ColorsGradients::handleChangeOrderClick);
+    connect(ui->solid_radioButton, &QRadioButton::clicked, this, &ColorsGradients::handleSolidRadioClick);
+    connect(ui->horizontal_radioButton, &QRadioButton::clicked, this, &ColorsGradients::handleHorizontalRadioClick);
+    connect(ui->vertical_radioButton, &QRadioButton::clicked, this, &ColorsGradients::handleVerticalRadioClick);
+    connect(ui->colorModeButton, &QPushButton::clicked, this, &ColorsGradients::handleColorModeButtonClick);
+    connect(ui->wallpaperModeButton, &QPushButton::clicked, this, &ColorsGradients::handleWallpaperModeButtonClick);
+
     wallpaperManager_ = wallpaperManager;
 
     if(currentShading == ColoringType::Solid)
@@ -74,7 +85,7 @@ ColorsGradients::ColorsGradients(WallpaperManager *wallpaperManager, QWidget *pa
     updateGradientsOnlyColors(false);
     if(gv.setAverageColor){
         ui->average_color_checkbox->setChecked(true);
-        on_average_color_checkbox_clicked(true);
+        handleAverageColorCheck(true);
     }
 }
 
@@ -83,7 +94,7 @@ ColorsGradients::~ColorsGradients()
     delete ui;
 }
 
-void ColorsGradients::on_average_color_checkbox_clicked(bool checked)
+void ColorsGradients::handleAverageColorCheck(bool checked)
 {
     ui->primary_color_button->setEnabled(!checked);
     ui->change_order->setEnabled(!checked);
@@ -132,12 +143,12 @@ void ColorsGradients::updateGradientsOnlyColors(bool updateLeftRightSolid){
     Q_EMIT updateImageStyle();
 }
 
-void ColorsGradients::on_saveButton_clicked()
+void ColorsGradients::handleSaveButtonClick()
 {
     close();
 }
 
-void ColorsGradients::on_primary_color_button_clicked()
+void ColorsGradients::handlePrimaryColorButtonClick()
 {
     QColor initial = QColor::fromRgb(ui->primary_color_button->icon().pixmap(QSize(5,5), QIcon::Normal, QIcon::On).toImage().pixel(1,1));
     QColorDialog::ColorDialogOptions options = QFlag(0);
@@ -153,7 +164,7 @@ void ColorsGradients::on_primary_color_button_clicked()
         Q_EMIT updateTv();
 }
 
-void ColorsGradients::on_secondary_color_button_clicked()
+void ColorsGradients::handleSecondaryColorButtonClick()
 {
     QColor initial = QColor::fromRgb(ui->secondary_color_button->icon().pixmap(QSize(5,5), QIcon::Normal, QIcon::On).toImage().pixel(1,1));
     QColorDialog::ColorDialogOptions options = QFlag(0);
@@ -169,7 +180,7 @@ void ColorsGradients::on_secondary_color_button_clicked()
         Q_EMIT updateTv();
 }
 
-void ColorsGradients::on_change_order_clicked()
+void ColorsGradients::handleChangeOrderClick()
 {
     //this turns the secondary color primary and vice versa...
     QString temp = ColorManager::getPrimaryColor();
@@ -201,7 +212,7 @@ void ColorsGradients::actionForSecondaryButtons()
     }
 }
 
-void ColorsGradients::on_solid_radioButton_clicked()
+void ColorsGradients::handleSolidRadioClick()
 {
     if(currentShading == ColoringType::Solid)
         return;
@@ -227,7 +238,7 @@ void ColorsGradients::on_solid_radioButton_clicked()
     Q_EMIT updateTv();
 }
 
-void ColorsGradients::on_horizontal_radioButton_clicked()
+void ColorsGradients::handleHorizontalRadioClick()
 {
     if(currentShading == ColoringType::Horizontal)
         return;
@@ -254,7 +265,7 @@ void ColorsGradients::on_horizontal_radioButton_clicked()
     Q_EMIT updateTv();
 }
 
-void ColorsGradients::on_vertical_radioButton_clicked()
+void ColorsGradients::handleVerticalRadioClick()
 {
     if(currentShading == ColoringType::Vertical)
         return;
@@ -280,7 +291,7 @@ void ColorsGradients::on_vertical_radioButton_clicked()
     Q_EMIT updateTv();
 }
 
-void ColorsGradients::on_colorModeButton_clicked()
+void ColorsGradients::handleColorModeButtonClick()
 {
     if(wallpaperManager_->getCurrentFit() == 0)
         return;
@@ -298,7 +309,7 @@ void ColorsGradients::on_colorModeButton_clicked()
     Q_EMIT updateTv();
 }
 
-void ColorsGradients::on_wallpaperModeButton_clicked()
+void ColorsGradients::handleWallpaperModeButtonClick()
 {
     if(wallpaperManager_->getCurrentFit() != 0)
         return;

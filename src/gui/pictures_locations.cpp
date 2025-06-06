@@ -30,6 +30,12 @@ PicturesLocations::PicturesLocations(QWidget *parent) :
     ui(new Ui::pictures_locations)
 {
     ui->setupUi(this);
+    connect(ui->add_location, &QPushButton::clicked, this, &PicturesLocations::handleAddLocationClick);
+    connect(ui->remove_location, &QPushButton::clicked, this, &PicturesLocations::handleRemoveLocationClick);
+    connect(ui->foldersTreeWidget, &QTreeWidget::currentItemChanged, this, &PicturesLocations::handleFoldersTreeItemChange);
+    connect(ui->cancel_pushButton, &QPushButton::clicked, this, &PicturesLocations::handleCancelClick);
+    connect(ui->save_pushButton, &QPushButton::clicked, this, &PicturesLocations::handleSaveClick);
+    connect(ui->reset_pushButton, &QPushButton::clicked, this, &PicturesLocations::handleResetClick);
 }
 
 PicturesLocations::~PicturesLocations()
@@ -37,7 +43,7 @@ PicturesLocations::~PicturesLocations()
     delete ui;
 }
 
-void PicturesLocations::on_add_location_clicked()
+void PicturesLocations::handleAddLocationClick()
 {
     QString folder = QFileDialog::getExistingDirectory(this, tr("Choose Folder"), gv.homePath);
 
@@ -61,22 +67,22 @@ void PicturesLocations::on_add_location_clicked()
 }
 
 
-void PicturesLocations::on_remove_location_clicked()
+void PicturesLocations::handleRemoveLocationClick()
 {
     delete ui->foldersTreeWidget->currentItem();
 }
 
-void PicturesLocations::on_foldersTreeWidget_currentItemChanged(QTreeWidgetItem *current)
+void PicturesLocations::handleFoldersTreeItemChange(QTreeWidgetItem *current)
 {
    ui->remove_location->setEnabled(ui->foldersTreeWidget->currentIndex().row()>1 || current->parent());
 }
 
-void PicturesLocations::on_cancel_pushButton_clicked()
+void PicturesLocations::handleCancelClick()
 {
     close();
 }
 
-void PicturesLocations::on_save_pushButton_clicked()
+void PicturesLocations::handleSaveClick()
 {
     //We want to keep the folder that the user was using before the changes
     short cur_fol=settings->value("currentFolder_index", 0).toInt();
@@ -127,7 +133,7 @@ void PicturesLocations::on_save_pushButton_clicked()
     close();
 }
 
-void PicturesLocations::on_reset_pushButton_clicked()
+void PicturesLocations::handleResetClick()
 {
     settings->setValue("currentFolder_index", 0);
     settings->beginWriteArray("pictures_locations");

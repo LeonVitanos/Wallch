@@ -196,6 +196,43 @@ void MainWindow::hideOrShow()
 }
 
 void MainWindow::connectSignalSlots(){
+    connect(ui->previous_Button, &QPushButton::clicked, this, &MainWindow::handlePreviousButtonClick);
+    connect(ui->next_Button, &QPushButton::clicked, this, &MainWindow::handleNextButtonClick);
+    connect(ui->timerSlider, &QSlider::valueChanged, this, &MainWindow::handleTimerSliderChange);
+    connect(ui->website_preview, &QPushButton::clicked, this, &MainWindow::handleWebsitePreviewClick);
+    connect(ui->edit_crop, &QPushButton::clicked, this, &MainWindow::handleEditCropClick);
+    connect(ui->website_crop_checkbox, &QCheckBox::clicked, this, &MainWindow::handleWebsiteCropCheck);
+    connect(ui->set_desktop_color, &QPushButton::clicked, this, &MainWindow::handleSetDesktopColorClick);
+    connect(ui->image_style_combo, &QComboBox::currentIndexChanged, this, &MainWindow::handleImageStyleChange);
+    connect(ui->website, &QLineEdit::textEdited, this, &MainWindow::handleWebsiteTextEdit);
+    connect(ui->browse_folders, &QPushButton::clicked, this, &MainWindow::handleBrowseFoldersClick);
+    connect(ui->website_slider, &QSlider::valueChanged, this, &MainWindow::handleWebsiteSliderChange);
+    connect(ui->le_tag_checkbox, &QCheckBox::clicked, this, &MainWindow::handleLiveEarthTagCheck);
+    connect(ui->le_tag_button, &QPushButton::clicked, this, &MainWindow::handleLiveEarthTagClick);
+    connect(ui->pictures_location_comboBox, &QComboBox::currentIndexChanged, this, &MainWindow::handlePicturesLocationChange);
+    connect(ui->potd_viewer_Button, &QPushButton::clicked, this, &MainWindow::handlePotdViewerClick);
+    connect(ui->add_login_details, &QCheckBox::clicked, this, &MainWindow::handleAddLoginDetailsCheck);
+    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::handleStopButtonClick);
+    connect(ui->startButton, &QPushButton::clicked, this, &MainWindow::handleStartButtonClick);
+    connect(ui->activate_livearth, &QPushButton::clicked, this, &MainWindow::handleActivateLiveEarthClick);
+    connect(ui->deactivate_livearth, &QPushButton::clicked, this, &MainWindow::handleDeactivateLiveEarthClick);
+    connect(ui->activate_potd, &QPushButton::clicked, this, &MainWindow::handleActivatePotdClick);
+    connect(ui->deactivate_potd, &QPushButton::clicked, this, &MainWindow::handleDeactivatePotdClick);
+    connect(ui->activate_website, &QPushButton::clicked, this, &MainWindow::handleActivateWebsiteClick);
+    connect(ui->deactivate_website, &QPushButton::clicked, this, &MainWindow::handleDeactivateWebsiteClick);
+    connect(ui->include_description_checkBox, &QCheckBox::clicked, this, &MainWindow::handleIncludeDescriptionCheck);
+    connect(ui->edit_potd, &QPushButton::clicked, this, &MainWindow::handleEditPotdClick);
+    connect(ui->shuffle_images_checkbox, &QCheckBox::clicked, this, &MainWindow::handleShuffleImagesCheck);
+    connect(ui->stackedWidget, &QStackedWidget::currentChanged, this, &MainWindow::handlePageChange);
+    connect(ui->edit_pushButton, &QPushButton::clicked, this, &MainWindow::handleEditLocationsClick);
+    connect(ui->days_spinBox, &QSpinBox::valueChanged, this, &MainWindow::handleDaysSpinBoxChange);
+    connect(ui->hours_spinBox, &QSpinBox::valueChanged, this, &MainWindow::handleHoursSpinBoxChange);
+    connect(ui->minutes_spinBox, &QSpinBox::valueChanged, this, &MainWindow::handleMinutesSpinBoxChange);
+    connect(ui->seconds_spinBox, &QSpinBox::valueChanged, this, &MainWindow::handleSecondsSpinBoxChange);
+    connect(ui->wallpapersList, &QListWidget::customContextMenuRequested, this, &MainWindow::handleWallpaperListContextMenu);
+    connect(ui->wallpapersList, &QListWidget::itemDoubleClicked, this, &MainWindow::handleWallpaperListDoubleClick);
+    connect(ui->wallpapersList, &QListWidget::itemSelectionChanged, this, &MainWindow::handleWallpaperListSelectionChange);
+
     connect(imageFetcher_, SIGNAL(fail()), this, SLOT(onlineRequestFailed()));
     connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineImageRequestReady(QString)));
     connect(cacheManager_, SIGNAL(requestCurrentFolders()), this, SLOT(beginFixCacheForFolders()));
@@ -213,7 +250,7 @@ void MainWindow::connectSignalSlots(){
     connect(ui->hours_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(ui->minutes_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(ui->seconds_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
-    connect(btn_group, SIGNAL(idClicked(int)), this, SLOT(page_button_clicked(int)));
+    connect(btn_group, SIGNAL(idClicked(int)), this, SLOT(handlePageButtonClick(int)));
     connect(wallpaperManager_, SIGNAL(updateImageStyle()), this, SLOT(updateImageStyleCombo()));
     connect(fileManager_, SIGNAL(prepareToSearchFolders()), this, SLOT(prepareToSearchFolders()));
     connect(fileManager_, SIGNAL(monitoredFoldersChanged()), this, SLOT(monitoredFoldersUpdated()));
@@ -339,7 +376,7 @@ void MainWindow::setupMenu()
     QAction *preferencesAction = new QAction(tr("Preferences"), this);
     preferencesAction->setShortcut(QKeySequence(tr("Ctrl+P")));
     settingsMenu_->addAction(preferencesAction);
-    connect(preferencesAction, &QAction::triggered, this, &MainWindow::on_action_Preferences_triggered);
+    connect(preferencesAction, &QAction::triggered, this, &MainWindow::handlePreferencesAction);
 
     settingsMenu_->addSeparator();
     currentBgMenu_->setTitle(tr("Current Background"));
@@ -355,22 +392,22 @@ void MainWindow::setupMenu()
     QAction *historyAction = new QAction(tr("History"), this);
     historyAction->setShortcut(QKeySequence(tr("Ctrl+H")));
     settingsMenu_->addAction(historyAction);
-    connect(historyAction, &QAction::triggered, this, &MainWindow::on_actionHistory_triggered);
-    settingsMenu_->addAction(tr("What is my screen resolution?"), this, SLOT(on_actionWhat_is_my_screen_resolution_triggered()));
+    connect(historyAction, &QAction::triggered, this, &MainWindow::handleHistoryAction);
+    settingsMenu_->addAction(tr("What is my screen resolution?"), this, SLOT(handleScreenResolutionAction()));
 
     settingsMenu_->addSeparator();
-    settingsMenu_->addAction(tr("About Wallch"), this, SLOT(on_action_About_triggered()));
+    settingsMenu_->addAction(tr("About Wallch"), this, SLOT(handleAboutAction()));
 
     helpMenu_ = new QMenu(this);
     helpMenu_->setTitle(tr("Help"));
     QAction *helpAction = new QAction(tr("How to use Wallch?"), this);
     helpAction->setShortcut(QKeySequence(tr("F1")));
     helpMenu_->addAction(helpAction);
-    connect(helpAction, &QAction::triggered, this, &MainWindow::on_actionContents_triggered);
-    helpMenu_->addAction(tr("Ask a question"), this, SLOT(on_actionGet_Help_Online_triggered()));
-    helpMenu_->addAction(tr("Report a bug"), this, SLOT(on_actionReport_A_Bug_triggered()));
+    connect(helpAction, &QAction::triggered, this, &MainWindow::handleContentsAction);
+    helpMenu_->addAction(tr("Ask a question"), this, SLOT(handleHelpOnlineAction()));
+    helpMenu_->addAction(tr("Report a bug"), this, SLOT(handleReportBugAction()));
     settingsMenu_->addMenu(helpMenu_);
-    settingsMenu_->addAction(tr("Donate"), this, SLOT(on_actionDonate_triggered()));
+    settingsMenu_->addAction(tr("Donate"), this, SLOT(handleDonateAction()));
 
     settingsMenu_->addSeparator();
     QAction *quitAction = new QAction(tr("Quit"), this);
@@ -467,14 +504,14 @@ void MainWindow::continueAlreadyRunningFeature()
         ui->activate_livearth->setEnabled(false);
         ui->deactivate_livearth->setEnabled(true);
         startUpdateSeconds();
-        page_button_clicked(1);
+        handlePageButtonClick(1);
         animateProgressbarOpacity(1);
     }
     else if(gv.potdRunning)
     {
         ui->deactivate_potd->setEnabled(true);
         ui->activate_potd->setEnabled(false);
-        page_button_clicked(2);
+        handlePageButtonClick(2);
         startPotd(false);
     }
     else if(gv.liveWebsiteRunning)
@@ -482,7 +519,7 @@ void MainWindow::continueAlreadyRunningFeature()
         ui->deactivate_website->setEnabled(true);
         ui->activate_website->setEnabled(false);
         startUpdateSeconds();
-        page_button_clicked(4);
+        handlePageButtonClick(4);
         animateProgressbarOpacity(1);
     }
     else
@@ -492,7 +529,7 @@ void MainWindow::continueAlreadyRunningFeature()
         previousAndNextButtonsSetEnabled(false);
 
         hideTimeForNext();
-        page_button_clicked(settings->value("current_page", 0).toInt());
+        handlePageButtonClick(settings->value("current_page", 0).toInt());
 
         //the app has opened normally, so there is no point in keeping a previous independent interval
         if(gv.independentIntervalEnabled){
@@ -503,16 +540,16 @@ void MainWindow::continueAlreadyRunningFeature()
 
 void MainWindow::closeWhatsRunning(){
     if(gv.wallpapersRunning){
-        on_stopButton_clicked();
+        handleStopButtonClick();
     }
     else if(gv.liveEarthRunning){
-        on_deactivate_livearth_clicked();
+        handleDeactivateLiveEarthClick();
     }
     else if(gv.potdRunning){
-        on_deactivate_potd_clicked();
+        handleDeactivatePotdClick();
     }
     else if(gv.liveWebsiteRunning){
-        on_deactivate_website_clicked();
+        handleDeactivateWebsiteClick();
     }
 }
 
@@ -1061,7 +1098,7 @@ void MainWindow::setButtonColor(){
     ui->set_desktop_color->setIcon(QIcon(QPixmap::fromImage(image)));
 }
 
-void MainWindow::on_image_style_combo_currentIndexChanged(int index)
+void MainWindow::handleImageStyleChange(int index)
 {
     if(!gv.mainwindowLoaded || addingImageStylesNow)
         return;
@@ -1253,10 +1290,10 @@ void MainWindow::nextKeySignal(const char *, void *){
 }
 
 void MainWindow::click_shortcut_next(){
-    on_next_Button_clicked();
+    handleNextButtonClick();
 }
 
-void MainWindow::on_website_slider_valueChanged(int value)
+void MainWindow::handleWebsiteSliderChange(int value)
 {
     ui->website_interval_slider_label->setText(timerManager_->secondsToMh(globalParser_->websiteSliderValueToSeconds(value)));
 }
@@ -1264,16 +1301,16 @@ void MainWindow::on_website_slider_valueChanged(int value)
 void MainWindow::stopEverythingThatsRunning(short excludingFeature)
 {
     if(excludingFeature!=1 && gv.wallpapersRunning){
-        on_stopButton_clicked();
+        handleStopButtonClick();
     }
     else if(excludingFeature!=2 && gv.liveEarthRunning){
-        on_deactivate_livearth_clicked();
+        handleDeactivateLiveEarthClick();
     }
     else if(excludingFeature!=3 && gv.potdRunning){
-        on_deactivate_potd_clicked();
+        handleDeactivatePotdClick();
     }
     else if(excludingFeature!=5 && gv.liveWebsiteRunning){
-        on_deactivate_website_clicked();
+        handleDeactivateWebsiteClick();
     }
 }
 
@@ -1282,17 +1319,17 @@ void MainWindow::pauseEverythingThatsRunning()
     if(gv.wallpapersRunning){
         if(!gv.processPaused)
         {
-            on_startButton_clicked();
+            handleStartButtonClick();
         }
     }
     else if(gv.liveEarthRunning){
-        on_deactivate_livearth_clicked();
+        handleDeactivateLiveEarthClick();
     }
     else if(gv.potdRunning){
-        on_deactivate_potd_clicked();
+        handleDeactivatePotdClick();
     }
     else if(gv.liveWebsiteRunning){
-        on_deactivate_website_clicked();
+        handleDeactivateWebsiteClick();
     }
 }
 
@@ -1323,7 +1360,7 @@ void MainWindow::updateScreenLabel()
         if(wallpaperManager_->wallpapersCount()==0 || ui->wallpapersList->selectedItems().count()==0)
             changeTextOfScreenLabelTo(tr("Select an image to preview")); //TODO: Stays on top sometimes
         else
-            on_wallpapersList_itemSelectionChanged();
+            handleWallpaperListSelectionChange();
         break;
     }
     case 1:
@@ -1392,7 +1429,7 @@ void MainWindow::justChangeWallpaper(){
     wallpaperManager_->setRandomWallpaperAsBackground();
 }
 
-void MainWindow::on_startButton_clicked(){
+void MainWindow::handleStartButtonClick(){
     loadWallpapersPage();
 
     if (!ui->startButton->isEnabled()){
@@ -1471,7 +1508,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
         }
 
         startUpdateSeconds();
-        page_button_clicked(0);
+        handlePageButtonClick(0);
     }
     else
     {
@@ -1493,7 +1530,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
     }
 }
 
-void MainWindow::on_stopButton_clicked(){
+void MainWindow::handleStopButtonClick(){
     if (!ui->stopButton->isEnabled())
         return;
 
@@ -1532,7 +1569,7 @@ void MainWindow::on_stopButton_clicked(){
     }
 }
 
-void MainWindow::on_next_Button_clicked()
+void MainWindow::handleNextButtonClick()
 {
     if (!ui->next_Button->isEnabled() || !fileManager_->currentFolderExists())
         return;
@@ -1542,7 +1579,7 @@ void MainWindow::on_next_Button_clicked()
     startUpdateSeconds();
 }
 
-void MainWindow::on_previous_Button_clicked()
+void MainWindow::handlePreviousButtonClick()
 {
     if(!ui->previous_Button->isEnabled() || !fileManager_->currentFolderExists())
         return;
@@ -1573,7 +1610,7 @@ void MainWindow::currentFolderDoesNotExist()
     ui->pictures_location_comboBox->setItemText(index, fileManager_->currentSelectionIsASet() ? ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString()+" (0)":globalParser_->basenameOf(ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString()+" (0)" ));
 
     if(gv.wallpapersRunning)
-        on_stopButton_clicked();
+        handleStopButtonClick();
 
     if(fileManager_->currentSelectionIsASet())
     {
@@ -1642,7 +1679,7 @@ void MainWindow::changeImage(){
 
 
 
-void MainWindow::on_timerSlider_valueChanged(int value)
+void MainWindow::handleTimerSliderChange(int value)
 {
     ui->wallpapers_slider_time->setText(timerManager_->secondsToMinutesHoursDays(timerManager_->defaultIntervals.at(value-1)));
 
@@ -1677,16 +1714,16 @@ void MainWindow::checkBatteryStatus(){
         switch(previouslyRunningFeature_){
         default:
         case 0:
-            on_startButton_clicked();
+            handleStartButtonClick();
             break;
         case 1:
-            on_activate_livearth_clicked();
+            handleActivateLiveEarthClick();
             break;
         case 2:
-            on_activate_potd_clicked();
+            handleActivatePotdClick();
             break;
         case 4:
-            on_activate_website_clicked();
+            handleActivateWebsiteClick();
             break;
         }
 
@@ -1874,7 +1911,7 @@ void MainWindow::forceUpdateIconOf(int index){
         updateScreenLabel();
 }
 
-void MainWindow::on_browse_folders_clicked()
+void MainWindow::handleBrowseFoldersClick()
 {
     addDialogShown_=true;
 
@@ -1904,7 +1941,7 @@ void MainWindow::enterPressed(){
     if(ui->search_box->hasFocus())
         searchImages_->enterPressed();
     else if(ui->stackedWidget->currentIndex()==0)
-        on_wallpapersList_itemDoubleClicked();
+        handleWallpaperListDoubleClick();
 }
 
 void MainWindow::delayed_pictures_location_change()
@@ -1914,7 +1951,7 @@ void MainWindow::delayed_pictures_location_change()
 
 
 
-void MainWindow::on_pictures_location_comboBox_currentIndexChanged(int index)
+void MainWindow::handlePicturesLocationChange(int index)
 {
     if(changingPicturesLocations_)
         return;
@@ -1944,7 +1981,7 @@ void MainWindow::on_pictures_location_comboBox_currentIndexChanged(int index)
     {
         startButtonsSetEnabled(false);
         if(gv.wallpapersRunning)
-            on_stopButton_clicked();
+            handleStopButtonClick();
 
         if(gv.mainwindowLoaded)
         {
@@ -1967,7 +2004,7 @@ void MainWindow::processRunningResetPictures(){
     //folder has changed/updated
     if(ui->shuffle_images_checkbox->isChecked()){
         if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START)
-            on_stopButton_clicked();
+            handleStopButtonClick();
         else
         {
             //generate new random images
@@ -1981,7 +2018,7 @@ void MainWindow::processRunningResetPictures(){
         timerManager_->secondsRemaining_=0;
     }
     else
-        on_stopButton_clicked();
+        handleStopButtonClick();
 }
 
 void MainWindow::savePicturesLocations()
@@ -2074,13 +2111,13 @@ void MainWindow::picturesLocationsChanged()
 
 //Live Earth code
 
-void MainWindow::on_activate_livearth_clicked()
+void MainWindow::handleActivateLiveEarthClick()
 {
     if(!ui->activate_livearth->isEnabled()){
         return;
     }
     stopEverythingThatsRunning(2);
-    page_button_clicked(1);
+    handlePageButtonClick(1);
     ui->activate_livearth->setEnabled(false);
     ui->deactivate_livearth->setEnabled(true);
     gv.liveEarthRunning=true;
@@ -2091,7 +2128,7 @@ void MainWindow::on_activate_livearth_clicked()
     animateProgressbarOpacity(1);
 }
 
-void MainWindow::on_deactivate_livearth_clicked()
+void MainWindow::handleDeactivateLiveEarthClick()
 {
     if(!ui->deactivate_livearth->isEnabled()){
         return;
@@ -2117,7 +2154,7 @@ void MainWindow::on_deactivate_livearth_clicked()
     Q_EMIT signalUncheckRunningFeatureOnTray();
 }
 
-void MainWindow::on_le_tag_checkbox_clicked(bool checked)
+void MainWindow::handleLiveEarthTagCheck(bool checked)
 {
     gv.leEnableTag = checked;
     ui->le_tag_button->setEnabled(checked);
@@ -2125,7 +2162,7 @@ void MainWindow::on_le_tag_checkbox_clicked(bool checked)
     settings->sync();
 }
 
-void MainWindow::on_le_tag_button_clicked()
+void MainWindow::handleLiveEarthTagClick()
 {
     lePointShown_=true;
     lepoint_ = new LEPoint(this);
@@ -2153,13 +2190,13 @@ void MainWindow::lePointDestroyed(){
 
 //Picture of they day code
 
-void MainWindow::on_activate_potd_clicked()
+void MainWindow::handleActivatePotdClick()
 {
     if(!ui->activate_potd->isEnabled()){
         return;
     }
     stopEverythingThatsRunning(3);
-    page_button_clicked(2);
+    handlePageButtonClick(2);
     startPotd(true);
 }
 
@@ -2179,7 +2216,7 @@ void MainWindow::startPotd(bool launchNow){
     updatePotdProgress();
 }
 
-void MainWindow::on_deactivate_potd_clicked()
+void MainWindow::handleDeactivatePotdClick()
 {
     if(!ui->deactivate_potd->isEnabled()){
         return;
@@ -2207,7 +2244,7 @@ void MainWindow::restartPotdIfRunningAfterSettingChange(){
         settings->sync();
         return;
     }
-    on_deactivate_potd_clicked();
+    handleDeactivatePotdClick();
     globalParser_->remove(gv.wallchHomePath+POTD_IMAGE+"*");
     settings->setValue("last_day_potd_was_set", "");
     settings->sync();
@@ -2220,8 +2257,8 @@ void MainWindow::restartLeIfRunningAfterSettingChange()
         return;
     }
 
-    on_deactivate_livearth_clicked();
-    on_activate_livearth_clicked();
+    handleDeactivateLiveEarthClick();
+    handleActivateLiveEarthClick();
 }
 
 
@@ -2234,7 +2271,7 @@ void MainWindow::restartLeIfRunningAfterSettingChange()
 
 
 //Live Website Code
-void MainWindow::on_activate_website_clicked()
+void MainWindow::handleActivateWebsiteClick()
 {   
     stopEverythingThatsRunning(5);
     loadLiveWebsitePage();
@@ -2246,7 +2283,7 @@ void MainWindow::on_activate_website_clicked()
     gv.websiteWebpageToLoad=gv.onlineLinkForHistory=ui->website->text();
     gv.websiteInterval=ui->website_slider->value();
 
-    page_button_clicked(4);
+    handlePageButtonClick(4);
 
     ui->deactivate_website->setEnabled(true);
     ui->activate_website->setEnabled(false);
@@ -2272,7 +2309,7 @@ void MainWindow::on_activate_website_clicked()
     startUpdateSeconds();*/
 }
 
-void MainWindow::on_deactivate_website_clicked()
+void MainWindow::handleDeactivateWebsiteClick()
 {
     if(!ui->deactivate_website->isEnabled()){
         return;
@@ -2300,7 +2337,7 @@ void MainWindow::on_deactivate_website_clicked()
     websiteSnapshot_->stop();*/
 }
 
-void MainWindow::on_website_preview_clicked()
+void MainWindow::handleWebsitePreviewClick()
 {
     if(gv.liveWebsiteRunning){
         QMessageBox::warning(this, tr("Error"), tr("Please stop the current process and try again.")+" ("+tr("Live Website")+")");
@@ -2421,7 +2458,7 @@ void MainWindow::setWebsitePreviewImage(QImage *image){
     updateScreenLabel();
 }
 
-void MainWindow::on_edit_crop_clicked()
+void MainWindow::handleEditCropClick()
 {
     if(gv.liveWebsiteRunning){
         QMessageBox::warning(this, tr("Error"), tr("Please stop the current process and try again.")+" ("+tr("Live Website")+")");
@@ -2451,7 +2488,7 @@ void MainWindow::websitePreviewDestroyed(){
     websitePreviewShown_=false;
 }
 
-void MainWindow::on_website_crop_checkbox_clicked(bool checked)
+void MainWindow::handleWebsiteCropCheck(bool checked)
 {
     if(gv.liveWebsiteRunning){
         ui->website_crop_checkbox->setChecked(!checked);
@@ -2468,7 +2505,7 @@ void MainWindow::readCoordinates(const QRect &cropArea){
     settings->sync();
     updateScreenLabel();
 }
-void MainWindow::on_website_textEdited(const QString &arg1)
+void MainWindow::handleWebsiteTextEdit(const QString &arg1)
 {
     changedWebPage_=arg1;
 }
@@ -2531,8 +2568,8 @@ void MainWindow::loadWallpapersPage(){
     connect(searchImages_, SIGNAL(launchTimerToUpdateIcons()), this, SLOT(launchTimerToUpdateIcons()));
     (void) new QShortcut(Qt::CTRL | Qt::Key_F, this, SLOT(handleSearchShortcut()));
 
-    connect(ui->search_up, SIGNAL(clicked()), searchImages_, SLOT(on_search_up_clicked()));
-    connect(ui->search_down, SIGNAL(clicked()), searchImages_, SLOT(on_search_down_clicked()));
+    connect(ui->search_up, SIGNAL(clicked()), searchImages_, SLOT(handleSearchUpClick()));
+    connect(ui->search_down, SIGNAL(clicked()), searchImages_, SLOT(handleSearchDownClick()));
     connect(ui->search_close, SIGNAL(clicked()), searchImages_, SLOT(hideSearch()));
 
 
@@ -2575,7 +2612,7 @@ void MainWindow::loadWallpapersPage(){
             QTimer::singleShot(100, this, SLOT(delayed_pictures_location_change()));
         }
         else if(currentFolder==0){
-            on_pictures_location_comboBox_currentIndexChanged(0);
+            handlePicturesLocationChange(0);
         }
         else {
             ui->pictures_location_comboBox->setCurrentIndex(currentFolder);
@@ -2589,7 +2626,7 @@ void MainWindow::loadWallpapersPage(){
             QTimer::singleShot(100, this, SLOT(delayed_pictures_location_change()));
         }
         else if(currentFolder==0){
-            on_pictures_location_comboBox_currentIndexChanged(0);
+            handlePicturesLocationChange(0);
         }
         else {
             ui->pictures_location_comboBox->setCurrentIndex(currentFolder);
@@ -2605,7 +2642,7 @@ void MainWindow::loadWallpapersPage(){
 
     ui->timerSlider->setValue(settings->value("timeSlider", 7).toInt());
     if(ui->timerSlider->value()==7){
-        on_timerSlider_valueChanged(7);
+        handleTimerSliderChange(7);
     }
     launchTimerToUpdateIcons();
 
@@ -2645,7 +2682,7 @@ void MainWindow::loadLiveWebsitePage(){
     openCloseAddLogin_->setDuration(GENERAL_ANIMATION_DURATION);
     ui->add_login_details->setChecked(gv.websiteLoginEnabled);
     if(gv.websiteLoginEnabled)
-        on_add_login_details_clicked(true);
+        handleAddLoginDetailsCheck(true);
     ui->username->setText(gv.websiteLoginUsername);
     ui->password->setText(gv.websiteLoginPasswd);
 
@@ -2653,7 +2690,7 @@ void MainWindow::loadLiveWebsitePage(){
     short old_website_slider_value=ui->website_slider->value();
     ui->website_slider->setValue(gv.websiteInterval);
     if(gv.websiteInterval == old_website_slider_value)
-        on_website_slider_valueChanged(gv.websiteInterval);
+        handleWebsiteSliderChange(gv.websiteInterval);
     ui->website_crop_checkbox->setChecked(gv.websiteCropEnabled);
     ui->edit_crop->setEnabled(ui->website_crop_checkbox->isEnabled() && gv.websiteCropEnabled);
     ui->redirect_checkBox->setChecked(gv.websiteRedirect);
@@ -2706,7 +2743,7 @@ void MainWindow::disableLiveWebsitePage(){
     ui->live_website_login_widget->setEnabled(false);
 }
 
-void MainWindow::on_add_login_details_clicked(bool checked)
+void MainWindow::handleAddLoginDetailsCheck(bool checked)
 {
     if(gv.liveWebsiteRunning){
         ui->add_login_details->setChecked(!checked);
@@ -2726,7 +2763,7 @@ void MainWindow::on_add_login_details_clicked(bool checked)
     openCloseAddLogin_->start();
 }
 
-void MainWindow::page_button_clicked(int btn){
+void MainWindow::handlePageButtonClick(int btn){
     if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==btn)
         return;
 
@@ -2735,7 +2772,7 @@ void MainWindow::page_button_clicked(int btn){
     {
         loadWallpapersPage();
         launchTimerToUpdateIcons();
-        on_timerSlider_valueChanged(ui->timerSlider->value());
+        handleTimerSliderChange(ui->timerSlider->value());
 
         ui->sep1->raise();
         break;
@@ -2787,16 +2824,16 @@ void MainWindow::page_button_clicked(int btn){
 
 void MainWindow::previousPage(){
     if(ui->stackedWidget->currentIndex()==0)
-        page_button_clicked(5);
+        handlePageButtonClick(5);
     else
-        page_button_clicked(ui->stackedWidget->currentIndex()-1);
+        handlePageButtonClick(ui->stackedWidget->currentIndex()-1);
 }
 
 void MainWindow::nextPage(){
     if(ui->stackedWidget->currentIndex()==5)
-        page_button_clicked(0);
+        handlePageButtonClick(0);
     else
-        page_button_clicked(ui->stackedWidget->currentIndex()+1);
+        handlePageButtonClick(ui->stackedWidget->currentIndex()+1);
 }
 
 
@@ -2816,27 +2853,27 @@ void MainWindow::doQuit()
     qApp->quit();
 }
 
-void MainWindow::on_actionContents_triggered()
+void MainWindow::handleContentsAction()
 {
     globalParser_->openUrl(HELP_URL);
 }
 
-void MainWindow::on_actionDonate_triggered()
+void MainWindow::handleDonateAction()
 {
     globalParser_->openUrl(DONATE_URL);
 }
 
-void MainWindow::on_actionReport_A_Bug_triggered()
+void MainWindow::handleReportBugAction()
 {
     globalParser_->openUrl("https://bugs.launchpad.net/wallpaper-changer/+filebug");
 }
 
-void MainWindow::on_actionGet_Help_Online_triggered()
+void MainWindow::handleHelpOnlineAction()
 {
     globalParser_->openUrl("https://answers.launchpad.net/wallpaper-changer/+addquestion");
 }
 
-void MainWindow::on_actionWhat_is_my_screen_resolution_triggered()
+void MainWindow::handleScreenResolutionAction()
 {
     QMessageBox msgBox;msgBox.setWindowTitle(tr("What is my Screen Resolution"));
     msgBox.setText("<b>"+tr("Your screen resolution is")+" <span style=\" font-size:20pt;\">"+
@@ -2866,7 +2903,7 @@ void MainWindow::getScreenAvailableResolution (QRect geometry){
 
 //Dialogs Code
 
-void MainWindow::on_actionHistory_triggered()
+void MainWindow::handleHistoryAction()
 {
     if(historyShown_){
         return;
@@ -2886,7 +2923,7 @@ void MainWindow::historyDestroyed()
     historyShown_=false;
 }
 
-void MainWindow::on_action_About_triggered()
+void MainWindow::handleAboutAction()
 {
     if(aboutShown_){
         return;
@@ -2905,7 +2942,7 @@ void MainWindow::aboutDestroyed(){
     aboutShown_=false;
 }
 
-void MainWindow::on_edit_pushButton_clicked()
+void MainWindow::handleEditLocationsClick()
 {
     if(locationsShown_){
         return;
@@ -2925,7 +2962,7 @@ void MainWindow::locationsDestroyed(){
     locationsShown_=false;
 }
 
-void MainWindow::on_action_Preferences_triggered()
+void MainWindow::handlePreferencesAction()
 {
     if(gv.preferencesDialogShown){
         return;
@@ -2953,7 +2990,7 @@ void MainWindow::preferencesDestroyed(){
     gv.preferencesDialogShown = false;
 }
 
-void MainWindow::on_set_desktop_color_clicked()
+void MainWindow::handleSetDesktopColorClick()
 {
     if(colorsGradientsShown_){
         return;
@@ -2977,7 +3014,7 @@ void MainWindow::colorsGradientsDestroyed()
     colorsGradientsShown_=false;
 }
 
-void MainWindow::on_potd_viewer_Button_clicked()
+void MainWindow::handlePotdViewerClick()
 {
     if(potdViewerShown_){
         return;
@@ -2996,7 +3033,7 @@ void MainWindow::potdViewerDestroyed()
     potdViewerShown_=false;
 }
 
-void MainWindow::on_include_description_checkBox_clicked(bool checked)
+void MainWindow::handleIncludeDescriptionCheck(bool checked)
 {
     gv.potdIncludeDescription = checked;
     ui->edit_potd->setEnabled(checked);
@@ -3006,7 +3043,7 @@ void MainWindow::on_include_description_checkBox_clicked(bool checked)
     restartPotdIfRunningAfterSettingChange();
 }
 
-void MainWindow::on_edit_potd_clicked()
+void MainWindow::handleEditPotdClick()
 {
     if(potdPreviewShown_){
         return;
@@ -3028,12 +3065,12 @@ void MainWindow::potdPreviewDestroyed()
 }
 
 // Settings
-void MainWindow::on_shuffle_images_checkbox_clicked()
+void MainWindow::handleShuffleImagesCheck()
 {
     settings->setValue("random_images_enabled", ui->shuffle_images_checkbox->isChecked());
 }
 
-void MainWindow::on_stackedWidget_currentChanged(int page)
+void MainWindow::handlePageChange(int page)
 {
     if(page==0)
         ui->help_label->setText("Images stored in your local hard drive");
@@ -3195,16 +3232,16 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, long* r
                switch(previouslyRunningFeature_){
                default:
                case 0:
-                   on_startButton_clicked();
+                   handleStartButtonClick();
                    break;
                case 1:
-                   on_activate_livearth_clicked();
+                   handleActivateLiveEarthClick();
                    break;
                case 2:
-                   on_activate_potd_clicked();
+                   handleActivatePotdClick();
                    break;
                case 4:
-                   on_activate_website_clicked();
+                   handleActivateWebsiteClick();
                    break;
                }
 
@@ -3240,25 +3277,25 @@ void MainWindow::timeSpinboxChanged()
     settings->sync();
 }
 
-void MainWindow::on_days_spinBox_valueChanged(int arg1)
+void MainWindow::handleDaysSpinBoxChange(int arg1)
 {
     settings->setValue("days_box", arg1);
 }
 
 
-void MainWindow::on_hours_spinBox_valueChanged(int arg1)
+void MainWindow::handleHoursSpinBoxChange(int arg1)
 {
     settings->setValue("hours_box", arg1);
 }
 
 
-void MainWindow::on_minutes_spinBox_valueChanged(int arg1)
+void MainWindow::handleMinutesSpinBoxChange(int arg1)
 {
     settings->setValue("minutes_box", arg1);
 }
 
 
-void MainWindow::on_seconds_spinBox_valueChanged(int arg1)
+void MainWindow::handleSecondsSpinBoxChange(int arg1)
 {
     settings->setValue("seconds_box", arg1);
 }
@@ -3270,7 +3307,7 @@ void MainWindow::on_seconds_spinBox_valueChanged(int arg1)
 
 // 'Wallpapers' ListWidget functions
 
-void MainWindow::on_wallpapersList_customContextMenuRequested()
+void MainWindow::handleWallpaperListContextMenu()
 {
     if(!fileManager_->currentFolderExists())
         return;
@@ -3286,7 +3323,7 @@ void MainWindow::on_wallpapersList_customContextMenuRequested()
 
         QAction *enterAction = new QAction(tr("Set this item as Background"), listwidgetMenu_);
         enterAction->setShortcut(QKeySequence("Enter"));
-        connect(enterAction, SIGNAL(triggered()), this, SLOT(on_wallpapersList_itemDoubleClicked()));
+        connect(enterAction, SIGNAL(triggered()), this, SLOT(handleWallpaperListDoubleClick()));
         listwidgetMenu_->addAction(enterAction);
 
         if(wallpaperManager_->wallpapersCount()>2)
@@ -3328,7 +3365,7 @@ void MainWindow::on_wallpapersList_customContextMenuRequested()
     listwidgetMenu_->popup(MENU_POPUP_POS);
 }
 
-void MainWindow::on_wallpapersList_itemDoubleClicked()
+void MainWindow::handleWallpaperListDoubleClick()
 {
     if (!wallpaperManager_->wallpapersCount())
         return;
@@ -3344,7 +3381,7 @@ void MainWindow::on_wallpapersList_itemDoubleClicked()
 #endif
 }
 
-void MainWindow::on_wallpapersList_itemSelectionChanged()
+void MainWindow::handleWallpaperListSelectionChange()
 {
     if(!gv.mainwindowLoaded || !gv.previewImagesOnScreen)
         return;
@@ -3426,7 +3463,7 @@ void MainWindow::monitoredFoldersUpdated(){
 
     if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START){
         if(gv.wallpapersRunning)
-           on_stopButton_clicked();
+           handleStopButtonClick();
     }
     else
         startButtonsSetEnabled(true);
@@ -3472,7 +3509,7 @@ void MainWindow::startWithThisImage(){
     if(ui->shuffle_images_checkbox->isChecked())
         firstRandomImageIsntRandom_=true;
 
-    on_startButton_clicked();
+    handleStartButtonClick();
 }
 
 void MainWindow::removeImageFromDisk(){

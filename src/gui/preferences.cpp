@@ -43,6 +43,19 @@ Preferences::Preferences(QWidget *parent) :
     ui(new Ui::preferences)
 {
     ui->setupUi(this);
+    connect(ui->reset, &QPushButton::clicked, this, &Preferences::handleResetClick);
+    connect(ui->saveButton, &QPushButton::clicked, this, &Preferences::handleSaveClick);
+    connect(ui->closeButton, &QPushButton::clicked, this, &Preferences::handleCloseClick);
+    connect(ui->page_0_general, &QPushButton::clicked, this, &Preferences::handleGeneralPageClick);
+    connect(ui->page_1_wallpapers_page, &QPushButton::clicked, this, &Preferences::handleWallpapersPageClick);
+    connect(ui->page_2_live_website, &QPushButton::clicked, this, &Preferences::handleLiveWebsitePageClick);
+    connect(ui->page_3_advanced, &QPushButton::clicked, this, &Preferences::handleAdvancedPageClick);
+    connect(ui->theme_combo, &QComboBox::currentIndexChanged, this, &Preferences::handleThemeChange);
+    connect(ui->rotate_checkBox, &QCheckBox::clicked, this, &Preferences::handleRotateCheck);
+    connect(ui->startupCheckBox, &QCheckBox::clicked, this, &Preferences::handleStartupCheck);
+    connect(ui->help, &QPushButton::clicked, this, &Preferences::handleHelpClick);
+    connect(ui->max_cache_slider, &QSlider::valueChanged, this, &Preferences::handleMaxCacheSliderChange);
+    connect(ui->clear_thumbnails_button, &QPushButton::clicked, this, &Preferences::handleClearThumbnailsClick);
 
     ui->stackedWidget->setCurrentIndex(0);
     setupShortcuts();
@@ -60,7 +73,7 @@ Preferences::Preferences(QWidget *parent) :
     ui->startupCheckBox->setChecked(settings->value("Startup", true).toBool());
     ui->onceCheckBox->setChecked(settings->value("Once", false).toBool());
     ui->hiddenTray_checkBox->setChecked(settings->value("start_hidden", false).toBool());
-    on_startupCheckBox_clicked(ui->startupCheckBox->isChecked());
+    handleStartupCheck(ui->startupCheckBox->isChecked());
     ui->showPreview_checkBox->setChecked(gv.previewImagesOnScreen);
     ui->startup_timeout_spinbox->setValue(settings->value("startup_timeout", 3).toInt());
 
@@ -116,7 +129,7 @@ Preferences::Preferences(QWidget *parent) :
         ui->max_cache_slider->setValue(maxCacheSize);
     }
     if(oldMaxCacheSliderValue == ui->max_cache_slider->value()){
-        on_max_cache_slider_valueChanged(ui->max_cache_slider->value());
+        handleMaxCacheSliderChange(ui->max_cache_slider->value());
     }
 
     ui->thumbnails_size_label->setText(dataToNiceString(CacheManager::getCurrentCacheSize()));
@@ -125,7 +138,7 @@ Preferences::Preferences(QWidget *parent) :
 Preferences::~Preferences()
 {
     if(oldTheme!=ui->theme_combo->currentIndex())
-        on_theme_combo_currentIndexChanged(oldTheme);
+        handleThemeChange(oldTheme);
 
     delete ui;
 }
@@ -144,14 +157,14 @@ void Preferences::changeEvent(QEvent *e)
 
 void Preferences::setupShortcuts(){
     (void) new QShortcut(Qt::Key_Escape, this, SLOT(close()));
-    (void) new QShortcut(Qt::ALT | Qt::Key_1, this, SLOT(on_page_0_general_clicked()));
-    (void) new QShortcut(Qt::ALT | Qt::Key_2, this, SLOT(on_page_1_wallpapers_page_clicked()));
-    (void) new QShortcut(Qt::ALT | Qt::Key_3, this, SLOT(on_page_2_live_website_clicked()));
-    (void) new QShortcut(Qt::ALT | Qt::Key_4, this, SLOT(on_page_3_advanced_clicked()));
-    (void) new QShortcut(Qt::CTRL | Qt::Key_1, this, SLOT(on_page_0_general_clicked()));
-    (void) new QShortcut(Qt::CTRL | Qt::Key_2, this, SLOT(on_page_1_wallpapers_page_clicked()));
-    (void) new QShortcut(Qt::CTRL | Qt::Key_3, this, SLOT(on_page_2_live_website_clicked()));
-    (void) new QShortcut(Qt::CTRL | Qt::Key_4, this, SLOT(on_page_3_advanced_clicked()));
+    (void) new QShortcut(Qt::ALT | Qt::Key_1, this, SLOT(handleGeneralPageClick()));
+    (void) new QShortcut(Qt::ALT | Qt::Key_2, this, SLOT(handleWallpapersPageClick()));
+    (void) new QShortcut(Qt::ALT | Qt::Key_3, this, SLOT(handleLiveWebsitePageClick()));
+    (void) new QShortcut(Qt::ALT | Qt::Key_4, this, SLOT(handleAdvancedPageClick()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_1, this, SLOT(handleGeneralPageClick()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_2, this, SLOT(handleWallpapersPageClick()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_3, this, SLOT(handleLiveWebsitePageClick()));
+    (void) new QShortcut(Qt::CTRL | Qt::Key_4, this, SLOT(handleAdvancedPageClick()));
     (void) new QShortcut(Qt::CTRL | Qt::Key_PageUp, this, SLOT(previousPage()));
     (void) new QShortcut(Qt::CTRL | Qt::Key_PageDown, this, SLOT(nextPage()));
 }
@@ -164,16 +177,16 @@ void Preferences::previousPage(){
     switch(currentPage){
     default:
     case 0:
-        on_page_0_general_clicked();
+        handleGeneralPageClick();
         break;
     case 1:
-        on_page_1_wallpapers_page_clicked();
+        handleWallpapersPageClick();
         break;
     case 2:
-        on_page_2_live_website_clicked();
+        handleLiveWebsitePageClick();
         break;
     case 3:
-        on_page_3_advanced_clicked();
+        handleAdvancedPageClick();
         break;
     }
 }
@@ -186,21 +199,21 @@ void Preferences::nextPage(){
     switch(currentPage){
     default:
     case 0:
-        on_page_0_general_clicked();
+        handleGeneralPageClick();
         break;
     case 1:
-        on_page_1_wallpapers_page_clicked();
+        handleWallpapersPageClick();
         break;
     case 2:
-        on_page_2_live_website_clicked();
+        handleLiveWebsitePageClick();
         break;
     case 3:
-        on_page_3_advanced_clicked();
+        handleAdvancedPageClick();
         break;
     }
 }
 
-void Preferences::on_closeButton_clicked()
+void Preferences::handleCloseClick()
 {
     this->close();
 }
@@ -209,7 +222,7 @@ void handler (const char *, void *)
 {
 }
 
-void Preferences::on_saveButton_clicked()
+void Preferences::handleSaveClick()
 {
     /*
      * On this function all we need to do is to update the .conf files(on Linux)
@@ -337,7 +350,7 @@ void Preferences::on_saveButton_clicked()
     this->close();
 }
 
-void Preferences::on_reset_clicked()
+void Preferences::handleResetClick()
 {
     if (QMessageBox::question(this, tr("Reset Preferences"), tr("Are you sure you want to reset your Wallch\npreferences?")) == QMessageBox::Yes)
     {
@@ -370,39 +383,39 @@ void Preferences::on_reset_clicked()
         ui->de_combo->setCurrentIndex(0);
 
         //applying these settings and closing the dialog...
-        on_saveButton_clicked();
+        handleSaveClick();
     }
 }
 
-void Preferences::on_page_0_general_clicked()
+void Preferences::handleGeneralPageClick()
 {
     ui->stackedWidget->setCurrentIndex(0);
     ui->page_0_general->setChecked(true);
     ui->page_0_general->raise();
 }
 
-void Preferences::on_page_1_wallpapers_page_clicked()
+void Preferences::handleWallpapersPageClick()
 {
     ui->stackedWidget->setCurrentIndex(1);
     ui->page_1_wallpapers_page->setChecked(true);
     ui->page_1_wallpapers_page->raise();
 }
 
-void Preferences::on_page_2_live_website_clicked()
+void Preferences::handleLiveWebsitePageClick()
 {
     ui->stackedWidget->setCurrentIndex(2);
     ui->page_2_live_website->setChecked(true);
     ui->page_2_live_website->raise();
 }
 
-void Preferences::on_page_3_advanced_clicked()
+void Preferences::handleAdvancedPageClick()
 {
     ui->stackedWidget->setCurrentIndex(3);
     ui->page_3_advanced->setChecked(true);
     ui->page_3_advanced->raise();
 }
 
-void Preferences::on_theme_combo_currentIndexChanged(int index)
+void Preferences::handleThemeChange(int index)
 {
     if(index == 0)
         settings->setValue("theme", "ambiance");
@@ -416,7 +429,7 @@ void Preferences::on_theme_combo_currentIndexChanged(int index)
     Q_EMIT changeTheme();
 }
 
-void Preferences::on_rotate_checkBox_clicked(bool checked)
+void Preferences::handleRotateCheck(bool checked)
 {
     if(checked){
         QMessageBox::warning(this, tr("Warning"), tr("This option will alter your images. You can also rotate your images manually via the right click menu."));
@@ -463,7 +476,7 @@ QString Preferences::dataToNiceString(qint64 data){
     return QString::number(niceData, 'f', 2)+" "+dataTypes.at(counter);
 }
 
-void Preferences::on_startupCheckBox_clicked(bool checked)
+void Preferences::handleStartupCheck(bool checked)
 {
     ui->onceCheckBox->setEnabled(checked);
     ui->hiddenTray_checkBox->setEnabled(checked);
@@ -472,18 +485,18 @@ void Preferences::on_startupCheckBox_clicked(bool checked)
     ui->startup_timeout_spinbox->setEnabled(checked);
 }
 
-void Preferences::on_help_clicked()
+void Preferences::handleHelpClick()
 {
     Global::openUrl(HELP_URL);
 }
 
-void Preferences::on_max_cache_slider_valueChanged(int value)
+void Preferences::handleMaxCacheSliderChange(int value)
 {
     maxCacheChanged_ = true;
     ui->thumbnails_max_size_label->setText(CacheManager().maxCacheIndexes.value(value).first);
 }
 
-void Preferences::on_clear_thumbnails_button_clicked()
+void Preferences::handleClearThumbnailsClick()
 {
     Global::remove(gv.cachePath+"/*");
     ui->thumbnails_size_label->setText("0.00 bytes");

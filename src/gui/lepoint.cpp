@@ -38,6 +38,12 @@ LEPoint::LEPoint(QWidget *parent) :
     ui(new Ui::lepoint)
 {
     ui->setupUi(this);
+    connect(ui->scaleSlider, &QSlider::valueChanged, this, &LEPoint::handleScaleSliderChange);
+    connect(ui->rotationSlider, &QSlider::valueChanged, this, &LEPoint::handleRotationSliderChange);
+    connect(ui->addButton, &QPushButton::clicked, this, &LEPoint::handleAddButtonClick);
+    connect(ui->iconCombo, &QComboBox::currentIndexChanged, this, &LEPoint::handleIconComboChange);
+    connect(ui->ok, &QPushButton::clicked, this, &LEPoint::handleOkClick);
+    connect(ui->cancel, &QPushButton::clicked, this, &LEPoint::handleCancelClick);
 
     scene_ = new QGraphicsScene(this);
     connect(scene_, SIGNAL(focusItemChanged(QGraphicsItem*,QGraphicsItem*,Qt::FocusReason)), this, SLOT(pointItemFocusChanged(QGraphicsItem*,QGraphicsItem*,Qt::FocusReason)));
@@ -238,7 +244,7 @@ void LEPoint::leImageFetchSuccess(const QByteArray &array)
     backgroundImageReady(background);
 }
 
-void LEPoint::on_scaleSlider_valueChanged(int value)
+void LEPoint::handleScaleSliderChange(int value)
 {
     Q_FOREACH(MarkItem *pointItem, marks_){
         if(pointItem->isSelected()){
@@ -248,7 +254,7 @@ void LEPoint::on_scaleSlider_valueChanged(int value)
     }
 }
 
-void LEPoint::on_rotationSlider_valueChanged(int value)
+void LEPoint::handleRotationSliderChange(int value)
 {
     Q_FOREACH(MarkItem *pointItem, marks_){
         if(pointItem->isSelected()){
@@ -260,7 +266,7 @@ void LEPoint::on_rotationSlider_valueChanged(int value)
     ui->rotationLabel->setText(QObject::tr("%1 degrees").arg(QString::number(value)));
 }
 
-void LEPoint::on_addButton_clicked()
+void LEPoint::handleAddButtonClick()
 {
     MarkItem *pointItem = new MarkItem();
 
@@ -299,7 +305,7 @@ void LEPoint::applyCustomIconToCombobox(const QString &path){
     alteringIndexesFromCode_ = false;
 }
 
-void LEPoint::on_iconCombo_currentIndexChanged(int index)
+void LEPoint::handleIconComboChange(int index)
 {
     if(alteringIndexesFromCode_ || !ui->iconCombo->isEnabled()){
         //do not run this function unless user generated the action through the UI
@@ -311,7 +317,7 @@ void LEPoint::on_iconCombo_currentIndexChanged(int index)
         QString path = QFileDialog::getOpenFileName(this, tr("Select Image"), QDir::homePath());
         if(isValidImage(path)){
             applyCustomIconToCombobox(path);
-            on_iconCombo_currentIndexChanged(2);
+            handleIconComboChange(2);
         }
         else
         {
@@ -412,10 +418,10 @@ void LEPoint::setOptionsValues(MarkItem *item){
 
 }
 
-void LEPoint::on_ok_clicked()
+void LEPoint::handleOkClick()
 {
     if (fetchFailed_) {
-        on_cancel_clicked();
+        handleCancelClick();
         return;
     }
     QSettings settings("wallch", "Settings");
@@ -446,7 +452,7 @@ void LEPoint::on_ok_clicked()
     this->close();
 }
 
-void LEPoint::on_cancel_clicked()
+void LEPoint::handleCancelClick()
 {
     if (tryFetch_ != NULL) {
         tryFetch_->abort();

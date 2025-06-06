@@ -53,12 +53,13 @@ private:
     QString numberWithLeadingZero(QString number);
 
 private Q_SLOTS:
-    void on_daysTree_itemClicked(QTreeWidgetItem* item);
-    void on_remove_history_clicked();
-    void on_closeButton_clicked();
-    void on_daysTree_customContextMenuRequested();
-    void on_historyInfo_customContextMenuRequested();
-    void on_historyInfo_doubleClicked();
+    void handleDaysTreeItemClick(QTreeWidgetItem* item);
+    void handleRemoveHistoryClick();
+    void handleCloseButtonClick();
+    void handleDaysTreeContextMenu();
+    void handleHistoryInfoContextMenu();
+    void handleHistoryInfoDoubleClick();
+    void handleKeepHistoryClick(bool checked);
     void removeHistoryEntry();
     void showProperties();
     void openFolder();
@@ -66,7 +67,6 @@ private Q_SLOTS:
     void setAsBackground();
     void copyLink();
     void launchInBrowser();
-    void on_keepHistory_clicked(bool checked);
 };
 
 #endif // HISTORY_H

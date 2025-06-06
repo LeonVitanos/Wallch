@@ -39,12 +39,19 @@ History::History(WallpaperManager *wallpaperManager, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::history)
 {
+    ui->setupUi(this);
+    connect(ui->daysTree, &QTreeWidget::itemClicked, this, &History::handleDaysTreeItemClick);
+    connect(ui->remove_history, &QPushButton::clicked, this, &History::handleRemoveHistoryClick);
+    connect(ui->closeButton, &QPushButton::clicked, this, &History::handleCloseButtonClick);
+    connect(ui->daysTree, &QTreeWidget::customContextMenuRequested, this, &History::handleDaysTreeContextMenu);
+    connect(ui->historyInfo, &QListWidget::customContextMenuRequested, this, &History::handleHistoryInfoContextMenu);
+
     wallpaperManager_ = wallpaperManager;
     dialogHelper_ = new DialogHelper();
-    ui->setupUi(this);
+
     ui->keepHistory->setChecked(settings->value("history", true).toBool());
     readHistoryFiles();
-    (void) new QShortcut(Qt::Key_Return, this, SLOT(on_historyInfo_doubleClicked()));
+    (void) new QShortcut(Qt::Key_Return, this, SLOT(handleHistoryInfoDoubleClick()));
 }
 
 History::~History()
@@ -52,7 +59,7 @@ History::~History()
     delete ui;
 }
 
-void History::on_closeButton_clicked()
+void History::handleCloseButtonClick()
 {
     this->close();
 }
@@ -116,7 +123,7 @@ void History::readHistoryFiles(){
     ui->daysTree->setHeaderLabel(tr("History Entries")+" ("+QString::number(totalWallpapers)+")");
 }
 
-void History::on_daysTree_itemClicked(QTreeWidgetItem* item)
+void History::handleDaysTreeItemClick(QTreeWidgetItem* item)
 {
     ui->historyInfo->clear();
     QSettings historySettings(HISTORY_SETTINGS);
@@ -208,7 +215,7 @@ void History::addHistoryEntry(QString time, QString path, short type){
     ui->historyInfo->addItem(item);
 }
 
-void History::on_historyInfo_customContextMenuRequested()
+void History::handleHistoryInfoContextMenu()
 {
     if (ui->historyInfo->count() > 0){
         if(ui->historyInfo->currentIndex().isValid() && ui->historyInfo->currentItem()->isSelected() && ui->historyInfo->currentItem()->text().length()>2)
@@ -273,7 +280,7 @@ void History::copyLink(){
         Global::copyTextToClipboard(ui->historyInfo->currentItem()->toolTip());
 }
 
-void History::on_historyInfo_doubleClicked()
+void History::handleHistoryInfoDoubleClick()
 {
     if (ui->historyInfo->count() > 0){
         if(ui->historyInfo->currentIndex().isValid() && ui->historyInfo->currentItem()->isSelected() && ui->historyInfo->currentItem()->text().length()>2)
@@ -292,7 +299,7 @@ void History::on_historyInfo_doubleClicked()
     }
 }
 
-void History::on_remove_history_clicked()
+void History::handleRemoveHistoryClick()
 {
     QSettings historySettings(HISTORY_SETTINGS);
     historySettings.clear();
@@ -302,7 +309,7 @@ void History::on_remove_history_clicked()
     ui->daysTree->setHeaderLabel(tr("History Entries")+" (0)");
 }
 
-void History::on_daysTree_customContextMenuRequested()
+void History::handleDaysTreeContextMenu()
 {
     QMenu *treeWidgetMenu = new QMenu(this);
     connect(treeWidgetMenu, SIGNAL(aboutToHide()), treeWidgetMenu, SLOT(deleteLater()));
@@ -345,7 +352,7 @@ QString History::numberWithLeadingZero(QString number)
     }
 }
 
-void History::on_keepHistory_clicked(bool checked)
+void History::handleKeepHistoryClick(bool checked)
 {
     gv.saveHistory=checked;
     settings->setValue("history", gv.saveHistory);

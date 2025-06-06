@@ -63,12 +63,12 @@ private Q_SLOTS:
     void sceneChanged();
     void cannotFetchLeImage();
     void leImageFetchSuccess(const QByteArray &array);
-    void on_scaleSlider_valueChanged(int value);
-    void on_rotationSlider_valueChanged(int value);
-    void on_addButton_clicked();
-    void on_iconCombo_currentIndexChanged(int index);
-    void on_ok_clicked();
-    void on_cancel_clicked();
+    void handleScaleSliderChange(int value);
+    void handleRotationSliderChange(int value);
+    void handleAddButtonClick();
+    void handleIconComboChange(int index);
+    void handleOkClick();
+    void handleCancelClick();
 
 private:
     Ui::lepoint *ui;

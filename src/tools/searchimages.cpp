@@ -117,7 +117,7 @@ void SearchImages::showHideSearchBoxMenu(){
         showHideSearchBox();
 }
 
-void SearchImages::on_search_up_clicked()
+void SearchImages::handleSearchUpClick()
 {
     if(searchBox_->text().isEmpty())
         return;
@@ -127,7 +127,7 @@ void SearchImages::on_search_up_clicked()
     continueToPreviousMatch();
 }
 
-void SearchImages::on_search_down_clicked()
+void SearchImages::handleSearchDownClick()
 {
     searchBox_->setFocus();
     enterPressed();

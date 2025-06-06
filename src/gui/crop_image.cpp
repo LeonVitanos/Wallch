@@ -35,6 +35,8 @@ CropImage::CropImage(QImage *image, const QRect &curCropRect, QWidget *parent) :
     ui(new Ui::crop_image)
 {
     ui->setupUi(this);
+    connect(ui->cancel, &QPushButton::clicked, this, &CropImage::handleCancelClick);
+    connect(ui->ok, &QPushButton::clicked, this, &CropImage::handleOkClick);
 
     showMaximized();
 
@@ -177,7 +179,7 @@ void CropImage::moveScroll(short direction){
     }
 }
 
-void CropImage::on_cancel_clicked()
+void CropImage::handleCancelClick()
 {
     this->close();
 }
@@ -201,7 +203,7 @@ void CropImage::sendNewCoordinates(QRect coords){
     Q_EMIT coordinates(coords);
 }
 
-void CropImage::on_ok_clicked()
+void CropImage::handleOkClick()
 {
     sendNewCoordinates(image_label->selectionRect());
     this->close();

@@ -35,6 +35,16 @@ PotdPreview::PotdPreview(QWidget *parent) :
     ui(new Ui::PotdPreview)
 {
     ui->setupUi(this);
+    connect(ui->textColorPotd, &QPushButton::clicked, this, &PotdPreview::handleTextColorClick);
+    connect(ui->backgroundColorPotd, &QPushButton::clicked, this, &PotdPreview::handleBackgroundColorClick);
+    connect(ui->potdFontComboBox, &QFontComboBox::currentFontChanged, this, &PotdPreview::handleFontChange);
+    connect(ui->potd_description_bottom_radioButton, &QRadioButton::clicked, this, &PotdPreview::handleBottomRadioClick);
+    connect(ui->potd_description_top_radioButton, &QRadioButton::clicked, this, &PotdPreview::handleTopRadioClick);
+    connect(ui->ok, &QPushButton::clicked, this, &PotdPreview::handleOkClick);
+    connect(ui->cancel, &QPushButton::clicked, this, &PotdPreview::handleCancelClick);
+    connect(ui->left_margin_spinbox, &QSpinBox::valueChanged, this, &PotdPreview::handleLeftMarginChange);
+    connect(ui->right_margin_spinbox, &QSpinBox::valueChanged, this, &PotdPreview::handleRightMarginChange);
+    connect(ui->bottom_top_margin_spinbox, &QSpinBox::valueChanged, this, &PotdPreview::handleBottomTopMarginChange);
 
     ui->left_margin_spinbox->setMaximum(gv.screenAvailableWidth-100);
     ui->right_margin_spinbox->setMaximum(gv.screenAvailableWidth-100);
@@ -86,7 +96,7 @@ PotdPreview::PotdPreview(QWidget *parent) :
         ui->bottom_top_margin_label->hide();
         ui->bottom_top_margin_spinbox->hide();
 
-        (void) new QShortcut(Qt::Key_Escape, this, SLOT(on_cancel_clicked()));
+        (void) new QShortcut(Qt::Key_Escape, this, SLOT(handleCancelClick()));
 
         tryFetch_ = new TryHard(this, potdPreviewImages_);
 
@@ -219,7 +229,7 @@ void PotdPreview::writeDescription(){
     updateLabel();
 }
 
-void PotdPreview::on_textColorPotd_clicked()
+void PotdPreview::handleTextColorClick()
 {
     QColorDialog::ColorDialogOptions options = QFlag(0);
     QColor textColor = QColorDialog::getColor(QColor(textColor_), this, tr("Select Color"), options);
@@ -229,7 +239,7 @@ void PotdPreview::on_textColorPotd_clicked()
     }
 }
 
-void PotdPreview::on_backgroundColorPotd_clicked()
+void PotdPreview::handleBackgroundColorClick()
 {
     QColorDialog::ColorDialogOptions options = QFlag(0);
     QColor backgroundColor = QColorDialog::getColor(QColor(backgroundColor_), this, tr("Select Color"), options);
@@ -239,24 +249,24 @@ void PotdPreview::on_backgroundColorPotd_clicked()
     }
 }
 
-void PotdPreview::on_potdFontComboBox_currentFontChanged()
+void PotdPreview::handleFontChange()
 {
     writeDescription();
 }
 
-void PotdPreview::on_potd_description_bottom_radioButton_clicked()
+void PotdPreview::handleBottomRadioClick()
 {
     ui->bottom_top_margin_label->setText(tr("Bottom:"));
     writeDescription();
 }
 
-void PotdPreview::on_potd_description_top_radioButton_clicked()
+void PotdPreview::handleTopRadioClick()
 {
     ui->bottom_top_margin_label->setText(tr("Top:"));
     writeDescription();
 }
 
-void PotdPreview::on_ok_clicked()
+void PotdPreview::handleOkClick()
 {
     if(!fetchFailed_){
         gv.potdDescriptionBottom=ui->potd_description_bottom_radioButton->isChecked();
@@ -284,7 +294,7 @@ void PotdPreview::on_ok_clicked()
     this->close();
 }
 
-void PotdPreview::on_cancel_clicked()
+void PotdPreview::handleCancelClick()
 {
     if(tryFetch_){
         tryFetch_->abort();
@@ -292,7 +302,7 @@ void PotdPreview::on_cancel_clicked()
     this->close();
 }
 
-void PotdPreview::on_left_margin_spinbox_valueChanged(int arg1)
+void PotdPreview::handleLeftMarginChange(int arg1)
 {
     Q_UNUSED(arg1);
     ui->left_margin_spinbox->setMaximum(gv.screenAvailableWidth-300-ui->right_margin_spinbox->value());
@@ -300,14 +310,14 @@ void PotdPreview::on_left_margin_spinbox_valueChanged(int arg1)
 }
 
 
-void PotdPreview::on_right_margin_spinbox_valueChanged(int arg1)
+void PotdPreview::handleRightMarginChange(int arg1)
 {
     Q_UNUSED(arg1);
     ui->right_margin_spinbox->setMaximum(gv.screenAvailableWidth-300-ui->left_margin_spinbox->value());
     writeDescription();
 }
 
-void PotdPreview::on_bottom_top_margin_spinbox_valueChanged(int arg1)
+void PotdPreview::handleBottomTopMarginChange(int arg1)
 {
     Q_UNUSED(arg1);
     writeDescription();

@@ -41,16 +41,16 @@ public:
     ~ColorsGradients();
     
 private Q_SLOTS:
-    void on_average_color_checkbox_clicked(bool checked);
-    void on_saveButton_clicked();
-    void on_primary_color_button_clicked();
-    void on_secondary_color_button_clicked();
-    void on_change_order_clicked();
-    void on_solid_radioButton_clicked();
-    void on_vertical_radioButton_clicked();
-    void on_horizontal_radioButton_clicked();
-    void on_colorModeButton_clicked();
-    void on_wallpaperModeButton_clicked();
+    void handleAverageColorCheck(bool checked);
+    void handleSaveButtonClick();
+    void handlePrimaryColorButtonClick();
+    void handleSecondaryColorButtonClick();
+    void handleChangeOrderClick();
+    void handleSolidRadioClick();
+    void handleVerticalRadioClick();
+    void handleHorizontalRadioClick();
+    void handleColorModeButtonClick();
+    void handleWallpaperModeButtonClick();
 
 private:
     Ui::colors_gradients *ui;

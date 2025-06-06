@@ -71,11 +71,11 @@ private:
     QImage resizePreview();
 
 private Q_SLOTS:
-    void on_close_clicked();
-    void on_previous_clicked();
-    void on_next_clicked();
-    void on_set_as_background_clicked();
-    void on_open_location_button_clicked();
+    void handleCloseClick();
+    void handlePreviousClick();
+    void handleNextClick();
+    void handleSetAsBackgroundClick();
+    void handleOpenLocationClick();
     void simulateNext();
     void simulatePrevious();
     void uncheckButtons();

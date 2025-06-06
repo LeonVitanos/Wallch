@@ -53,7 +53,7 @@ private:
     void beginCropDialog(QImage *image);
 
 private Q_SLOTS:
-    void on_cancel_or_close_clicked();
+    void handleCancelOrCloseClick();
     void sendCoordinates(const QRect &coords);
     void imageReady(QImage *image, short errorCode);
     void reduceTimeoutByOne();

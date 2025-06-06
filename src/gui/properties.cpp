@@ -39,6 +39,11 @@ Properties::Properties(int currentIndex, WallpaperManager *wallpaperManager, QSt
     ui(new Ui::properties)
 {
     ui->setupUi(this);
+    connect(ui->close, &QPushButton::clicked, this, &Properties::handleCloseClick);
+    connect(ui->previous, &QPushButton::clicked, this, &Properties::handlePreviousClick);
+    connect(ui->next, &QPushButton::clicked, this, &Properties::handleNextClick);
+    connect(ui->set_as_background, &QPushButton::clicked, this, &Properties::handleSetAsBackgroundClick);
+    connect(ui->open_location_button, &QPushButton::clicked, this, &Properties::handleOpenLocationClick);
 
     filePath_ = filePath;
     wallpaperManager_ = wallpaperManager;
@@ -117,7 +122,7 @@ QImage Properties::resizePreview(){
 
 }
 
-void Properties::on_close_clicked()
+void Properties::handleCloseClick()
 {
     close();
 }
@@ -170,7 +175,7 @@ void Properties::updateEntries(int currentIndex){
 
 }
 
-void Properties::on_next_clicked()
+void Properties::handleNextClick()
 {
     if(propertiesReadyWatcher_->isRunning())
         propertiesReadyWatcher_->cancel();
@@ -178,7 +183,7 @@ void Properties::on_next_clicked()
     updateEntries(currentIndex_ >= static_cast<int>(wallpaperManager_->wallpapersCount()) - 1 ? 0 : currentIndex_ + 1);
 }
 
-void Properties::on_previous_clicked()
+void Properties::handlePreviousClick()
 {
     if(propertiesReadyWatcher_->isRunning())
         propertiesReadyWatcher_->cancel();
@@ -192,7 +197,7 @@ void Properties::simulateNext(){
     ui->next->setDown(false);
     ui->next->setDown(true);
 
-    on_next_clicked();
+    handleNextClick();
     if(nextPreviousTimer_->isActive())
         nextPreviousTimer_->stop();
     nextPreviousTimer_->start(150);
@@ -203,7 +208,7 @@ void Properties::simulatePrevious(){
     ui->next->setDown(false);
     ui->previous->setDown(true);
 
-    on_previous_clicked();
+    handlePreviousClick();
     if(nextPreviousTimer_->isActive())
         nextPreviousTimer_->stop();
     nextPreviousTimer_->start(150);
@@ -214,7 +219,7 @@ void Properties::uncheckButtons(){
     ui->previous->setDown(false);
 }
 
-void Properties::on_set_as_background_clicked()
+void Properties::handleSetAsBackgroundClick()
 {
     wallpaperManager_->setBackground(currentFilename_, true, true, 1);
     if(gv.setAverageColor)
@@ -229,7 +234,7 @@ QString Properties::sizeToNiceString(qint64 fsize){
         return QString::number(fsize/BYTES_PER_KiB, 'f', 1) + " KiB";
 }
 
-void Properties::on_open_location_button_clicked()
+void Properties::handleOpenLocationClick()
 {
     FileManager::openFolderOf(currentFilename_);
 }

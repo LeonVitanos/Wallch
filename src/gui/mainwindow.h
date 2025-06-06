@@ -318,52 +318,52 @@ private Q_SLOTS:
     void doQuit();
     void onlineRequestFailed();
     void onlineImageRequestReady(QString image);
-    void on_actionHistory_triggered();
-    void on_actionContents_triggered();
-    void on_previous_Button_clicked();
-    void on_next_Button_clicked();
-
-    void on_timerSlider_valueChanged(int value);
-    void on_website_preview_clicked();
-    void on_edit_crop_clicked();
-    void on_website_crop_checkbox_clicked(bool checked);
-    void on_set_desktop_color_clicked();
-    void on_image_style_combo_currentIndexChanged(int index);
-    void on_website_textEdited(const QString &arg1);
-    void on_browse_folders_clicked();
-    void on_website_slider_valueChanged(int value);
-    void on_le_tag_checkbox_clicked(bool checked);
-    void on_le_tag_button_clicked();
-    void on_pictures_location_comboBox_currentIndexChanged(int index);
-    void on_actionDonate_triggered();
-    void on_actionReport_A_Bug_triggered();
-    void on_actionGet_Help_Online_triggered();
-    void on_actionWhat_is_my_screen_resolution_triggered();
-    void on_potd_viewer_Button_clicked();
-    void on_add_login_details_clicked(bool checked);
-    void on_action_About_triggered();
-    void on_action_Preferences_triggered();
-    void on_stopButton_clicked();
-    void on_startButton_clicked();
-    void on_activate_livearth_clicked();
-    void on_deactivate_livearth_clicked();
-    void on_activate_potd_clicked();
-    void on_deactivate_potd_clicked();
-    void on_activate_website_clicked();
-    void on_deactivate_website_clicked();
-    void page_button_clicked(int btn);
-    void on_include_description_checkBox_clicked(bool checked);
-    void on_edit_potd_clicked();
-    void on_shuffle_images_checkbox_clicked();
-    void on_stackedWidget_currentChanged(int page);
-    void on_edit_pushButton_clicked();
+    void handleHistoryAction();
+    void handleContentsAction();
+    void handlePreviousButtonClick();
+    void handleNextButtonClick();
+    void handleTimerSliderChange(int value);
+    void handleWebsitePreviewClick();
+    void handleEditCropClick();
+    void handleWebsiteCropCheck(bool checked);
+    void handleSetDesktopColorClick();
+    void handleImageStyleChange(int index);
+    void handleWebsiteTextEdit(const QString &arg1);
+    void handleBrowseFoldersClick();
+    void handleWebsiteSliderChange(int value);
+    void handleLiveEarthTagCheck(bool checked);
+    void handleLiveEarthTagClick();
+    void handlePicturesLocationChange(int index);
+    void handleDonateAction();
+    void handleReportBugAction();
+    void handleHelpOnlineAction();
+    void handleScreenResolutionAction();
+    void handlePotdViewerClick();
+    void handleAddLoginDetailsCheck(bool checked);
+    void handleAboutAction();
+    void handlePreferencesAction();
+    void handleStopButtonClick();
+    void handleStartButtonClick();
+    void handleActivateLiveEarthClick();
+    void handleDeactivateLiveEarthClick();
+    void handleActivatePotdClick();
+    void handleDeactivatePotdClick();
+    void handleActivateWebsiteClick();
+    void handleDeactivateWebsiteClick();
+    void handlePageButtonClick(int btn);
+    void handleIncludeDescriptionCheck(bool checked);
+    void handleEditPotdClick();
+    void handleShuffleImagesCheck();
+    void handlePageChange(int page);
+    void handleEditLocationsClick();
     void updateImageStyleCombo();
     void getScreenResolution(QRect geometry);
     void getScreenAvailableResolution(QRect geometry);
-    void on_days_spinBox_valueChanged(int arg1);
-    void on_hours_spinBox_valueChanged(int arg1);
-    void on_minutes_spinBox_valueChanged(int arg1);
-    void on_seconds_spinBox_valueChanged(int arg1);
+
+    void handleDaysSpinBoxChange(int arg1);
+    void handleHoursSpinBoxChange(int arg1);
+    void handleMinutesSpinBoxChange(int arg1);
+    void handleSecondsSpinBoxChange(int arg1);
     void clearWallpapersList();
 
     // File System Watcher
@@ -373,9 +373,9 @@ private Q_SLOTS:
     void currentFolderDoesNotExist();
 
     // 'Wallpapers' ListWidget functions
-    void on_wallpapersList_customContextMenuRequested();
-    void on_wallpapersList_itemDoubleClicked();
-    void on_wallpapersList_itemSelectionChanged();
+    void handleWallpaperListContextMenu();
+    void handleWallpaperListDoubleClick();
+    void handleWallpaperListSelectionChange();
     void deletePressed();
 
     // 'Wallpapers' ListWidget right-click menu functions

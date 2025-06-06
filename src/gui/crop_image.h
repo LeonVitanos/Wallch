@@ -75,8 +75,8 @@ private:
     void sendNewCoordinates(QRect coords);
 
 private Q_SLOTS:
-    void on_cancel_clicked();
-    void on_ok_clicked();
+    void handleCancelClick();
+    void handleOkClick();
 
 Q_SIGNALS:
     void coordinates(QRect coords);

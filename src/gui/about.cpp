@@ -35,6 +35,12 @@ About::About(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    connect(ui->website_label, &QLabel::linkActivated, this, &About::handleWebsiteLinkActivation);
+    connect(ui->about_button, &QPushButton::clicked, this, &About::handleAboutButtonClick);
+    connect(ui->credits_button, &QPushButton::clicked, this, &About::handleCreditsButtonClick);
+    connect(ui->license_button, &QPushButton::clicked, this, &About::handleLicenseButtonClick);
+    connect(ui->closeButton, &QPushButton::clicked, this, &About::handleCloseButtonClick);
+
     easterEggCounter_=0;
 
     ui->wallch_version_label->setText("Wallch " + QString::number(APP_VERSION, 'f', 3));
@@ -91,19 +97,19 @@ void About::changeEvent(QEvent *e)
     }
 }
 
-void About::on_closeButton_clicked()
+void About::handleCloseButtonClick()
 {
     close();
 }
 
-void About::on_about_button_clicked()
+void About::handleAboutButtonClick()
 {
     easterEggCounter_=0;
     ui->about_button->setChecked(true);
     ui->stackedWidget->setCurrentIndex(0);
 }
 
-void About::on_credits_button_clicked()
+void About::handleCreditsButtonClick()
 {
     if((++easterEggCounter_)==5){
         QMessageBox::information(this, "Wallch", tr("Don't click it again."));
@@ -116,14 +122,14 @@ void About::on_credits_button_clicked()
     ui->stackedWidget->setCurrentIndex(1);
 }
 
-void About::on_license_button_clicked()
+void About::handleLicenseButtonClick()
 {
     easterEggCounter_=0;
     ui->license_button->setChecked(true);
     ui->stackedWidget->setCurrentIndex(2);
 }
 
-void About::on_website_label_linkActivated()
+void About::handleWebsiteLinkActivation()
 {
     Global::openUrl("http://melloristudio.com");
 }

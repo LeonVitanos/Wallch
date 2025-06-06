@@ -30,8 +30,8 @@ public Q_SLOTS:
     void showHideSearchBoxMenu();
     void showHideSearchBox();
     void searchFor(const QString &term);
-    void on_search_down_clicked();
-    void on_search_up_clicked();
+    void handleSearchDownClick();
+    void handleSearchUpClick();
     bool hideSearch();
 
 private Q_SLOTS:

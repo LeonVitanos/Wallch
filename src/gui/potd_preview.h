@@ -74,16 +74,16 @@ private:
 private Q_SLOTS:
     void imageFetchfailed();
     void downloadedImage(QByteArray array);
-    void on_textColorPotd_clicked();
-    void on_backgroundColorPotd_clicked();
-    void on_potdFontComboBox_currentFontChanged();
-    void on_potd_description_bottom_radioButton_clicked();
-    void on_potd_description_top_radioButton_clicked();
-    void on_ok_clicked();
-    void on_cancel_clicked();
-    void on_left_margin_spinbox_valueChanged(int arg1);
-    void on_right_margin_spinbox_valueChanged(int arg1);
-    void on_bottom_top_margin_spinbox_valueChanged(int arg1);
+    void handleTextColorClick();
+    void handleBackgroundColorClick();
+    void handleFontChange();
+    void handleBottomRadioClick();
+    void handleTopRadioClick();
+    void handleOkClick();
+    void handleCancelClick();
+    void handleLeftMarginChange(int arg1);
+    void handleRightMarginChange(int arg1);
+    void handleBottomTopMarginChange(int arg1);
     void writeDescription();
     void updateLabel();
 

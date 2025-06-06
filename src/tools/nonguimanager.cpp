@@ -1208,16 +1208,16 @@ void NonGuiManager::setIndependentInterval(const QString &independentInterval){
 void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     //connects MainWindow with command line messages.
     QObject::connect(nongui, SIGNAL(signalOnce()), w, SLOT(justChangeWallpaper()));
-    QObject::connect(nongui, SIGNAL(signalPause()), w, SLOT(on_startButton_clicked()));
-    QObject::connect(nongui, SIGNAL(signalPrevious()), w, SLOT(on_previous_Button_clicked()));
-    QObject::connect(nongui, SIGNAL(signalNext()), w, SLOT(on_next_Button_clicked()));
-    QObject::connect(nongui, SIGNAL(signalStart()), w, SLOT(on_startButton_clicked()));
-    QObject::connect(nongui, SIGNAL(signalActivateLivearth()), w, SLOT(on_activate_livearth_clicked()));
-    QObject::connect(nongui, SIGNAL(signalActivatePotd()), w, SLOT(on_activate_potd_clicked()));
-    QObject::connect(nongui, SIGNAL(signalActivateLiveWebsite()), w, SLOT(on_activate_website_clicked()));
+    QObject::connect(nongui, SIGNAL(signalPause()), w, SLOT(handleStartButtonClick()));
+    QObject::connect(nongui, SIGNAL(signalPrevious()), w, SLOT(handlePreviousButtonClick()));
+    QObject::connect(nongui, SIGNAL(signalNext()), w, SLOT(handleNextButtonClick()));
+    QObject::connect(nongui, SIGNAL(signalStart()), w, SLOT(handleStartButtonClick()));
+    QObject::connect(nongui, SIGNAL(signalActivateLivearth()), w, SLOT(handleActivateLiveEarthClick()));
+    QObject::connect(nongui, SIGNAL(signalActivatePotd()), w, SLOT(handleActivatePotdClick()));
+    QObject::connect(nongui, SIGNAL(signalActivateLiveWebsite()), w, SLOT(handleActivateWebsiteClick()));
     QObject::connect(nongui, SIGNAL(closeWhatsRunning()), w, SLOT(closeWhatsRunning()));
-    QObject::connect(nongui, SIGNAL(signalShowPreferences()), w, SLOT(on_action_Preferences_triggered()));
-    QObject::connect(nongui, SIGNAL(signalShowAbout()), w, SLOT(on_action_About_triggered()));
+    QObject::connect(nongui, SIGNAL(signalShowPreferences()), w, SLOT(handlePreferencesAction()));
+    QObject::connect(nongui, SIGNAL(signalShowAbout()), w, SLOT(handleAboutAction()));
     QObject::connect(nongui, SIGNAL(signalQuit()), w, SLOT(doQuit()));
     QObject::connect(nongui, &NonGuiManager::signalDeleteCurrent, wallpaperManager_->deleteCurrentBackgroundImage);
     QObject::connect(nongui, SIGNAL(signalAddFolderForMonitor(const QString&)), w, SLOT(addFolderForMonitor(const QString&)));

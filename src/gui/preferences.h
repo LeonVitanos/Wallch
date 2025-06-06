@@ -52,19 +52,19 @@ private:
 private Q_SLOTS:
     void previousPage();
     void nextPage();
-    void on_reset_clicked();
-    void on_saveButton_clicked();
-    void on_closeButton_clicked();
-    void on_page_0_general_clicked();
-    void on_page_1_wallpapers_page_clicked();
-    void on_page_2_live_website_clicked();
-    void on_page_3_advanced_clicked();
-    void on_theme_combo_currentIndexChanged(int index);
-    void on_rotate_checkBox_clicked(bool checked);
-    void on_startupCheckBox_clicked(bool checked);
-    void on_help_clicked();
-    void on_max_cache_slider_valueChanged(int value);
-    void on_clear_thumbnails_button_clicked();
+    void handleResetClick();
+    void handleSaveClick();
+    void handleCloseClick();
+    void handleGeneralPageClick();
+    void handleWallpapersPageClick();
+    void handleLiveWebsitePageClick();
+    void handleAdvancedPageClick();
+    void handleThemeChange(int index);
+    void handleRotateCheck(bool checked);
+    void handleStartupCheck(bool checked);
+    void handleHelpClick();
+    void handleMaxCacheSliderChange(int value);
+    void handleClearThumbnailsClick();
 
 Q_SIGNALS:
     void intervalTypeChanged();

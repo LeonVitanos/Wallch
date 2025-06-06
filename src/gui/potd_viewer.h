@@ -76,11 +76,11 @@ private Q_SLOTS:
     void updateDataReadProgress_save(qint64 bytesRead, qint64 totalBytes);
     void imageDownloaded();
     void saveImage();
-    void on_quitButton_clicked();
-    void on_saveimageButton_clicked();
-    void on_dateEdit_dateChanged(const QDate &date_calendar);
-    void on_previousButton_clicked();
-    void on_nextButton_clicked();
+    void handleQuitClick();
+    void handleSaveImageClick();
+    void handleDateChange(const QDate &date);
+    void handlePreviousClick();
+    void handleNextClick();
     void updateLabel();
 
 };

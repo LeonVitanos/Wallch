@@ -34,6 +34,11 @@ PotdViewer::PotdViewer(QWidget *parent) :
     ui(new Ui::potd_viewer)
 {
     ui->setupUi(this);
+    connect(ui->quitButton, &QPushButton::clicked, this, &PotdViewer::handleQuitClick);
+    connect(ui->saveimageButton, &QPushButton::clicked, this, &PotdViewer::handleSaveImageClick);
+    connect(ui->dateEdit, &QDateEdit::dateChanged, this, &PotdViewer::handleDateChange);
+    connect(ui->previousButton, &QPushButton::clicked, this, &PotdViewer::handlePreviousClick);
+    connect(ui->nextButton, &QPushButton::clicked, this, &PotdViewer::handleNextClick);
 
     selectedDate_=QDate::currentDate();
     skipStepsAfterThree_=false;
@@ -45,8 +50,8 @@ PotdViewer::PotdViewer(QWidget *parent) :
     ui->save_progressBar->hide();
     ui->dateEdit->setDate(selectedDate_);
 
-    (void) new QShortcut(Qt::Key_Right, this, SLOT(on_nextButton_clicked()));
-    (void) new QShortcut(Qt::Key_Left, this, SLOT(on_previousButton_clicked()));
+    (void) new QShortcut(Qt::Key_Right, this, SLOT(handleNextClick()));
+    (void) new QShortcut(Qt::Key_Left, this, SLOT(handlePreviousClick()));
 }
 
 PotdViewer::~PotdViewer()
@@ -380,12 +385,12 @@ void PotdViewer::updateDataReadProgress(qint64 bytesRead, qint64 totalBytes)
     ui->save_progressBar->setValue(bytesRead);
 }
 
-void PotdViewer::on_quitButton_clicked()
+void PotdViewer::handleQuitClick()
 {
     close();
 }
 
-void PotdViewer::on_saveimageButton_clicked()
+void PotdViewer::handleSaveImageClick()
 {
     //acts as save or cancel.
     if(!downloadingImage_ && QDate::fromString(settings->value("last_day_potd_was_set").toString(),"dd.MM.yyyy") == ui->dateEdit->date()){
@@ -472,23 +477,23 @@ void PotdViewer::enableWidgets(bool state)
 }
 
 
-void PotdViewer::on_dateEdit_dateChanged(const QDate &date_calendar)
+void PotdViewer::handleDateChange(const QDate &date)
 {
     if(originalMovie_!=NULL){
         originalMovie_->deleteLater();
     }
     enableWidgets(false);
-    selectedDate_=date_calendar;
+    selectedDate_=date;
     ui->label->setText(tr("Downloading")+"...");
     urlQDate();
 }
 
-void PotdViewer::on_previousButton_clicked()
+void PotdViewer::handlePreviousClick()
 {
     ui->dateEdit->setDate(selectedDate_.addDays(-1));
 }
 
-void PotdViewer::on_nextButton_clicked()
+void PotdViewer::handleNextClick()
 {
     ui->dateEdit->setDate(selectedDate_.addDays(+1));
 }

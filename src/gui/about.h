@@ -42,11 +42,11 @@ private:
     short easterEggCounter_;
 
 private Q_SLOTS:
-    void on_website_label_linkActivated();
-    void on_about_button_clicked();
-    void on_credits_button_clicked();
-    void on_license_button_clicked();
-    void on_closeButton_clicked();
+    void handleWebsiteLinkActivation();
+    void handleAboutButtonClick();
+    void handleCreditsButtonClick();
+    void handleLicenseButtonClick();
+    void handleCloseButtonClick();
 
 };
 
