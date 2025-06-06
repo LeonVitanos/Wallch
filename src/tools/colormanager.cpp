@@ -3,6 +3,7 @@
 #include "settingsmanager.h"
 
 #include <QPainter>
+#include <QPalette>
 
 #ifdef Q_OS_LINUX
     #include "desktopenvironment.h"
