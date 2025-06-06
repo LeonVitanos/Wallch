@@ -410,7 +410,7 @@ void NonGuiManager::connectToServer()
     localServer_ = new QLocalServer(this);
 
     if(!localServer_->listen(QString(SOCKET_SERVER_NAME))){
-#ifdef Q_OS_LINUX
+#if defined(Q_OS_LINUX) || defined(Q_OS_MAC)
         //if not in windows, remove the socket and retry...
         QLocalServer::removeServer(QString(SOCKET_SERVER_NAME));
         if(!localServer_->listen(QString(SOCKET_SERVER_NAME))){
