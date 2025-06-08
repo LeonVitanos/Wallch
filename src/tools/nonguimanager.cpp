@@ -226,7 +226,7 @@ void NonGuiManager::updateSeconds(){
 
                 gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(timerManager_->secondsRemaining_);
             }
-            else if (!(timerManager_->secondsRemaining_-secondsToChangingTime < -1 || timerManager_->secondsRemaining_-secondsToChangingTime > 1)){
+            else if (!(timerManager_->secondsRemaining_<(secondsToChangingTime-1) || timerManager_->secondsRemaining_>(secondsToChangingTime + 1))){
                 timerManager_->secondsRemaining_ = secondsToChangingTime;
             }
         }

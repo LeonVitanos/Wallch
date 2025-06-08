@@ -1247,7 +1247,7 @@ void MainWindow::updateSeconds(){
                 actionsOnWallpaperChange();
                 gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(timerManager_->secondsRemaining_);
             }
-            else if (!(timerManager_->secondsRemaining_-secondsToChange<-1 || timerManager_->secondsRemaining_-secondsToChange>1)){
+            else if (!(timerManager_->secondsRemaining_<(secondsToChange-1) || timerManager_->secondsRemaining_>(secondsToChange+1))){
                 //the time has yet to come, just update
                 if(abs(timerManager_->secondsRemaining_-secondsToChange)>1){
                     timerManager_->secondsRemaining_=secondsToChange;
