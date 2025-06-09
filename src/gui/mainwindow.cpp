@@ -2363,7 +2363,7 @@ void MainWindow::handleWebsitePreviewClick()
     webPreview_->setAttribute(Qt::WA_DeleteOnClose);
     connect(webPreview_, SIGNAL(destroyed()), this, SLOT(websitePreviewDestroyed()));
     connect(webPreview_, SIGNAL(previewImageReady(QImage*)), this, SLOT(setWebsitePreviewImage(QImage*)));
-    connect(webPreview_, SIGNAL(sendExtraCoordinates(QRect)), this, SLOT(readCoordinates(const QRect&)));
+    connect(webPreview_, &WebsitePreview::sendExtraCoordinates, this, &MainWindow::readCoordinates);
     webPreview_->setWindowFlags(Qt::Dialog | Qt::WindowTitleHint);
     webPreview_->show();
 }
@@ -2479,7 +2479,7 @@ void MainWindow::handleEditCropClick()
     webPreview_->setModal(true);
     webPreview_->setAttribute(Qt::WA_DeleteOnClose);
     connect(webPreview_, SIGNAL(destroyed()), this, SLOT(websitePreviewDestroyed()));
-    connect(webPreview_, SIGNAL(sendExtraCoordinates(QRect)), this, SLOT(readCoordinates(const QRect&)));
+    connect(webPreview_, &WebsitePreview::sendExtraCoordinates, this, &MainWindow::readCoordinates);
     webPreview_->setWindowFlags(Qt::Dialog | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint);
     webPreview_->show();
 }

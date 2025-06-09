@@ -258,6 +258,9 @@ private:
     void iconsPathsChanged();
     bool addingImageStylesNow = false;
 
+public slots:
+    void addFolderForMonitor(const QString &folder);
+
 private Q_SLOTS:
 #ifdef Q_OS_LINUX
     void dconfChanges();
@@ -267,7 +270,6 @@ private Q_SLOTS:
     void intervalTypeChanged();
     void closeWhatsRunning();
     void checkBatteryStatus();
-    void addFolderForMonitor(const QString &folder);
     void updateTiming();
     void changePathsToIcons();
     void changeIconsToPaths();

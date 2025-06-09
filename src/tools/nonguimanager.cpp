@@ -1220,7 +1220,7 @@ void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     QObject::connect(nongui, SIGNAL(signalShowAbout()), w, SLOT(handleAboutAction()));
     QObject::connect(nongui, SIGNAL(signalQuit()), w, SLOT(doQuit()));
     QObject::connect(nongui, &NonGuiManager::signalDeleteCurrent, wallpaperManager_->deleteCurrentBackgroundImage);
-    QObject::connect(nongui, SIGNAL(signalAddFolderForMonitor(const QString&)), w, SLOT(addFolderForMonitor(const QString&)));
+    QObject::connect(nongui, &NonGuiManager::signalAddFolderForMonitor, w, &MainWindow::addFolderForMonitor);
     QObject::connect(nongui, SIGNAL(signalFocus()), w, SLOT(showNormal()));
     QObject::connect(nongui, SIGNAL(signalHideOrShow()), w, SLOT(hideOrShow()));
     QObject::connect(w, SIGNAL(signalUncheckRunningFeatureOnTray()), nongui , SLOT(uncheckRunningFeatureOnTray()));
