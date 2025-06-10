@@ -62,7 +62,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef Q_OS_LINUX
     #include "notification.h"
-#else
 # ifdef Q_OS_WIN
     #include <stdio.h>
     #include <windows.h>
