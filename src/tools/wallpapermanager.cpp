@@ -615,7 +615,9 @@ void WallpaperManager::setCurrentFit(short index){
     HKEY hKey = NULL;
     hr = HRESULT_FROM_WIN32(RegOpenKeyEx(HKEY_CURRENT_USER,
                                          L"Control Panel\\Desktop", 0, KEY_READ | KEY_WRITE, &hKey));
-    if (SUCCEEDED(hr))
+    if (FAILED(hr))
+        qWarning() << "Failed to open registry key 'Control Panel\\Desktop'. Error code:" << hr;
+    else if (SUCCEEDED(hr))
     {
         PWSTR pszWallpaperStyle;
         PWSTR pszTileWallpaper;
@@ -641,10 +643,6 @@ void WallpaperManager::setCurrentFit(short index){
             pszWallpaperStyle = two;
             pszTileWallpaper = zero;
             break;
-        case 4: //fit (Windows 7 and later)
-            pszWallpaperStyle = six;
-            pszTileWallpaper = zero;
-            break;
         case 5: //fill (Windows 7 and later)
             pszWallpaperStyle = ten;
             pszTileWallpaper = zero;
@@ -653,17 +651,26 @@ void WallpaperManager::setCurrentFit(short index){
             pszWallpaperStyle = twentytwo;
             pszTileWallpaper = zero;
             break;
+        default:
+        case 4: //fit (Windows 7 and later)
+            pszWallpaperStyle = six;
+            pszTileWallpaper = zero;
+            break;
         }
 
         //set the WallpaperStyle and TileWallpaper registry values.
         DWORD cbData = lstrlen(pszWallpaperStyle) * sizeof(*pszWallpaperStyle);
         hr = HRESULT_FROM_WIN32(RegSetValueEx(hKey, L"WallpaperStyle", 0, REG_SZ,
                                               reinterpret_cast<const BYTE *>(pszWallpaperStyle), cbData));
-        if (SUCCEEDED(hr))
+        if (FAILED(hr))
+            qWarning() << "Failed to set WallpaperStyle registry value. Error code:" << hr;
+        else if (SUCCEEDED(hr))
         {
             cbData = lstrlen(pszTileWallpaper) * sizeof(*pszTileWallpaper);
             hr = HRESULT_FROM_WIN32(RegSetValueEx(hKey, L"TileWallpaper", 0, REG_SZ,
                                                   reinterpret_cast<const BYTE *>(pszTileWallpaper), cbData));
+            if (FAILED(hr))
+                qWarning() << "Failed to set TileWallpaper registry value. Error code:" << hr;
         }
 
         RegCloseKey(hKey);
