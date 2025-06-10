@@ -95,9 +95,19 @@ public:
     Ui::MainWindow *ui;
 
 protected:
-    void closeEvent(QCloseEvent * event);
-    void resizeEvent(QResizeEvent *event);
-    bool eventFilter(QObject *object, QEvent *event);
+    void closeEvent(QCloseEvent * event) override;
+    void resizeEvent(QResizeEvent *event) override;
+    bool eventFilter(QObject *object, QEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
+
+#if defined(Q_OS_WIN)
+    #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
+    #else
+        bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
+    #endif
+#endif
 
 private:
 #ifdef Q_OS_LINUX
@@ -106,13 +116,6 @@ private:
     QProcess *dconf;
 #else
     Notification *notification_;
-# ifdef Q_OS_WIN
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
-#else
-    bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
-#endif
-# endif
 #endif
 
     QSharedMemory *attachedMemory_;
@@ -208,8 +211,6 @@ private:
     QShortcut *contentsShortcut_ = NULL;
     QShortcut *historyShortcut_ = NULL;
 
-    void dragEnterEvent(QDragEnterEvent *event);
-    void dropEvent(QDropEvent *event);
     void actionsOnClose();
     void changeImage();
     void startButtonsSetEnabled(bool enabled);
