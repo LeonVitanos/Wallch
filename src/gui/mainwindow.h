@@ -102,12 +102,12 @@ protected:
     void dropEvent(QDropEvent *event) override;
 
 #if defined(Q_OS_WIN)
-    #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-        bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
-    #else
-        bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
-    #endif
-#endif
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
+#else
+    bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
+#endif // QT_VERSION
+#endif // Q_OS_WIN
 
 private:
 #ifdef Q_OS_LINUX
