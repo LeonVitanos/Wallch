@@ -56,6 +56,7 @@ public:
     void addWallpaper(const QString &wallpaper);
     QStringList getCurrentWallpapers();
     void clearWallpapers();
+    void removeWallpaperAt(const int);
     unsigned int wallpapersCount();
     void convertRandomToNormal();
     bool randomModeEnabled();

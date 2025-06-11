@@ -1882,7 +1882,7 @@ bool MainWindow::updateIconOf(int index){
     if(image.isNull()){
         if(wallpaperManager_->wallpapersCount() > 1){
             delete ui->wallpapersList->item(index);
-            wallpaperManager_->getCurrentWallpapers().removeAt(index);
+            wallpaperManager_->removeWallpaperAt(index);
         }
         else
             clearWallpapersList();
