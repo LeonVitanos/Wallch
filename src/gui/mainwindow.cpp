@@ -912,11 +912,11 @@ void MainWindow::dropEvent(QDropEvent *event)
     case 0:
     {
         //something was dropped inside the Wallpapers page!
-        QList<QUrl> urlList = event->mimeData()->urls();
-        for (QList<QUrl>::const_iterator i = urlList.begin(); i != urlList.end();i++)
+        const QList<QUrl> urlList = event->mimeData()->urls();
+        for (const QUrl &url : urlList)
         {
             //removing extra characters from the absolute path...
-            QString dropped_temp=(*i).toString();
+            QString dropped_temp = url.toString();
             QString droppedfile = dropped_temp.mid(7, dropped_temp.length()-2);
             addFolderForMonitor(droppedfile);
         }
