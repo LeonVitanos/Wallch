@@ -50,7 +50,7 @@ Preferences::Preferences(QWidget *parent) :
     connect(ui->page_1_wallpapers_page, &QPushButton::clicked, this, &Preferences::handleWallpapersPageClick);
     connect(ui->page_2_live_website, &QPushButton::clicked, this, &Preferences::handleLiveWebsitePageClick);
     connect(ui->page_3_advanced, &QPushButton::clicked, this, &Preferences::handleAdvancedPageClick);
-    connect(ui->theme_combo, &QComboBox::currentIndexChanged, this, &Preferences::handleThemeChange);
+    connect(ui->theme_combo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &Preferences::handleThemeChange);
     connect(ui->rotate_checkBox, &QCheckBox::clicked, this, &Preferences::handleRotateCheck);
     connect(ui->startupCheckBox, &QCheckBox::clicked, this, &Preferences::handleStartupCheck);
     connect(ui->help, &QPushButton::clicked, this, &Preferences::handleHelpClick);

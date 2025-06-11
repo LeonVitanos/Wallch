@@ -42,9 +42,9 @@ PotdPreview::PotdPreview(QWidget *parent) :
     connect(ui->potd_description_top_radioButton, &QRadioButton::clicked, this, &PotdPreview::handleTopRadioClick);
     connect(ui->ok, &QPushButton::clicked, this, &PotdPreview::handleOkClick);
     connect(ui->cancel, &QPushButton::clicked, this, &PotdPreview::handleCancelClick);
-    connect(ui->left_margin_spinbox, &QSpinBox::valueChanged, this, &PotdPreview::handleLeftMarginChange);
-    connect(ui->right_margin_spinbox, &QSpinBox::valueChanged, this, &PotdPreview::handleRightMarginChange);
-    connect(ui->bottom_top_margin_spinbox, &QSpinBox::valueChanged, this, &PotdPreview::handleBottomTopMarginChange);
+    connect(ui->left_margin_spinbox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &PotdPreview::handleLeftMarginChange);
+    connect(ui->right_margin_spinbox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &PotdPreview::handleRightMarginChange);
+    connect(ui->bottom_top_margin_spinbox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &PotdPreview::handleBottomTopMarginChange);
 
     ui->left_margin_spinbox->setMaximum(gv.screenAvailableWidth-100);
     ui->right_margin_spinbox->setMaximum(gv.screenAvailableWidth-100);

@@ -41,7 +41,7 @@ LEPoint::LEPoint(QWidget *parent) :
     connect(ui->scaleSlider, &QSlider::valueChanged, this, &LEPoint::handleScaleSliderChange);
     connect(ui->rotationSlider, &QSlider::valueChanged, this, &LEPoint::handleRotationSliderChange);
     connect(ui->addButton, &QPushButton::clicked, this, &LEPoint::handleAddButtonClick);
-    connect(ui->iconCombo, &QComboBox::currentIndexChanged, this, &LEPoint::handleIconComboChange);
+    connect(ui->iconCombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &LEPoint::handleIconComboChange);
     connect(ui->ok, &QPushButton::clicked, this, &LEPoint::handleOkClick);
     connect(ui->cancel, &QPushButton::clicked, this, &LEPoint::handleCancelClick);
 
