@@ -59,7 +59,7 @@ LEPoint::LEPoint(QWidget *parent) :
         // initiate the image fetch
         tryFetch_ = new TryHard(this, lePointImages_);
         connect(tryFetch_, SIGNAL(failed()), this, SLOT(cannotFetchLeImage()));
-        connect(tryFetch_, SIGNAL(success(const QByteArray&)), this, SLOT(leImageFetchSuccess(const QByteArray&)));
+        connect(tryFetch_, &TryHard::success, this, &LEPoint::leImageFetchSuccess);
         tryFetch_->start();
     }
 

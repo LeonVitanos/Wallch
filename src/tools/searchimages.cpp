@@ -10,7 +10,7 @@ SearchImages::SearchImages(QListWidget* wallpapersList, QLineEdit* searchBox, QW
     //for manually searching for files or re-selecting a picture after a folder contents have changed
     match_.setPatternOptions(QRegularExpression::CaseInsensitiveOption);
 
-    connect(searchBox_, SIGNAL(textChanged(const QString &)), this, SLOT(searchFor(const QString &)));
+    connect(searchBox_, &QLineEdit::textChanged, this, &SearchImages::searchFor);
 }
 
 void SearchImages::searchFor(const QString &term){
