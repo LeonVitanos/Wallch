@@ -20,6 +20,10 @@ win32 {
 }
 
 unix:!macx {
+    # Use no_keywords to prevent Qt's 'signals'/'slots' from conflicting
+    # with 3rd-party system libraries on Linux (e.g., when including gio.h).
+    # This requires using Q_SIGNALS/Q_SLOTS macros in the C++ code.
+    # See: https://doc.qt.io/qt-6/signalsandslots.html#using-qt-with-3rd-party-signals-and-slots
     CONFIG += link_pkgconfig no_keywords
     PKGCONFIG += libnotify libexif
 }

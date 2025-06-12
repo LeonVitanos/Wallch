@@ -258,7 +258,7 @@ private:
     void iconsPathsChanged();
     bool addingImageStylesNow = false;
 
-public slots:
+public Q_SLOTS:
     void addFolderForMonitor(const QString &folder);
 
 private Q_SLOTS:
