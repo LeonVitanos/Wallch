@@ -88,7 +88,9 @@ void History::readHistoryFiles(){
         }
         months.sort();
         Q_FOREACH (QString month, months) {
-            month.remove( QRegularExpression("^[0]*"));
+            static const QRegularExpression leadingZerosRegex("^[0]*");
+            month.remove(leadingZerosRegex);
+
             //add top level item, eg. December (2014)
             QTreeWidgetItem *month_year_item = new QTreeWidgetItem;
 

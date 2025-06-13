@@ -308,8 +308,8 @@ void ImageFetcher::getPotdDescription(QNetworkReply *reply){
 
     if(potdDescription.contains("/wiki/File:"))
     {
-        QRegularExpression filter("<a href=\"/wiki/File:(.+)</a></small>");
-        QRegularExpressionMatch match = filter.match(potdDescription);
+        static const QRegularExpression wikiImageFileRegex("<a href=\"/wiki/File:(.+)</a></small>");
+        QRegularExpressionMatch match = wikiImageFileRegex.match(potdDescription);
         if(match.hasMatch())
             potdDescription=match.captured(1);
     }
@@ -322,8 +322,8 @@ void ImageFetcher::getPotdDescription(QNetworkReply *reply){
 
     if(potdDescription.contains("<p>") && potdDescription.contains("</small>"))
     {
-        QRegularExpression filter("<p>(.+)</small>");
-        QRegularExpressionMatch match = filter.match(potdDescription);
+        static const QRegularExpression descriptionRegex("<p>(.+)</small>");
+        QRegularExpressionMatch match = descriptionRegex.match(potdDescription);
         if(match.hasMatch())
             potdDescription=match.captured(1);
     }
@@ -333,7 +333,8 @@ void ImageFetcher::getPotdDescription(QNetworkReply *reply){
         Q_EMIT success(potdDescriptionFilename_);
         return;
     }
-    potdDescription.replace("/wiki", "https://en.wikipedia.org/wiki").remove(QRegularExpression("<[^>]*>")).replace("\n", " ");
+    static const QRegularExpression htmlTagRegex("<[^>]*>");
+    potdDescription.replace("/wiki", "https://en.wikipedia.org/wiki").remove(htmlTagRegex).replace("\n", " ");
 
     // Call writePotdDescription() in a separate thread
     (void)QtConcurrent::run([this, potdDescription]() {writePotdDescription(replaceSpecialHtml(potdDescription));});
@@ -420,7 +421,8 @@ void ImageFetcher::readFileContainingImage(QNetworkReply *reply){
 
     if(fetchType_ == FetchType::POTD){
         //potd has multiple links in it
-        QStringList linksDates = onlineLink.split(QRegularExpression("[ \n]"),Qt::SkipEmptyParts);
+        static const QRegularExpression whitespaceRegex("[ \n]");
+        QStringList linksDates = onlineLink.split(whitespaceRegex, Qt::SkipEmptyParts);
         if(linksDates.count() != 6){
             if(!alreadyTriedAlternativeLinkToDropbox_){
                 tryDownloadingImagesFromAlternativeLink();

@@ -197,8 +197,8 @@ void PotdViewer::httpFinished()
         int imageSummixCount=0;
         if(htmlSource_.contains("/wiki/File:"))
         {
-            QRegularExpression filter("/wiki/File:(.+)");
-            QRegularExpressionMatch match = filter.match(htmlSource_);
+            static const QRegularExpression wikiImageFileRegex("/wiki/File:(.+)");
+            QRegularExpressionMatch match = wikiImageFileRegex.match(htmlSource_);
             if(match.hasMatch())
                 htmlSource_=match.captured(1);
 
@@ -223,8 +223,8 @@ void PotdViewer::httpFinished()
 
         if(htmlSource_.contains("<p>") && htmlSource_.contains("</small>"))
         {
-            QRegularExpression filter2("<p>(.+)</small>");
-            QRegularExpressionMatch match = filter2.match(htmlSource_);
+            static const QRegularExpression descriptionRegex("<p>(.+)</small>");
+            QRegularExpressionMatch match = descriptionRegex.match(htmlSource_);
             if(match.hasMatch()){
                 htmlSource_=match.captured(1);
             }
@@ -232,8 +232,8 @@ void PotdViewer::httpFinished()
             ui->potdDescription->setText(htmlSource_);
         }
         else if(htmlSource_.contains("<p>") && htmlSource_.contains("</p>")){
-            QRegularExpression filter2("<p>(.+)</p>");
-            QRegularExpressionMatch match = filter2.match(htmlSource_);
+            static const QRegularExpression paragraphRegex("<p>(.+)</p>");
+            QRegularExpressionMatch match = paragraphRegex.match(htmlSource_);
             if(match.hasMatch()){
                 htmlSource_=match.captured(1);
             }
@@ -274,8 +274,8 @@ void PotdViewer::httpFinished()
         {
             if(htmlSource_.contains("fullImageLink"))
             {
-                QRegularExpression filter("fullImageLink\" id=\"file\"><a href=\"(.+)\"", QRegularExpression::InvertedGreedinessOption);
-                QRegularExpressionMatch match = filter.match(htmlSource_);
+                static const QRegularExpression fullImageUrlRegex("fullImageLink\" id=\"file\"><a href=\"(.+)\"", QRegularExpression::InvertedGreedinessOption);
+                QRegularExpressionMatch match = fullImageUrlRegex.match(htmlSource_);
                 if(match.hasMatch())
                     directLinkOfFullImage_=match.captured(1);
                 directLinkOfFullImage_="https:"+directLinkOfFullImage_;
@@ -289,8 +289,8 @@ void PotdViewer::httpFinished()
             }
 
             if(htmlSource_.contains("Size of this preview")){
-                QRegularExpression filter("Size of this preview: <a href=\"(.+)\"", QRegularExpression::InvertedGreedinessOption);
-                QRegularExpressionMatch match = filter.match(htmlSource_);
+                static const QRegularExpression previewImageUrlRegex("Size of this preview: <a href=\"(.+)\"", QRegularExpression::InvertedGreedinessOption);
+                QRegularExpressionMatch match = previewImageUrlRegex.match(htmlSource_);
                 if(match.hasMatch())
                     directLinkOfPreviewImage_=match.captured(1);
                 directLinkOfPreviewImage_="https:"+directLinkOfPreviewImage_;
