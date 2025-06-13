@@ -545,6 +545,9 @@ void WallpaperManager::setCurrentFit(short index){
             if(result)
                 break;
         }
+        if(!result){
+            qWarning() << "XFCE: Failed to set fit style";
+        }
     }
     else if(currentDE == DE::LXDE){
         QString style;
@@ -568,6 +571,9 @@ void WallpaperManager::setCurrentFit(short index){
         }
 
         result = DesktopEnvironment::runPcManFm(QStringList() << "--wallpaper-mode=" + style);
+        if(!result){
+            qWarning() << "LXDE: Failed to set fit style";
+        }
     }
 #else
 # ifdef Q_OS_WIN
