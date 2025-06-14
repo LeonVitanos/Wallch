@@ -6,6 +6,8 @@ This is my first project, in which i took my first steps of programming together
 
 Wallch 5 is currently under active development. This version represents a significant rewrite, primarily aimed at achieving broad compatibility across Linux, Windows, and macOS, as the methods for changing wallpapers have evolved and diverged significantly since v4 was originally developed.
 
+> 🧹 **Milestone (June 14, 2025):** The project now compiles error- and warning-free on Linux, Windows, and macOS for both Qt 5.15.2 and modern Qt 6 versions.
+
 The original Live Earth and Wikipedia Picture of the Day features are currently non-functional.
 
 Below is a snapshot of the current compatibility status based on recent testing:
