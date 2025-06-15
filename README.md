@@ -1,16 +1,14 @@
 # Wallch
 
-At the age of 15, I took my first steps into programming with this project, together with my friend [Alexandros Solanos](https://github.com/hytromo).
-
-<p align="center">
-  <img src="https://i.imgur.com/j6vWRv1.jpg" alt="alt text">
-</p>
-
 Wallch is a powerful wallpaper changer. Besides changing pictures from local folders, it became popular in the open-source community for its unique features:
 
 * **Live Earth Wallpaper:** A live wallpaper of the Earth that updates with the current satellite cloud and sunlight data.
 * **Wikipedia's Picture of the Day:** Automatically sets your wallpaper to Wikipedia's featured image each day.
 * **Wallpaper Clocks:** Wallpapers that change throughout the day to reflect the current time.
+
+<p align="center">
+  <img src="https://i.imgur.com/j6vWRv1.jpg" alt="alt text">
+</p>
 
 ## Development Status: Wallch 5
 
@@ -49,7 +47,7 @@ Below is a snapshot of the current compatibility based on recent testing.
 | LXQt         | Lubuntu 22.04                |   ➖   |          ✅          |      ❌      |      ❌      |
 
 
-### Reviews & Community
+## Reviews & Community
 
 Wallch was featured in several online publications and has been translated into more than 7 languages with the help of the community.
 
@@ -59,10 +57,10 @@ Wallch was featured in several online publications and has been translated into 
 * Youtuber [InfinitelyGalactic](https://www.youtube.com/watch?v=CnWsC4kIHn8)
 * Article in greek magazine [Linux Inside](https://www.linuxinsider.gr/magazine/linux-inside-6-parallilos-programmatismos)
 
-### Downloads
-
-Wallch counts over 50k downloads at the [SourceForge repository](https://sourceforge.net/projects/wall-changer/), not including downloads from PPAs or the Ubuntu Software Center. :squirrel:
-
 ## License
 
 See the [LICENSE](https://github.com/LeonVitanos/Wallch/blob/master/LICENSE) file for license rights and limitations (GPLv3).
+
+## About
+
+At the age of 15, I took my first steps into programming with this project, together with my friend [Alexandros Solanos](https://github.com/hytromo). The development was active from 2010 to 2015 and was a foundational part of my journey. Now, after years of professional experience, I have returned to modernize Wallch, applying mature engineering practices to the codebase that started it all.
