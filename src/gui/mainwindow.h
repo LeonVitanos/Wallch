@@ -344,14 +344,18 @@ private Q_SLOTS:
     void handleAddLoginDetailsCheck(bool checked);
     void handleAboutAction();
     void handlePreferencesAction();
-    void handleStopButtonClick();
+
+    void handleFeatureStart();
     void handleStartButtonClick();
     void handleActivateLiveEarthClick();
-    void handleDeactivateLiveEarthClick();
     void handleActivatePotdClick();
-    void handleDeactivatePotdClick();
     void handleActivateWebsiteClick();
+
+    void handleStopButtonClick();
+    void handleDeactivateLiveEarthClick();
+    void handleDeactivatePotdClick();
     void handleDeactivateWebsiteClick();
+
     void handlePageButtonClick(int btn);
     void handleIncludeDescriptionCheck(bool checked);
     void handleEditPotdClick();

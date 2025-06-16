@@ -1711,24 +1711,28 @@ void MainWindow::checkBatteryStatus(){
         batteryStatusChecker_->stop();
 #endif
 
-        switch(previouslyRunningFeature_){
-        default:
-        case 0:
-            handleStartButtonClick();
-            break;
-        case 1:
-            handleActivateLiveEarthClick();
-            break;
-        case 2:
-            handleActivatePotdClick();
-            break;
-        case 4:
-            handleActivateWebsiteClick();
-            break;
-        }
-
-        previouslyRunningFeature_=0;
+        handleFeatureStart();
     }
+}
+
+void MainWindow::handleFeatureStart(){
+    switch(previouslyRunningFeature_){
+    default:
+    case 0:
+        handleStartButtonClick();
+        break;
+    case 1:
+        handleActivateLiveEarthClick();
+        break;
+    case 2:
+        handleActivatePotdClick();
+        break;
+    case 4:
+        handleActivateWebsiteClick();
+        break;
+    }
+
+    previouslyRunningFeature_=0;
 }
 
 void MainWindow::startButtonsSetEnabled(bool enabled)
@@ -3229,23 +3233,7 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, long* r
        {
            if(stoppedBecauseOnBattery_)
            {
-               switch(previouslyRunningFeature_){
-               default:
-               case 0:
-                   handleStartButtonClick();
-                   break;
-               case 1:
-                   handleActivateLiveEarthClick();
-                   break;
-               case 2:
-                   handleActivatePotdClick();
-                   break;
-               case 4:
-                   handleActivateWebsiteClick();
-                   break;
-               }
-
-               previouslyRunningFeature_=0;
+               handleFeatureStart();
                stoppedBecauseOnBattery_=false;
            }
        }
