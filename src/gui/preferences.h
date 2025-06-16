@@ -52,6 +52,7 @@ private:
 private Q_SLOTS:
     void previousPage();
     void nextPage();
+    void handlePageNavigation(short);
     void handleResetClick();
     void handleSaveClick();
     void handleCloseClick();

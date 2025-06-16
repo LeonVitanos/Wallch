@@ -171,31 +171,15 @@ void Preferences::setupShortcuts(){
 
 void Preferences::previousPage(){
     short currentPage = ui->stackedWidget->currentIndex()-1;
-    if(currentPage < 0){
-        currentPage = 3;
-    }
-    switch(currentPage){
-    default:
-    case 0:
-        handleGeneralPageClick();
-        break;
-    case 1:
-        handleWallpapersPageClick();
-        break;
-    case 2:
-        handleLiveWebsitePageClick();
-        break;
-    case 3:
-        handleAdvancedPageClick();
-        break;
-    }
+    handlePageNavigation(currentPage < 0 ? 3 : currentPage);
 }
 
 void Preferences::nextPage(){
     short currentPage = ui->stackedWidget->currentIndex()+1;
-    if(currentPage > 3){
-        currentPage = 0;
-    }
+    handlePageNavigation(currentPage > 3 ? 0 : currentPage);
+}
+
+void Preferences::handlePageNavigation(short currentPage){
     switch(currentPage){
     default:
     case 0:
