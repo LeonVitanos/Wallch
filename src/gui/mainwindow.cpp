@@ -2611,30 +2611,11 @@ void MainWindow::loadWallpapersPage(){
         currentFolder=0;
 
     if(ui->pictures_location_comboBox->itemData(currentFolder, Qt::UserRole+1).toBool()){
-        if(fileManager_->atLeastOneFolderFromTheSetExists()){
-            tempForDelayedPicturesLocationChange_=currentFolder;
-            QTimer::singleShot(100, this, SLOT(delayed_pictures_location_change()));
-        }
-        else if(currentFolder==0){
-            handlePicturesLocationChange(0);
-        }
-        else {
-            ui->pictures_location_comboBox->setCurrentIndex(currentFolder);
-        }
+        handlePicturesLocationWhileLoading(fileManager_->atLeastOneFolderFromTheSetExists(), currentFolder);
     }
     else{
         fileManager_->currentFolder_=ui->pictures_location_comboBox->itemData(currentFolder, Qt::UserRole).toString();
-        if(!QDir(fileManager_->currentFolder_).exists())
-        {
-            tempForDelayedPicturesLocationChange_=currentFolder;
-            QTimer::singleShot(100, this, SLOT(delayed_pictures_location_change()));
-        }
-        else if(currentFolder==0){
-            handlePicturesLocationChange(0);
-        }
-        else {
-            ui->pictures_location_comboBox->setCurrentIndex(currentFolder);
-        }
+        handlePicturesLocationWhileLoading(!QDir(fileManager_->currentFolder_).exists(), currentFolder);
     }
 
     ui->stackedWidget_2->setCurrentIndex(gv.typeOfInterval);
@@ -2651,6 +2632,20 @@ void MainWindow::loadWallpapersPage(){
     launchTimerToUpdateIcons();
 
     startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
+}
+
+void MainWindow::handlePicturesLocationWhileLoading(bool condition, int currentFolder){
+    if(condition)
+    {
+        tempForDelayedPicturesLocationChange_=currentFolder;
+        QTimer::singleShot(100, this, SLOT(delayed_pictures_location_change()));
+    }
+    else if(currentFolder==0){
+        handlePicturesLocationChange(0);
+    }
+    else {
+        ui->pictures_location_comboBox->setCurrentIndex(currentFolder);
+    }
 }
 
 void MainWindow::loadLePage(){

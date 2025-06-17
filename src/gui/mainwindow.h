@@ -230,6 +230,8 @@ private:
     void startPauseWallpaperChangingProcess();
     void animateScreenLabel(bool onlyHide);
     void loadWallpapersPage();
+    void handlePicturesLocationWhileLoading(bool, int);
+
     void loadLePage();
     void loadPotdPage();
     void loadWallpaperClocksPage();
