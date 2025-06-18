@@ -199,8 +199,8 @@ void MainWindow::connectSignalSlots(){
     connect(ui->previous_Button, &QPushButton::clicked, this, &MainWindow::handlePreviousButtonClick);
     connect(ui->next_Button, &QPushButton::clicked, this, &MainWindow::handleNextButtonClick);
     connect(ui->timerSlider, &QSlider::valueChanged, this, &MainWindow::handleTimerSliderChange);
-    connect(ui->website_preview, &QPushButton::clicked, this, &MainWindow::handleWebsitePreviewClick);
-    connect(ui->edit_crop, &QPushButton::clicked, this, &MainWindow::handleEditCropClick);
+    connect(ui->website_preview, &QPushButton::clicked, this, [this]() { openWebsitePreview(false); });
+    connect(ui->edit_crop, &QPushButton::clicked, this, [this]() { openWebsitePreview(true); });
     connect(ui->website_crop_checkbox, &QCheckBox::clicked, this, &MainWindow::handleWebsiteCropCheck);
     connect(ui->set_desktop_color, &QPushButton::clicked, this, &MainWindow::handleSetDesktopColorClick);
     connect(ui->image_style_combo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &MainWindow::handleImageStyleChange);
@@ -2341,37 +2341,6 @@ void MainWindow::handleDeactivateWebsiteClick()
     websiteSnapshot_->stop();*/
 }
 
-void MainWindow::handleWebsitePreviewClick()
-{
-    if(gv.liveWebsiteRunning){
-        QMessageBox::warning(this, tr("Error"), tr("Please stop the current process and try again.")+" ("+tr("Live Website")+")");
-        return;
-    }
-
-    if(websitePreviewShown_ || !websiteConfiguredCorrectly()){
-        return;
-    }
-
-    if(changedWebPage_!=initialWebPage_ && !(changedWebPage_==initialWebPage_+"/" || changedWebPage_+"/"==initialWebPage_)){
-        initialWebPage_=changedWebPage_;
-    }
-
-    QFile::remove(gv.wallchHomePath+LW_PREVIEW_IMAGE);
-
-    websitePreviewShown_=true;
-
-    prepareWebsiteSnapshot();
-
-    webPreview_ = new WebsitePreview(websiteSnapshot_, false, ui->website_crop_checkbox->isChecked(), gv.websiteCropArea, this);
-    webPreview_->setModal(true);
-    webPreview_->setAttribute(Qt::WA_DeleteOnClose);
-    connect(webPreview_, SIGNAL(destroyed()), this, SLOT(websitePreviewDestroyed()));
-    connect(webPreview_, SIGNAL(previewImageReady(QImage*)), this, SLOT(setWebsitePreviewImage(QImage*)));
-    connect(webPreview_, &WebsitePreview::sendExtraCoordinates, this, &MainWindow::readCoordinates);
-    webPreview_->setWindowFlags(Qt::Dialog | Qt::WindowTitleHint);
-    webPreview_->show();
-}
-
 void MainWindow::liveWebsiteImageCreated(QImage *image, short errorCode){
     ui->timeout_text_label->hide();
     ui->website_timeout_label->hide();
@@ -2462,10 +2431,13 @@ void MainWindow::setWebsitePreviewImage(QImage *image){
     updateScreenLabel();
 }
 
-void MainWindow::handleEditCropClick()
-{
+void MainWindow::openWebsitePreview(bool edit){
     if(gv.liveWebsiteRunning){
         QMessageBox::warning(this, tr("Error"), tr("Please stop the current process and try again.")+" ("+tr("Live Website")+")");
+        return;
+    }
+
+    if(!edit && (websitePreviewShown_ || !websiteConfiguredCorrectly())){
         return;
     }
 
@@ -2479,12 +2451,14 @@ void MainWindow::handleEditCropClick()
 
     prepareWebsiteSnapshot();
 
-    webPreview_ = new WebsitePreview(websiteSnapshot_, true, false, gv.websiteCropArea, this);
+    webPreview_ = new WebsitePreview(websiteSnapshot_, edit, edit? false : ui->website_crop_checkbox->isChecked(), gv.websiteCropArea, this);
     webPreview_->setModal(true);
     webPreview_->setAttribute(Qt::WA_DeleteOnClose);
     connect(webPreview_, SIGNAL(destroyed()), this, SLOT(websitePreviewDestroyed()));
     connect(webPreview_, &WebsitePreview::sendExtraCoordinates, this, &MainWindow::readCoordinates);
-    webPreview_->setWindowFlags(Qt::Dialog | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint);
+    if(edit)
+        connect(webPreview_, SIGNAL(previewImageReady(QImage*)), this, SLOT(setWebsitePreviewImage(QImage*)));
+    webPreview_->setWindowFlags(Qt::Dialog | (edit ? (Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint) : Qt::WindowTitleHint));
     webPreview_->show();
 }
 

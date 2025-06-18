@@ -327,8 +327,7 @@ private Q_SLOTS:
     void handlePreviousButtonClick();
     void handleNextButtonClick();
     void handleTimerSliderChange(int value);
-    void handleWebsitePreviewClick();
-    void handleEditCropClick();
+    void openWebsitePreview(bool);
     void handleWebsiteCropCheck(bool checked);
     void handleSetDesktopColorClick();
     void handleImageStyleChange(int index);
