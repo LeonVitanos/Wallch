@@ -58,6 +58,11 @@ private:
     void actionForSecondaryButtons();
     void updateGradientsOnlyColors(bool updateLeftRightSolid);
 
+#ifdef Q_OS_LINUX
+    // XFCE
+    void changeXfColorStyle(int);
+#endif
+
 Q_SIGNALS:
     void updateDesktopColor();
     void updateTv();

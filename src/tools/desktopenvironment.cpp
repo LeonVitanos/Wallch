@@ -99,6 +99,25 @@ QString DesktopEnvironment::getCurrentDEprettyName(){
     }
 }
 
+QStringList DesktopEnvironment::runCommand(const QString &command, const QStringList &parameters, bool replaceNewLine, const QString &split){
+    QProcess process;
+    process.setProcessChannelMode(QProcess::MergedChannels);
+    process.start(command, parameters,QIODevice::ReadWrite);
+
+    if(!process.waitForStarted())
+        return QStringList();
+
+    QByteArray data;
+
+    process.waitForFinished(3000);
+
+    data.append(process.readAll());
+
+    QString output = replaceNewLine ? QString(data.data()).replace("\n", "") : data.data();
+
+    return split.isEmpty() ? QStringList() << output : output.split(split);
+}
+
 // Gnome, Mate
 
 void DesktopEnvironment::gsettingsSet(const QString &schema, const QString &key, const QString &value){
@@ -157,9 +176,9 @@ void DesktopEnvironment::setPcManFmValue(const QString &key, const QString &valu
     settings.endGroup();
     settings.sync();
 
-    QStringList pids = runCommand("pidof", false, QStringList() << "pcmanfm", true, " ");
+    QStringList pids = runCommand("pidof", QStringList() << "pcmanfm", true, " ");
     Q_FOREACH(QString pid, pids){
-        QStringList output = runCommand("ps", false, QStringList() << "-fp" << pid, false, "");
+        QStringList output = runCommand("ps", QStringList() << "-fp" << pid, false, "");
         if(output.contains("--desktop"))
             QProcess::startDetached("kill", QStringList() << "-9" << pid);
     }
@@ -182,6 +201,20 @@ bool DesktopEnvironment::runPcManFm(QStringList args){
 
 // XFCE
 
+QStringList DesktopEnvironment::runXfCommand(bool backdrop, const QStringList &parameters, bool replaceNewLine)
+{
+    QStringList finalArgs;
+    finalArgs << "-c" << "xfce4-desktop" << "-p";
+
+    finalArgs.append(parameters);
+
+    if (backdrop) {
+        finalArgs << "/backdrop" << "-l";
+    }
+
+    return runCommand("xfconf-query", finalArgs, replaceNewLine);
+}
+
 bool DesktopEnvironment::runXfconf(QStringList args){
     QProcess process;
     process.start("xfconf-query", QStringList() << "-c" << "xfce4-desktop" << "-p" << args);
@@ -193,28 +226,20 @@ bool DesktopEnvironment::runXfconf(QStringList args){
         return process.readAllStandardError().isEmpty(); //TODO: CHECK WITH XFCE
 }
 
-QStringList DesktopEnvironment::runCommand(QString command, bool backdrop, QStringList parameters, bool replaceNewLine, QString split){
-    if(command=="xfconf-query"){
-        parameters = QStringList() << "-c" << "xfce4-desktop" << "-p" << parameters;
-        if(backdrop)
-            parameters = parameters << "/backdrop" << "-l";
+void DesktopEnvironment::processXfconfQuery(const QStringList &keywordsToFind,
+                                            std::function<bool(const QString&)> processor)
+{
+    const QStringList results = runXfCommand(true);
+
+    for (const QString &entry : results) {
+        for (const QString &keyword : keywordsToFind) {
+            if (entry.contains(keyword)) {
+                if (!processor(entry)) {
+                    return;
+                }
+                break;
+            }
+        }
     }
-
-    QProcess process;
-    process.setProcessChannelMode(QProcess::MergedChannels);
-    process.start(command, parameters,QIODevice::ReadWrite);
-
-    if(!process.waitForStarted())
-        return QStringList();
-
-    QByteArray data;
-
-    process.waitForFinished(3000);
-
-    data.append(process.readAll());
-
-    QString output = replaceNewLine ? QString(data.data()).replace("\n", "") : data.data();
-
-    return split.isEmpty() ? QStringList() << output : output.split(split);
 }
 #endif

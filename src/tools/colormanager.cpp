@@ -97,24 +97,25 @@ QString ColorManager::getColor(short num){
     if(currentDE == DE::Gnome || currentDE == DE::Mate)
         return DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", num == 1 ? "primary-color" : "secondary-color");
     else if(currentDE == DE::XFCE){
-        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
-            if(entry.contains("color"+QString(num))){
-                QStringList colors = DesktopEnvironment::runCommand("xfconf-query", false, QStringList() << entry);
-                QList<int> rgbColors;
-                Q_FOREACH(QString color, colors){
-                    bool ok=false;
-                    int currentColor=color.toInt(&ok);
-                    if(!ok)
-                        continue;
-                    rgbColors.append(int((256.0*currentColor)/65535.0));
-                }
-                if(rgbColors.count()!=4)
+        QString color;
+        DesktopEnvironment::processXfconfQuery({"color"+QString(num)}, [&](const QString &entry) {
+            QStringList colors = DesktopEnvironment::runXfCommand(false, QStringList() << entry);
+            QList<int> rgbColors;
+            Q_FOREACH(QString color, colors){
+                bool ok=false;
+                int currentColor=color.toInt(&ok);
+                if(!ok)
                     continue;
-                QColor finalColor;
-                finalColor.setRgb(rgbColors.at(0), rgbColors.at(1), rgbColors.at(2));
-                return finalColor.name();
+                rgbColors.append(int((256.0*currentColor)/65535.0));
             }
-        }
+            if(rgbColors.count()!=4)
+                return true;
+            QColor finalColor;
+            finalColor.setRgb(rgbColors.at(0), rgbColors.at(1), rgbColors.at(2));
+            color = finalColor.name();
+            return false;
+        });
+        return color;
     }
 
     return "black";
@@ -130,13 +131,13 @@ void ColorManager::setColor(short num, QString colorName){
         colorValues.append(QString::number(int((65535.0/256.0)*color.green())));
         colorValues.append(QString::number(int((65535.0/256.0)*color.blue())));
         colorValues.append("65535");
-        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
-            if(entry.contains("color"+QString(num)))
-                DesktopEnvironment::runXfconf(QStringList() << entry << "-t" << "uint" << "-s" << colorValues.at(0)
-                                                            << "-t" << "uint" << "-s" << colorValues.at(1)
-                                                            << "-t" << "uint" << "-s" << colorValues.at(2)
-                                                            << "-t" << "uint" << "-s" << colorValues.at(3));
-        }
+        DesktopEnvironment::processXfconfQuery({"color"+QString(num)}, [&](const QString &entry) {
+            DesktopEnvironment::runXfconf(QStringList() << entry << "-t" << "uint" << "-s" << colorValues.at(0)
+                                          << "-t" << "uint" << "-s" << colorValues.at(1)
+                                          << "-t" << "uint" << "-s" << colorValues.at(2)
+                                          << "-t" << "uint" << "-s" << colorValues.at(3));
+            return false;
+        });
     }
 }
 #endif
@@ -153,17 +154,18 @@ ColoringType::Value ColorManager::getColoringType(){
             return ColoringType::Horizontal;
     }
     else if(currentDE == DE::XFCE){
-        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
-            if(entry.contains("color-style")){
-                QString colorStyle=DesktopEnvironment::runCommand("xfconf-query", false, QStringList() << entry, true).at(0);
-                if(colorStyle=="0" || colorStyle=="3")
-                    return ColoringType::Solid;
-                else if(colorStyle=="1")
-                    return ColoringType::Horizontal;
-                else if(colorStyle=="2")
-                    return ColoringType::Vertical;
-            }
-        }
+        ColoringType::Value result = ColoringType::Solid;
+        DesktopEnvironment::processXfconfQuery({"color-style"}, [&](const QString &entry) {
+            QString colorStyle = DesktopEnvironment::runXfCommand(false, QStringList() << entry, true).at(0);
+            if(colorStyle=="0" || colorStyle=="3")
+                result = ColoringType::Solid;
+            else if(colorStyle=="1")
+                result = ColoringType::Horizontal;
+            else if(colorStyle=="2")
+                result = ColoringType::Vertical;
+            return false;
+        });
+        return result;
     }
     else if(currentDE == DE::LXDE)
         return ColoringType::Solid;

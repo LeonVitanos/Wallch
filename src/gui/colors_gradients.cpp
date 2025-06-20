@@ -222,10 +222,7 @@ void ColorsGradients::handleSolidRadioClick()
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "solid");
     }
     else if(currentDE == DE::XFCE){
-        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
-            if(entry.contains("color-style"))
-                DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << "0");
-        }
+        changeXfColorStyle(0);
     }
 #else
     settings->setValue("ShadingType", "solid");
@@ -248,10 +245,7 @@ void ColorsGradients::handleHorizontalRadioClick()
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "horizontal");
     }
     else if(currentDE == DE::XFCE){
-        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
-            if(entry.contains("color-style"))
-                DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << "1");
-        }
+        changeXfColorStyle(1);
     }
 #else
     ColorManager::createVerticalHorizontalImage(gv.screenWidth, gv.screenHeight).save(gv.wallchHomePath+COLOR_IMAGE, 0, 80);
@@ -274,10 +268,7 @@ void ColorsGradients::handleVerticalRadioClick()
     if(currentDE == DE::Gnome || currentDE == DE::Mate)
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "vertical");
     else if(currentDE == DE::XFCE){
-        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
-            if(entry.contains("color-style"))
-                DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << "2");
-        }
+        changeXfColorStyle(2);
     }
 #else
     ColorManager::createVerticalHorizontalImage(gv.screenWidth, gv.screenHeight).save(gv.wallchHomePath+COLOR_IMAGE, 0, 80);
@@ -329,3 +320,12 @@ void ColorsGradients::handleWallpaperModeButtonClick()
 
     Q_EMIT updateTv();
 }
+
+#ifdef Q_OS_LINUX
+void ColorsGradients::changeXfColorStyle(int set){
+    DesktopEnvironment::processXfconfQuery({"color-style"}, [&](const QString &entry) {
+        DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << QString::number(set));
+        return false;
+    });
+}
+#endif

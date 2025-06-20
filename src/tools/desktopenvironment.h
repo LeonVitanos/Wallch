@@ -28,6 +28,12 @@ public:
     static void setCurrentDE();
     static DE::Value detectCurrentDe();
     static QString getCurrentDEprettyName();
+    static QStringList runCommand(
+        const QString &command,
+        const QStringList &parameters = QStringList(),
+        bool replaceNewLine = false,
+        const QString &split = "\n"
+    );
 
     // Gnome, Mate
     static QString gsettingsGet(const QString &schema, const QString &key);
@@ -40,9 +46,12 @@ public:
     static bool runPcManFm(QStringList args);
 
     // XFCE
+    static QStringList runXfCommand(bool backdrop = true,
+                                    const QStringList &parameters = QStringList(),
+                                    bool replaceNewLine = false);
+    static void processXfconfQuery(const QStringList &keywordsToFind,
+                                  std::function<bool(const QString&)> processor);
     static bool runXfconf(QStringList args);
-    static QStringList runCommand(QString command, bool backdrop = false, QStringList parameters = QStringList(),
-                                  bool replaceNewLine = false, QString split = "\n");
 #endif
 };
 

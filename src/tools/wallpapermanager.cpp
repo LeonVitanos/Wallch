@@ -281,11 +281,10 @@ QString WallpaperManager::currentBackgroundWallpaper(){
         }
     }
     else if(currentDE == DE::XFCE){
-        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
-            if(entry.contains("image-path") || entry.contains("last-image")){
-                currentImage=DesktopEnvironment::runCommand("xfconf-query", false, QStringList() << entry, true).at(0);
-            }
-        }
+        DesktopEnvironment::processXfconfQuery({"image-path", "last-image"}, [&](const QString &entry) {
+            currentImage = DesktopEnvironment::runXfCommand(false, QStringList() << entry, true).at(0);
+            return false;
+        });
     }
     else if(currentDE == DE::LXDE){
         currentImage=DesktopEnvironment::getPcManFmValue("wallpaper");
@@ -349,13 +348,11 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
         break;
     case DE::XFCE:
         result = false;
-        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
-            if(entry.contains("image-path") || entry.contains("last-image")){
-                result = DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << image);
-                if(result)
-                    break; //TODO: CHECK WITH XFCE
-            }
-        }
+        DesktopEnvironment::processXfconfQuery({"image-path", "last-image"}, [&](const QString &entry) {
+            result = DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << image);
+             //TODO: CHECK WITH XFCE
+            return result;
+        });
         break;
     default:
         result=false;
@@ -462,12 +459,10 @@ short WallpaperManager::getCurrentFit(){
             return 6;
     }
     else if(currentDE == DE::XFCE){
-        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
-            if(entry.contains("image-style")){
-                QString imageStyle = DesktopEnvironment::runCommand("xfconf-query", false, QStringList() << entry).at(0);
-                return imageStyle.toInt();
-            }
-        }
+        DesktopEnvironment::processXfconfQuery({"image-style"}, [&](const QString &entry) {
+            QString imageStyle = DesktopEnvironment::runXfCommand(false, QStringList() << entry).at(0);
+            return imageStyle.toInt();
+        });
     }
     else if(currentDE == DE::LXDE)
         return DesktopEnvironment::getPcManFmValue("wallpaper_mode").toInt();
@@ -539,12 +534,11 @@ void WallpaperManager::setCurrentFit(short index){
     }
     else if(currentDE == DE::XFCE){
         result = false;
-        Q_FOREACH(QString entry, DesktopEnvironment::runCommand("xfconf-query", true)){
-            if(entry.contains("image-style"))
-                result = DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << QString::number(index));
-            if(result)
-                break;
-        }
+        DesktopEnvironment::processXfconfQuery({"image-style"}, [&](const QString &entry) {
+            result = DesktopEnvironment::runXfconf(QStringList() << entry << "-s" << QString::number(index));
+             //TODO: CHECK WITH XFCE
+            return result;
+        });
         if(!result){
             qWarning() << "XFCE: Failed to set fit style";
         }
