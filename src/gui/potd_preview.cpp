@@ -79,22 +79,7 @@ PotdPreview::PotdPreview(QWidget *parent) :
     }
     else
     {
-        ui->potdLabel->hide();
-        ui->potdFontComboBox->hide();
-        ui->potd_description_bottom_radioButton->hide();
-        ui->potd_description_top_radioButton->hide();
-        ui->descrPos_label->hide();
-        ui->font_label->hide();
-        ui->textColorPotd->hide();
-        ui->backgroundColorPotd->hide();
-        ui->ok->hide();
-        ui->margins_label->hide();
-        ui->left_margin_label->hide();
-        ui->left_margin_spinbox->hide();
-        ui->right_margin_label->hide();
-        ui->right_margin_spinbox->hide();
-        ui->bottom_top_margin_label->hide();
-        ui->bottom_top_margin_spinbox->hide();
+        setPotdOptionsVisible(false);
 
         (void) new QShortcut(Qt::Key_Escape, this, SLOT(handleCancelClick()));
 
@@ -121,6 +106,32 @@ void PotdPreview::resizeEvent(QResizeEvent *)
     scaledSize.scale(ui->potdLabel->size(), Qt::KeepAspectRatio);
     if (scaledSize != ui->potdLabel->pixmap(Qt::ReturnByValue).size())
         updateLabel();
+}
+
+void PotdPreview::setPotdOptionsVisible(bool visible)
+{
+    const QList<QWidget*> potdWidgets = {
+        ui->potdLabel,
+        ui->potdFontComboBox,
+        ui->potd_description_bottom_radioButton,
+        ui->potd_description_top_radioButton,
+        ui->descrPos_label,
+        ui->font_label,
+        ui->textColorPotd,
+        ui->backgroundColorPotd,
+        ui->ok,
+        ui->margins_label,
+        ui->left_margin_label,
+        ui->left_margin_spinbox,
+        ui->right_margin_label,
+        ui->right_margin_spinbox,
+        ui->bottom_top_margin_label,
+        ui->bottom_top_margin_spinbox
+    };
+
+    for (QWidget *widget : potdWidgets) {
+        widget->setVisible(visible);
+    }
 }
 
 void PotdPreview::updateLabel()
@@ -152,22 +163,7 @@ void PotdPreview::fetchFinished(QImage img){
     originalImage_=img;
     currentPixmap_ = QPixmap().fromImage(img);
 
-    ui->potdLabel->show();
-    ui->potdFontComboBox->show();
-    ui->potd_description_bottom_radioButton->show();
-    ui->potd_description_top_radioButton->show();
-    ui->descrPos_label->show();
-    ui->font_label->show();
-    ui->textColorPotd->show();
-    ui->backgroundColorPotd->show();
-    ui->ok->show();
-    ui->margins_label->show();
-    ui->left_margin_label->show();
-    ui->left_margin_spinbox->show();
-    ui->right_margin_label->show();
-    ui->right_margin_spinbox->show();
-    ui->bottom_top_margin_label->show();
-    ui->bottom_top_margin_spinbox->show();
+    setPotdOptionsVisible(true);
 
     ui->infoLabel->hide();
     ui->progressBar->hide();

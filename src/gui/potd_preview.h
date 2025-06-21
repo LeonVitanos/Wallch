@@ -84,6 +84,7 @@ private Q_SLOTS:
     void writeDescription();
     void updateLabel();
     void updateMarginsAndDescription();
+    void setPotdOptionsVisible(bool visible);
 
 Q_SIGNALS:
     void potdPreferencesChanged();
