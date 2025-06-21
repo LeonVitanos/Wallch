@@ -81,11 +81,9 @@ private Q_SLOTS:
     void handleTopRadioClick();
     void handleOkClick();
     void handleCancelClick();
-    void handleLeftMarginChange(int arg1);
-    void handleRightMarginChange(int arg1);
-    void handleBottomTopMarginChange(int arg1);
     void writeDescription();
     void updateLabel();
+    void updateMarginsAndDescription();
 
 Q_SIGNALS:
     void potdPreferencesChanged();

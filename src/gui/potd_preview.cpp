@@ -42,9 +42,9 @@ PotdPreview::PotdPreview(QWidget *parent) :
     connect(ui->potd_description_top_radioButton, &QRadioButton::clicked, this, &PotdPreview::handleTopRadioClick);
     connect(ui->ok, &QPushButton::clicked, this, &PotdPreview::handleOkClick);
     connect(ui->cancel, &QPushButton::clicked, this, &PotdPreview::handleCancelClick);
-    connect(ui->left_margin_spinbox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &PotdPreview::handleLeftMarginChange);
-    connect(ui->right_margin_spinbox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &PotdPreview::handleRightMarginChange);
-    connect(ui->bottom_top_margin_spinbox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &PotdPreview::handleBottomTopMarginChange);
+    connect(ui->left_margin_spinbox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &PotdPreview::updateMarginsAndDescription);
+    connect(ui->right_margin_spinbox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &PotdPreview::updateMarginsAndDescription);
+    connect(ui->bottom_top_margin_spinbox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &PotdPreview::updateMarginsAndDescription);
 
     ui->left_margin_spinbox->setMaximum(gv.screenAvailableWidth-100);
     ui->right_margin_spinbox->setMaximum(gv.screenAvailableWidth-100);
@@ -302,23 +302,10 @@ void PotdPreview::handleCancelClick()
     this->close();
 }
 
-void PotdPreview::handleLeftMarginChange(int arg1)
+void PotdPreview::updateMarginsAndDescription()
 {
-    Q_UNUSED(arg1);
-    ui->left_margin_spinbox->setMaximum(gv.screenAvailableWidth-300-ui->right_margin_spinbox->value());
-    writeDescription();
-}
+    ui->left_margin_spinbox->setMaximum(gv.screenAvailableWidth - 300 - ui->right_margin_spinbox->value());
+    ui->right_margin_spinbox->setMaximum(gv.screenAvailableWidth - 300 - ui->left_margin_spinbox->value());
 
-
-void PotdPreview::handleRightMarginChange(int arg1)
-{
-    Q_UNUSED(arg1);
-    ui->right_margin_spinbox->setMaximum(gv.screenAvailableWidth-300-ui->left_margin_spinbox->value());
-    writeDescription();
-}
-
-void PotdPreview::handleBottomTopMarginChange(int arg1)
-{
-    Q_UNUSED(arg1);
     writeDescription();
 }
