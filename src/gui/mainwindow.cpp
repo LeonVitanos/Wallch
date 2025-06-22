@@ -50,10 +50,10 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
 
     attachedMemory_ = attachedMemory;
 
-    initializePrivateVariables(globalParser, imageFetcher);
     wallpaperManager_ = (wallpaperManager == NULL) ? new WallpaperManager() : wallpaperManager;
     timerManager_ = (timerManager == NULL) ? new TimerManager() : timerManager;
     websiteSnapshot_ = websiteSnapshot;
+    initializePrivateVariables(globalParser, imageFetcher);
 
     getScreenResolution(QGuiApplication::primaryScreen()->geometry());
     getScreenAvailableResolution(QGuiApplication::primaryScreen()->availableGeometry());
@@ -348,7 +348,7 @@ void MainWindow::initializePrivateVariables(Global *globalParser, ImageFetcher *
     opacityEffect_ = new QGraphicsOpacityEffect(this);
     opacityEffect2_ = new QGraphicsOpacityEffect(this);
     scaleWatcher_ = new QFutureWatcher<QImage>(this);
-    fileManager_ = new FileManager();
+    fileManager_ = new FileManager(wallpaperManager_);
     dialogHelper_ = new DialogHelper();
     wallpaperHelper_ = new WallpaperHelper(wallpaperManager_, ui->wallpapersList);
 

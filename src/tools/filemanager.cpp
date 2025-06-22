@@ -2,7 +2,9 @@
 #include "settingsmanager.h"
 #include "glob.h"
 
-FileManager::FileManager(){
+FileManager::FileManager(WallpaperManager *wallpaperManager){
+    wallpaperManager_ = wallpaperManager;
+
     //Timer for folder monitoring
     researchFoldersTimer_ = new QTimer(this);
     connect(researchFoldersTimer_, SIGNAL(timeout()), this, SLOT(researchFolders()));

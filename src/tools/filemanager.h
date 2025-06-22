@@ -2,6 +2,7 @@
 #define FILEMANAGER_H
 
 #include "desktopenvironment.h"
+#include "wallpapermanager.h"
 
 #include <QMessageBox>
 #include <QListWidgetItem>
@@ -12,7 +13,7 @@ class FileManager : public QObject
     Q_OBJECT
 
 public:
-    FileManager();
+    FileManager(WallpaperManager *wallpaperManager);
 
     static void openFolderOf(QString image = "");
     static void openMultipleFolders(QList<QListWidgetItem*> images);
@@ -38,6 +39,7 @@ private:
     QTimer *researchFoldersTimer_;
     QStringList monitoredFoldersList_;
     void monitor(const QStringList &finalListOfPaths);
+    WallpaperManager *wallpaperManager_;
 
 public Q_SLOTS:
     void folderChanged();

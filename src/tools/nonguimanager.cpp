@@ -1573,7 +1573,7 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
         imageFetcher_ = new ImageFetcher();
         connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineBackgroundReady(QString)));
         wallpaperManager_ = new WallpaperManager();
-        fileManager_ = new FileManager();
+        fileManager_ = new FileManager(wallpaperManager_);
         connect(fileManager_, SIGNAL(addFilesToWallpapers(QString)), this, SLOT(addFilesToWallpapers(QString)));
         viralSettingsOperations();
         QApplication::setQuitOnLastWindowClosed(false);
