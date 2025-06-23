@@ -1574,7 +1574,6 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
         connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineBackgroundReady(QString)));
         wallpaperManager_ = new WallpaperManager();
         fileManager_ = new FileManager(wallpaperManager_);
-        connect(fileManager_, SIGNAL(addFilesToWallpapers(QString)), this, SLOT(addFilesToWallpapers(QString)));
         viralSettingsOperations();
         QApplication::setQuitOnLastWindowClosed(false);
 
@@ -1609,16 +1608,6 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
     }
 
     return 0;
-}
-
-void NonGuiManager::addFilesToWallpapers(QString path){
-    QString cleanPath = path.endsWith('/') ? path.left(path.length()-1) : path;
-    QStringList currrentDirectory = QDir (cleanPath, QString(""), QDir::Name, QDir::Files).entryList(IMAGE_FILTERS);
-
-    Q_FOREACH(QString file, currrentDirectory){
-        QString fullPath= cleanPath + '/' + file;
-        wallpaperManager_->addWallpaper(fullPath);
-    }
 }
 
 void NonGuiManager::changeRunningFeature(int feature){

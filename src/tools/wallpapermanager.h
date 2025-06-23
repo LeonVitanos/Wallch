@@ -54,6 +54,7 @@ public:
     QString randomButNotCurrentWallpaper();
     void setCurrentWallpapers(const QStringList &wallpapers);
     void addWallpaper(const QString &wallpaper);
+    void addWallpapers(const QStringList &wallpapers);
     QStringList getCurrentWallpapers();
     void clearWallpapers();
     void removeWallpaperAt(const int);
@@ -84,6 +85,7 @@ public:
 
 Q_SIGNALS:
     void updateImageStyle();
+    void addPicturesToWallpaperList(const QStringList &wallpapers);
 };
 
 #endif // WALLPAPERMANAGER_H

@@ -99,7 +99,7 @@ void FileManager::monitor(const QStringList &finalListOfPaths){
         addPathToWatcher(path);
         monitoredFoldersList_ << path;
 
-        Q_EMIT addFilesToWallpapers(path);
+        addWallpapersFromDirectory(path);
     }
 }
 
@@ -209,3 +209,14 @@ void FileManager::createDesktopFile(const QString &path, const QString &command,
     desktopFile.close();
 }
 #endif
+
+void FileManager::addWallpapersFromDirectory(const QString &path){
+    QString cleanPath = path.endsWith('/') ? path.left(path.length()-1) : path;
+    QStringList files = QDir (cleanPath, QString(""), QDir::Name, QDir::Files).entryList(IMAGE_FILTERS);
+
+    for (QString &file : files) {
+        file.prepend(cleanPath + '/');
+    }
+
+    wallpaperManager_->addWallpapers(files);
+}

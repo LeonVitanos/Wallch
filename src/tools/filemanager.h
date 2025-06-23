@@ -40,6 +40,7 @@ private:
     QStringList monitoredFoldersList_;
     void monitor(const QStringList &finalListOfPaths);
     WallpaperManager *wallpaperManager_;
+    void addWallpapersFromDirectory(const QString &path);
 
 public Q_SLOTS:
     void folderChanged();
@@ -48,7 +49,6 @@ public Q_SLOTS:
 Q_SIGNALS:
     void prepareToSearchFolders();
     void monitoredFoldersChanged();
-    void addFilesToWallpapers(const QString path);
     void currentFolderDoesNotExist();
 };
 

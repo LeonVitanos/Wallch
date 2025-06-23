@@ -197,6 +197,13 @@ void WallpaperManager::setCurrentWallpapers(const QStringList &wallpapers){
     }
 }
 
+void WallpaperManager::addWallpapers(const QStringList &wallpapers){
+    for (const QString &wallpaper : wallpapers) {
+        addWallpaper(wallpaper);
+    }
+    Q_EMIT addPicturesToWallpaperList(wallpapers);
+}
+
 void WallpaperManager::addWallpaper(const QString &wallpaper){
     allWallpapers_ << wallpaper;
 }

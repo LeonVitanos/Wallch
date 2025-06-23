@@ -376,7 +376,6 @@ private Q_SLOTS:
     // File System Watcher
     void prepareToSearchFolders();
     void monitoredFoldersUpdated();
-    void addFilesToWallpapers(const QString path);
     void currentFolderDoesNotExist();
 
     // 'Wallpapers' ListWidget functions
@@ -384,6 +383,7 @@ private Q_SLOTS:
     void handleWallpaperListDoubleClick();
     void handleWallpaperListSelectionChange();
     void deletePressed();
+    void addPicturesToWallpaperList(const QStringList &pictures);
 
     // 'Wallpapers' ListWidget right-click menu functions
     void startWithThisImage();

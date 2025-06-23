@@ -156,7 +156,6 @@ private Q_SLOTS:
     void checkPicOfDay();
     void preferencesDestroyed();
     void liveWebsiteImageReady(QImage *image, short errorCode);
-    void addFilesToWallpapers (QString path);
 
 Q_SIGNALS:
     void signalOnce();

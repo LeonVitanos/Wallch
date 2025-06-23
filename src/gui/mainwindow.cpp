@@ -252,10 +252,10 @@ void MainWindow::connectSignalSlots(){
     connect(ui->seconds_spinBox, SIGNAL(valueChanged(int)), this, SLOT(timeSpinboxChanged()));
     connect(btn_group, SIGNAL(idClicked(int)), this, SLOT(handlePageButtonClick(int)));
     connect(wallpaperManager_, SIGNAL(updateImageStyle()), this, SLOT(updateImageStyleCombo()));
+    connect(wallpaperManager_, SIGNAL(addPicturesToWallpaperList(QStringList)), this, SLOT(addPicturesToWallpaperList(QStringList)));
     connect(fileManager_, SIGNAL(prepareToSearchFolders()), this, SLOT(prepareToSearchFolders()));
     connect(fileManager_, SIGNAL(monitoredFoldersChanged()), this, SLOT(monitoredFoldersUpdated()));
     connect(fileManager_, SIGNAL(currentFolderDoesNotExist()), this, SLOT(currentFolderDoesNotExist()));
-    connect(fileManager_, SIGNAL(addFilesToWallpapers(QString)), this, SLOT(addFilesToWallpapers(QString)));
     connect(QGuiApplication::primaryScreen(), SIGNAL(geometryChanged(QRect)), this, SLOT(getScreenResolution(QRect)));
     connect(QGuiApplication::primaryScreen(), SIGNAL(availableGeometryChanged(QRect)), this, SLOT(getScreenAvailableResolution(QRect)));
 
@@ -1749,26 +1749,20 @@ void MainWindow::previousAndNextButtonsSetEnabled(bool enabled){
     ui->next_Button->setEnabled(enabled); ui->previous_Button->setEnabled(enabled);
 }
 
-void MainWindow::addFilesToWallpapers(const QString path){
-    QString cleanPath = path.endsWith('/') ? path.left(path.length()-1) : path;
-    QStringList currrentDirectory = QDir (cleanPath, QString(""), QDir::Name, QDir::Files).entryList(IMAGE_FILTERS);
-
-    Q_FOREACH(QString file, currrentDirectory){
-        QString fullPath= cleanPath + '/' + file;
+void MainWindow::addPicturesToWallpaperList(const QStringList &pictures){
+    for (const QString &picture : pictures) {
         QListWidgetItem *item = new QListWidgetItem;
         if(gv.iconMode){
             item->setIcon(imageLoading_);
             item->setSizeHint(WALLPAPERS_LIST_ICON_SIZE+WALLPAPERS_LIST_ITEMS_OFFSET);
-            item->setToolTip(fullPath);
+            item->setToolTip(picture);
         }
         else{
-            item->setText(fullPath);
+            item->setText(picture);
             item->setToolTip("");
-            item->setStatusTip(fullPath);
+            item->setStatusTip(picture);
         }
         ui->wallpapersList->addItem(item);
-
-        wallpaperManager_->addWallpaper(fullPath);
     }
 }
 
