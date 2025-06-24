@@ -29,6 +29,7 @@ public:
     QStringList getCurrentWallpaperFolders();
     QString currentFolder_;
     QStringList currentFolderList_;
+    void addWallpapersFromDirectory(const QString &path);
 
 #ifdef Q_OS_LINUX
     static void createDesktopFile(const QString &path, const QString &command, const QString &comment);
@@ -40,7 +41,6 @@ private:
     QStringList monitoredFoldersList_;
     void monitor(const QStringList &finalListOfPaths);
     WallpaperManager *wallpaperManager_;
-    void addWallpapersFromDirectory(const QString &path);
 
 public Q_SLOTS:
     void folderChanged();

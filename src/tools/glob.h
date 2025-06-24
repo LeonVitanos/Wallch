@@ -75,9 +75,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define INTERVAL_INDEPENDENCE_DEFAULT_VALUE "p-1.0000:00:00:00:00:00"
 
-//TODO: Add support for heic images (libheic)
-#define IMAGE_FILTERS QStringList() << "*.png" << "*.PNG" << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG" << "*.gif" << "*.GIF" << "*.bmp" << "*.BMP" << "*.svg" << "*.SVG"
-
 #define MENU_POPUP_POS QPoint(QCursor::pos()) + QPoint(2, 0)
 
 #define PREVIOUS_PICTURES_LIMIT 30

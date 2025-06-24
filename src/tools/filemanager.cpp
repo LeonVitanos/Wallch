@@ -2,6 +2,9 @@
 #include "settingsmanager.h"
 #include "glob.h"
 
+//TODO: Add support for heic images (libheic)
+#define IMAGE_FILTERS QStringList() << "*.png" << "*.PNG" << "*.jpg" << "*.JPG" << "*.jpeg" << "*.JPEG" << "*.gif" << "*.GIF" << "*.bmp" << "*.BMP" << "*.svg" << "*.SVG"
+
 FileManager::FileManager(WallpaperManager *wallpaperManager){
     wallpaperManager_ = wallpaperManager;
 

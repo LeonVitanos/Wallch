@@ -109,7 +109,6 @@ private:
     void viralSettingsOperations();
     bool getPicturesLocation(bool init);
     bool alreadyRuns();
-    void getFilesFromFolder(const QString &path);
     void messageServer(const QString &message, bool quitAfterwards);
     void actionsOnWallpaperChange();
     void setIndependentInterval(const QString &independentInterval);

@@ -63,14 +63,6 @@ void NonGuiManager::onlineBackgroundReady(QString image){
     wallpaperManager_->setBackground(image, true, gv.potdRunning, (gv.potdRunning ? 3 : 2));
 }
 
-void NonGuiManager::getFilesFromFolder(const QString &path){
-    //this function is for adding files of a monitored folder
-    QDir directoryContainingPictures(path, QString(""), QDir::Name, QDir::Files);
-    Q_FOREACH(QString pic, directoryContainingPictures.entryList(IMAGE_FILTERS)){
-        wallpaperManager_->addWallpaper(path+"/"+pic);
-    }
-}
-
 void NonGuiManager::potdSetSameImage(){
     Global::debug("Picture Of The Day should already be in your hard drive.");
     QString filename=Global::getFilename(gv.wallchHomePath+POTD_IMAGE+"*");
@@ -86,21 +78,8 @@ void NonGuiManager::potdSetSameImage(){
 }
 
 void NonGuiManager::readPictures(const QString &folder){
-    /*
-     * This function returns a QStringList with all the needed pictures
-     * for the process from a folder(it reads it recursively)...
-     * Used ONLY with --change
-     */
     Global::debug("Wallch is reading pictures from your folder: '"+folder+"'");
-    //getting all the subfolders of the parent 'file' folder
-    QDir directoryContainingPictures(folder, QString(""), QDir::Name, QDir::Files);
-    //looping between the folders and adding each of their images.
-    Q_FOREACH(QString currentFolder, Global::listFolders(folder, true, true)){
-        directoryContainingPictures.setPath(currentFolder);
-        Q_FOREACH(QString pic, directoryContainingPictures.entryList(IMAGE_FILTERS)){
-            wallpaperManager_->addWallpaper(currentFolder+"/"+pic);
-        }
-    }
+    fileManager_->addWallpapersFromDirectory(folder);
 
     if(wallpaperManager_->wallpapersCount() == 0){
         globalParser_->desktopNotify(tr("There are not enough valid pictures for the process to continue."), false, "info");
@@ -971,7 +950,7 @@ void NonGuiManager::doAction(const QString &message){
         wallpaperManager_->clearWallpapers();
 
         Q_FOREACH(QString curFolder, Global::listFolders(parentFolder, true, true)){
-            getFilesFromFolder(curFolder);
+            fileManager_->addWallpapersFromDirectory(curFolder);
         }
 
         if(gv.randomImagesEnabled){
