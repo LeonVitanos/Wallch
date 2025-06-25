@@ -788,107 +788,13 @@ void NonGuiManager::doAction(const QString &message){
         w->show();
     }
     else if(message == "--earth"){
-        if(mainWindowLaunched_){
-            if(gv.liveEarthRunning){
-                Global::debug("Stopping the Live Earth process.");
-                Q_EMIT closeWhatsRunning();
-            }
-            else
-            {
-                Global::debug("Activating the Live Earth process.");
-                Q_EMIT signalActivateLivearth();
-            }
-            return;
-        }
-
-        if(gv.liveEarthRunning){
-            Global::debug("Stopping the Live Earth process.");
-            doAction("--stop");
-            return;
-        }
-
-        if(gv.liveWebsiteRunning){
-            /*if(websiteSnapshot_->isLoading()){
-                websiteSnapshot_->stop();
-            }*/
-        }
-        if(gv.potdRunning){
-            imageFetcher_->abort();
-        }
-
-        changeRunningFeature(1);
-
-        this->connectToUpdateSecondsSlot();
-        imageFetcher_->setFetchType(FetchType::LE);
-        imageFetcher_->fetch();
-        timerManager_->secondsRemaining_=timerManager_->totalSeconds_=LIVEARTH_INTERVAL;
-        Global::resetSleepProtection(timerManager_->secondsRemaining_);
-        generalTimer_->start(1000);
+        startFeature(1);
     }
     else if(message == "--potd"){
-        if(mainWindowLaunched_){
-            if(gv.potdRunning){
-                Global::debug("Stopping the Picture Of The Day process.");
-                Q_EMIT closeWhatsRunning();
-            }
-            else
-            {
-                Global::debug("Activating the Picture Of The Day process.");
-                Q_EMIT signalActivatePotd();
-            }
-            return;
-        }
-
-        if(gv.potdRunning){
-            Global::debug("Stopping the Picture Of The Day process.");
-            doAction("--stop");
-            return;
-        }
-
-        if(gv.liveWebsiteRunning){
-            /*if(websiteSnapshot_->isLoading()){
-                websiteSnapshot_->stop();
-            }*/
-        }
-        if(gv.liveEarthRunning){
-            imageFetcher_->abort();
-        }
-
-        changeRunningFeature(2);
-
-        this->continueWithPotd();
+        startFeature(2);
     }
     else if(message == "--website"){
-        if(mainWindowLaunched_){
-            if(gv.liveWebsiteRunning){
-                Global::debug("Stopping the Live Website process.");
-                Q_EMIT closeWhatsRunning();
-            }
-            else
-            {
-                Global::debug("Activating the Live Website process.");
-                Q_EMIT signalActivateLiveWebsite();
-            }
-            return;
-        }
-
-        if(gv.liveWebsiteRunning){
-            Global::debug("Stopping the Live Website process.");
-            doAction("--stop");
-            return;
-        }
-        if(websiteSnapshot_==NULL){
-            websiteSnapshot_ = new WebsiteSnapshot();
-        }
-
-        if(gv.liveEarthRunning || gv.potdRunning){
-            imageFetcher_->abort();
-        }
-
-        changeRunningFeature(3);
-
-        timerManager_->secondsRemaining_=0;
-        this->continueWithWebsite();
+        startFeature(3);
     }
     else if(message == "--start"){
         if(mainWindowLaunched_){
@@ -991,6 +897,8 @@ void NonGuiManager::doAction(const QString &message){
         if(generalTimer_->isActive()){
             generalTimer_->stop();
         }
+
+        this->disconnectFromSlot();
 
         if(gv.wallpapersRunning)
         {
@@ -1595,16 +1503,48 @@ void NonGuiManager::changeRunningFeature(int feature){
     gv.potdRunning = feature == 2 ? true : false;
     gv.liveWebsiteRunning = feature == 3 ? true : false;
 
-    Global::debug("Switching to " + QString(gv.wallpapersRunning ? "Wallpapers" :
-                                            gv.liveEarthRunning ? "Live Earth" :
-                                            gv.potdRunning ? "Picture of the Day" :
-                                                            "Live Website") + " mode.");
-
     SettingsManager::updateStartup();
+}
 
-    if(generalTimer_->isActive())
-        generalTimer_->stop();
+void NonGuiManager::startFeature(int featureId) {
+    // Step 1: Handle the GUI-mode toggle
+    if (mainWindowLaunched_) {
+        bool isRunning = (featureId == 1 && gv.liveEarthRunning) ||
+                         (featureId == 2 && gv.potdRunning) ||
+                         (featureId == 3 && gv.liveWebsiteRunning);
 
-    this->disconnectFromSlot();
+        if (isRunning) {
+            Q_EMIT closeWhatsRunning();
+        } else {
+            if (featureId == 1) Q_EMIT signalActivateLivearth();
+            else if (featureId == 2) Q_EMIT signalActivatePotd();
+            else if (featureId == 3) Q_EMIT signalActivateLiveWebsite();
+        }
+        return;
+    }
+
+    // Step 2: Handle the command-line toggle
+    bool wasRunning = (featureId == 1 && gv.liveEarthRunning) ||
+                      (featureId == 2 && gv.potdRunning) ||
+                      (featureId == 3 && gv.liveWebsiteRunning);
+
+    doAction("--stop");
+
+    if (wasRunning) {
+        Global::debug("Toggled feature off.");
+        SettingsManager::updateStartup();
+        return;
+    }
+
+    // --- Step 3: Start the new feature
+    changeRunningFeature(featureId);
+
+    if (featureId == 1) { // --earth
+        this->continueWithLiveEarth();
+    } else if (featureId == 2) { // --potd
+        this->continueWithPotd();
+    } else if (featureId == 3) { // --website
+        this->continueWithWebsite();
+    }
 }
 

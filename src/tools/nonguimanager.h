@@ -128,6 +128,7 @@ private:
     int processArguments(QApplication *app, QStringList arguments);
     void startProgramNormalGui();
     void changeRunningFeature(int feature);
+    void startFeature(int featureId);
 
 private Q_SLOTS:
     void newSocketConnection();
