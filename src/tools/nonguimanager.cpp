@@ -268,6 +268,25 @@ void NonGuiManager::connectToCheckInternet(){
     connect(generalTimer_, SIGNAL(timeout()), this, SLOT(waitForInternetConnection()));
 }
 
+void NonGuiManager::continueWithWallpapers(){
+    if(startedWithLiveEarth_ || startedWithWebsite_ || startedWithPotd_ || startedWithNone_){
+        startedWithNone_=startedWithLiveEarth_=startedWithWebsite_=startedWithPotd_=false;
+        if(!getPicturesLocation(true)){
+            return;
+        }
+        if(gv.randomImagesEnabled){
+            wallpaperManager_->setRandomMode(true);
+        }
+    }
+
+    this->connectToUpdateSecondsSlot();
+
+    getDelay();
+    timerManager_->secondsRemaining_=0;
+    Global::resetSleepProtection(timerManager_->secondsRemaining_);
+    generalTimer_->start(1000);
+}
+
 void NonGuiManager::continueWithLiveEarth(){
     this->disconnectFromSlot();
     this->connectToUpdateSecondsSlot();
@@ -797,49 +816,7 @@ void NonGuiManager::doAction(const QString &message){
         startFeature(3);
     }
     else if(message == "--start"){
-        if(mainWindowLaunched_){
-            if(!gv.wallpapersRunning || gv.processPaused){
-                Global::debug("Activating the Wallpapers process.");
-                Q_EMIT signalStart();
-            }
-            else
-            {
-                Global::debug("Stopping the Wallpapers process.");
-                doAction("--stop");
-            }
-            return;
-        }
-
-        if(gv.wallpapersRunning){
-            if(gv.processPaused){
-                doAction("--pause"); //continue from the pause
-            }
-            else
-            {
-                Global::debug("Stopping the Wallpapers process.");
-                doAction("--stop");
-            }
-        }
-        else
-        {
-            if(startedWithLiveEarth_ || startedWithWebsite_ || startedWithPotd_ || startedWithNone_){
-                startedWithNone_=startedWithLiveEarth_=startedWithWebsite_=startedWithPotd_=false;
-                if(!getPicturesLocation(true)){
-                    return;
-                }
-                if(gv.randomImagesEnabled){
-                    wallpaperManager_->setRandomMode(true);
-                }
-            }
-            changeRunningFeature(0);
-
-            this->connectToUpdateSecondsSlot();
-
-            getDelay();
-            timerManager_->secondsRemaining_=0;
-            Global::resetSleepProtection(timerManager_->secondsRemaining_);
-            generalTimer_->start(1000);
-        }
+        startFeature(0);
     }
     else if(message == "--change"){
         if(mainWindowLaunched_){
@@ -1509,22 +1486,30 @@ void NonGuiManager::changeRunningFeature(int feature){
 void NonGuiManager::startFeature(int featureId) {
     // Step 1: Handle the GUI-mode toggle
     if (mainWindowLaunched_) {
-        bool isRunning = (featureId == 1 && gv.liveEarthRunning) ||
+        bool isRunning = (featureId == 0 && gv.wallpapersRunning && !gv.processPaused) ||
+                         (featureId == 1 && gv.liveEarthRunning) ||
                          (featureId == 2 && gv.potdRunning) ||
                          (featureId == 3 && gv.liveWebsiteRunning);
 
         if (isRunning) {
             Q_EMIT closeWhatsRunning();
         } else {
-            if (featureId == 1) Q_EMIT signalActivateLivearth();
+            if (featureId == 0) Q_EMIT signalStart();
+            else if (featureId == 1) Q_EMIT signalActivateLivearth();
             else if (featureId == 2) Q_EMIT signalActivatePotd();
             else if (featureId == 3) Q_EMIT signalActivateLiveWebsite();
         }
         return;
     }
 
+    if (featureId == 0 && gv.wallpapersRunning && gv.processPaused) {
+        doAction("--pause"); // This will un-pause it
+        return;
+    }
+
     // Step 2: Handle the command-line toggle
-    bool wasRunning = (featureId == 1 && gv.liveEarthRunning) ||
+    bool wasRunning = (featureId == 0 && gv.wallpapersRunning) ||
+                      (featureId == 1 && gv.liveEarthRunning) ||
                       (featureId == 2 && gv.potdRunning) ||
                       (featureId == 3 && gv.liveWebsiteRunning);
 
@@ -1539,7 +1524,9 @@ void NonGuiManager::startFeature(int featureId) {
     // --- Step 3: Start the new feature
     changeRunningFeature(featureId);
 
-    if (featureId == 1) { // --earth
+    if (featureId == 0) { // --start
+        this->continueWithWallpapers();
+    } else if (featureId == 1) { // --earth
         this->continueWithLiveEarth();
     } else if (featureId == 2) { // --potd
         this->continueWithPotd();

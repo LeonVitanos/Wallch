@@ -121,6 +121,7 @@ private:
     void continueWithLiveEarth();
     void continueWithWebsite();
     void continueWithPotd();
+    void continueWithWallpapers();
     void changeWallpaperNow();
     void getDelay();
     void readPictures(const QString &folder);
