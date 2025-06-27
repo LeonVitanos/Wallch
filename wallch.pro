@@ -51,3 +51,4 @@ INSTALLS += configfiles
 include(src/tools/tools.pri)
 include(src/gui/gui.pri)
 include(src/common/common.pri)
+include(src/features/features.pri)

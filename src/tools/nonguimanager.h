@@ -41,6 +41,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "imagefetcher.h"
 #include "timermanager.h"
 #include "dialoghelper.h"
+#include "wallpapersfeature.h"
 
 #define SOCKET_SERVER_NAME "Wallch Local Socket Server"
 
@@ -65,6 +66,7 @@ private:
     WebsiteSnapshot *websiteSnapshot_=NULL;
     Global *globalParser_ = NULL;
     ImageFetcher *imageFetcher_ = NULL;
+    WallpapersFeature* wallpapersFeature_ = NULL;
 
     QTimer *trayWheelTimer_;
     QTimer *generalTimer_ = NULL;

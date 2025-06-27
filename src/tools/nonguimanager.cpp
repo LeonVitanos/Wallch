@@ -55,10 +55,6 @@ bool NonGuiManager::alreadyRuns(){
     return false;
 }
 
-void NonGuiManager::getDelay(){
-    timerManager_->totalSeconds_=settings->value("delay", DEFAULT_SLIDER_DELAY).toInt();
-}
-
 void NonGuiManager::onlineBackgroundReady(QString image){
     wallpaperManager_->setBackground(image, true, gv.potdRunning, (gv.potdRunning ? 3 : 2));
 }
@@ -274,16 +270,11 @@ void NonGuiManager::continueWithWallpapers(){
         if(!getPicturesLocation(true)){
             return;
         }
-        if(gv.randomImagesEnabled){
-            wallpaperManager_->setRandomMode(true);
-        }
     }
 
     this->connectToUpdateSecondsSlot();
 
-    getDelay();
-    timerManager_->secondsRemaining_=0;
-    Global::resetSleepProtection(timerManager_->secondsRemaining_);
+    wallpapersFeature_->start();
     generalTimer_->start(1000);
 }
 
@@ -1184,7 +1175,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
 
         Global::resetSleepProtection(timerManager_->secondsRemaining_);
         if(gotPicLocation){
-            getDelay();
+            wallpapersFeature_->getDelay();
             Global::debug("Your Desktop Background will change every "+QString::number(timerManager_->totalSeconds_)+" seconds.");
 
             if(wallpaperManager_->wallpapersCount()<LEAST_WALLPAPERS_FOR_START){
@@ -1438,6 +1429,7 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
         connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineBackgroundReady(QString)));
         wallpaperManager_ = new WallpaperManager();
         fileManager_ = new FileManager(wallpaperManager_);
+        wallpapersFeature_ = new WallpapersFeature(wallpaperManager_, timerManager_);
         viralSettingsOperations();
         QApplication::setQuitOnLastWindowClosed(false);
 
