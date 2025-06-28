@@ -215,6 +215,7 @@ public:
     static bool isSubfolder(QString &subfolder, QString &parentFolder);
     static QPixmap roundedCorners(const QImage &image, const int radius);
     bool runsOnBattery();
+    void notifyNotEnoughPics();
 
     // Clipboard management
     static void copyImageToClipboard(const QString &image);

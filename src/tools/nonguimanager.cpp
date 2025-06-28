@@ -78,15 +78,15 @@ void NonGuiManager::readPictures(const QString &folder){
     fileManager_->addWallpapersFromDirectory(folder);
 
     if(wallpaperManager_->wallpapersCount() == 0){
-        globalParser_->desktopNotify(tr("There are not enough valid pictures for the process to continue."), false, "info");
-        Global::error("Wallch has not enough pictures to continue.");
+        Global().notifyNotEnoughPics();
         doAction("--stop");
     }
 }
 
+//TODO-MODULARIZATION:WALLPAPERSFEATURE
 bool NonGuiManager::getPicturesLocation(bool init){
 
-    if(!startedWithJustChange_ && init)
+    if(!wallpapersFeature_->startedWithJustChange_ && init)
         fileManager_->resetWatchFolders();
 
     fileManager_->picturesLocationChanged();
@@ -95,10 +95,9 @@ bool NonGuiManager::getPicturesLocation(bool init){
         wallpaperManager_->setRandomMode(true);
     }
 
-    if(startedWithJustChange_){
+    if(wallpapersFeature_->startedWithJustChange_){
         if(wallpaperManager_->wallpapersCount() == 0){
-            globalParser_->desktopNotify(tr("There are not enough valid pictures for the process to continue."), false, "info");
-            Global::error("Wallch has not enough pictures to continue.");
+            Global().notifyNotEnoughPics();
             doAction("--stop");
             return false;
         }
@@ -106,8 +105,7 @@ bool NonGuiManager::getPicturesLocation(bool init){
     else
     {
         if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START){
-            globalParser_->desktopNotify(tr("There are not enough valid pictures for the process to continue."), false, "info");
-            Global::error("Wallch has not enough pictures to continue.");
+            Global().notifyNotEnoughPics();
             doAction("--stop");
             return false;
         }
@@ -135,6 +133,7 @@ void showUsage(short exitCode){
     exit(exitCode);
 }
 
+//TODO:BROKENONLINEFEATURES
 void NonGuiManager::waitForInternetConnection(){
     Global::debug("Checking for internet connection...");
 
@@ -148,66 +147,6 @@ void NonGuiManager::waitForInternetConnection(){
     else if(gv.liveWebsiteRunning){
         continueWithWebsite();
     }
-}
-
-void NonGuiManager::actionsOnWallpaperChange(){
-    if(gv.wallpapersRunning)
-    {
-        changeWallpaperNow();
-        if(timerManager_->secondsRemaining_<=0)
-            timerManager_->secondsRemaining_=timerManager_->totalSeconds_;
-        if(gv.independentIntervalEnabled)
-            Global::saveSecondsLeftNow(timerManager_->secondsRemaining_, 0);
-    }
-    else if(gv.liveEarthRunning)
-    {
-        imageFetcher_->setFetchType(FetchType::LE);
-        imageFetcher_->fetch();
-        timerManager_->secondsRemaining_ = timerManager_->totalSeconds_;
-        if(gv.independentIntervalEnabled){
-            Global::saveSecondsLeftNow(timerManager_->secondsRemaining_, 1);
-        }
-    }
-    else if(gv.liveWebsiteRunning)
-    {
-        //websiteSnapshot_->start();
-        timerManager_->secondsRemaining_ = timerManager_->totalSeconds_;
-        if(gv.independentIntervalEnabled){
-            Global::saveSecondsLeftNow(timerManager_->secondsRemaining_, 2);
-        }
-    }
-}
-
-void NonGuiManager::updateSeconds(){
-    /*
-     * This function runs once a second and reduces
-     * the timeout_count, which, once 0, will update
-     * the desktop background...
-     */
-    gv.runningTimeOfProcess = QDateTime::currentDateTime();
-    if(timerManager_->secondsRemaining_ <= 0){
-        actionsOnWallpaperChange();
-
-        gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(timerManager_->secondsRemaining_);
-    }
-    else
-    {
-        if(timerManager_->secondsRemaining_ != gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval))
-        {
-            int secondsToChangingTime = gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval);
-            if(secondsToChangingTime < 0)
-            {
-                actionsOnWallpaperChange();
-
-                gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(timerManager_->secondsRemaining_);
-            }
-            else if (!(timerManager_->secondsRemaining_<(secondsToChangingTime-1) || timerManager_->secondsRemaining_>(secondsToChangingTime + 1))){
-                timerManager_->secondsRemaining_ = secondsToChangingTime;
-            }
-        }
-    }
-
-    timerManager_->secondsRemaining_--;
 }
 
 void NonGuiManager::checkPicOfDay(){
@@ -233,35 +172,18 @@ void NonGuiManager::checkPicOfDay(){
     {
         justUpdatedPotd_=false;
         //time has yet to be reached!
+        /* TODO:MODULARIZATION-POTD
         if(generalTimer_->isSingleShot()){
             if(generalTimer_->isActive()){
-                generalTimer_->stop();
+                timerManager_->stop();
             }
             //back to normal
-            generalTimer_->start(59500);
+            timerManager_->start(true);
         }
-    }
-}
 
-void NonGuiManager::connectToUpdateSecondsSlot(){
-    if(generalTimer_ == NULL){
-        generalTimer_ = new QTimer(this);
-    }
-    if(gv.potdRunning){
         connect(generalTimer_, SIGNAL(timeout()), this, SLOT(checkPicOfDay()));
+        */
     }
-    else
-    {
-        connect(generalTimer_, SIGNAL(timeout()), this, SLOT(updateSeconds()));
-    }
-}
-
-void NonGuiManager::disconnectFromSlot(){
-    disconnect(generalTimer_, 0, this, 0);
-}
-
-void NonGuiManager::connectToCheckInternet(){
-    connect(generalTimer_, SIGNAL(timeout()), this, SLOT(waitForInternetConnection()));
 }
 
 void NonGuiManager::continueWithWallpapers(){
@@ -272,15 +194,10 @@ void NonGuiManager::continueWithWallpapers(){
         }
     }
 
-    this->connectToUpdateSecondsSlot();
-
     wallpapersFeature_->start();
-    generalTimer_->start(1000);
 }
 
 void NonGuiManager::continueWithLiveEarth(){
-    this->disconnectFromSlot();
-    this->connectToUpdateSecondsSlot();
     this->connectToServer();
     timerManager_->totalSeconds_=LIVEARTH_INTERVAL;
     if(!gv.firstTimeout){
@@ -290,12 +207,10 @@ void NonGuiManager::continueWithLiveEarth(){
     if(gv.independentIntervalEnabled){
         Global::saveSecondsLeftNow(timerManager_->totalSeconds_, 1);
     }
-    generalTimer_->start(1000);
+    timerManager_->start();
 }
 
 void NonGuiManager::continueWithWebsite(){
-    this->disconnectFromSlot();
-    this->connectToUpdateSecondsSlot();
     this->connectToServer();
     //getting the required values from the settings...
 
@@ -369,12 +284,10 @@ void NonGuiManager::continueWithWebsite(){
     if(gv.independentIntervalEnabled){
         Global::saveSecondsLeftNow(timerManager_->secondsRemaining_, 2);
     }
-    generalTimer_->start(1000);*/
+    timerManager_->start();*/
 }
 
 void NonGuiManager::continueWithPotd(){
-    this->disconnectFromSlot();
-    this->connectToUpdateSecondsSlot();
     this->connectToServer();
 
     //yearmonthday contains the last time that picture of the day was changed...
@@ -391,7 +304,7 @@ void NonGuiManager::continueWithPotd(){
     }
     gv.doNotToggleRadiobuttonFallback=false;
 
-    generalTimer_->start(59500);
+    timerManager_->start(true);
 }
 
 void NonGuiManager::connectToServer()
@@ -470,26 +383,7 @@ void NonGuiManager::quitNow(){
     qApp->exit(0);
 }
 
-void NonGuiManager::changeWallpaperNow(){
 
-    if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START && !startedWithJustChange_){
-        Global::error("Could not get pictures or not enough pictures.");
-        globalParser_->desktopNotify(tr("There are not enough valid pictures for the process to continue."), false, "info");
-        return;
-    }
-    if(previousWasClicked_){
-        previousWasClicked_=false;
-        wallpaperManager_->setBackground(wallpaperManager_->getPreviousWallpaper(), true, true, 1);
-    }
-    else
-    {
-        QString image = wallpaperManager_->getNextWallpaper();
-
-        wallpaperManager_->addToPreviousWallpapers(image);
-
-        wallpaperManager_->setBackground(image, true, true, 1);
-    }
-}
 
 //System tray icon Code
 void NonGuiManager::setupTray()
@@ -763,10 +657,7 @@ void NonGuiManager::doAction(const QString &message){
 
         Global::debug("Loading the Wallch window.");
 
-        //stop any process from nonGUI (they will continue to GUI)
-        if(generalTimer_->isActive()){
-            generalTimer_->stop();
-        }
+        timerManager_->stop();
 
         fileManager_->resetWatchFolders();
 
@@ -845,7 +736,7 @@ void NonGuiManager::doAction(const QString &message){
         }
         if(!gv.processPaused){
             Global::debug("Pausing the Wallpapers process.");
-            generalTimer_->stop();
+            timerManager_->stop();
             gv.processPaused=true;
         }
         else
@@ -853,7 +744,7 @@ void NonGuiManager::doAction(const QString &message){
             Global::resetSleepProtection(timerManager_->secondsRemaining_);
             Global::debug("Continuing from the pause...");
             gv.processPaused=false;
-            generalTimer_->start(1000);
+            timerManager_->start();
         }
     }
     else if(message == "--stop"){
@@ -862,11 +753,7 @@ void NonGuiManager::doAction(const QString &message){
             return;
         }
 
-        if(generalTimer_->isActive()){
-            generalTimer_->stop();
-        }
-
-        this->disconnectFromSlot();
+        timerManager_->stop();
 
         if(gv.wallpapersRunning)
         {
@@ -899,12 +786,7 @@ void NonGuiManager::doAction(const QString &message){
                 return;
             }
 
-            if(generalTimer_->isActive()){
-                generalTimer_->stop();
-                timerManager_->secondsRemaining_=0;
-                updateSeconds();
-                generalTimer_->start(1000);
-            }
+            timerManager_->resetTimer();
         }
         else {
             Global::error("Υou can use 'next' only in Wallpapers mode.");
@@ -917,19 +799,8 @@ void NonGuiManager::doAction(const QString &message){
         }
 
         if(gv.wallpapersRunning){
-            if(generalTimer_->isActive()){
-                if(gv.wallpapersRunning){
-                    generalTimer_->stop();
-                    timerManager_->secondsRemaining_=0;
-                    previousWasClicked_=true;
-                    updateSeconds();
-                    generalTimer_->start(1000);
-                }
-            }
-            else
-            {
-                Global::error("Wallpapers mode is not running in order to use 'previous'");
-            }
+            wallpapersFeature_->previousWasClicked_=true;
+            timerManager_->resetTimer();
         }
         else
         {
@@ -1190,13 +1061,12 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
 
             gv.wallpapersRunning=true;
             SettingsManager::updateStartup();
-            connectToUpdateSecondsSlot();
         }
         connectToServer();
         setupTray();
 
         if(gotPicLocation){
-            generalTimer_->start(1000);
+            timerManager_->start();
         }
 
         return app == NULL ? 0 : app->exec();
@@ -1388,7 +1258,7 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
                 viralSettingsOperations();
 
                 wallpaperManager_ = new WallpaperManager();
-                startedWithJustChange_=true;
+                wallpapersFeature_->startedWithJustChange_=true;
 
                 if(optarg){
                     //probably the user has specified a folder for working with --change.
@@ -1526,4 +1396,24 @@ void NonGuiManager::startFeature(int featureId) {
         this->continueWithWebsite();
     }
 }
+
+/*
+ * TODO-MODULARIZATION:FeatureController
+void NonGuiManager::actionsOnWallpaperChange(){
+
+    if(gv.wallpapersRunning)
+    {
+        changeWallpaperNow();
+    }
+    else if(gv.liveEarthRunning)
+    {
+        imageFetcher_->setFetchType(FetchType::LE);
+        imageFetcher_->fetch();
+    }
+    else if(gv.liveWebsiteRunning)
+    {
+        //websiteSnapshot_->start();
+    }
+}
+*/
 

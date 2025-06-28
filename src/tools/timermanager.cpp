@@ -6,6 +6,9 @@
 TimerManager::TimerManager(QObject *parent):
     QObject(parent)
 {
+    m_internalTimer = new QTimer(this);
+    connect(m_internalTimer, SIGNAL(timeout()), this, SLOT(updateSeconds()));
+
     secondsRemaining_ = 0;
     totalSeconds_ = 0;
     defaultIntervals = QList<int>() << 10 << 30 << 60 << 180 << 300 << 600 << 900 << 1200 << 1800 <<
@@ -137,4 +140,63 @@ QString TimerManager::secondsToMh(int seconds)
         return QString("1 "+tr("week"));
 
     return QString("");
+}
+
+void TimerManager::start(bool potd) {
+    m_internalTimer->start(potd ? 59500 : 1000); // Ticks every second
+}
+
+void TimerManager::stop() {
+    m_internalTimer->stop();
+}
+
+void TimerManager::updateSeconds(){
+    /*
+     * This function runs once a second and reduces
+     * the timeout_count, which, once 0, will update
+     * the desktop background...
+     */
+    gv.runningTimeOfProcess = QDateTime::currentDateTime();
+    if(secondsRemaining_ <= 0){
+        resetSecondsRemaining();
+        //TODO-MODULARIZATION: Q_EMIT timeToChangeWallpaper();
+
+        gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsRemaining_);
+    }
+    else
+    {
+        if(secondsRemaining_ != gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval))
+        {
+            int secondsToChangingTime = gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval);
+            if(secondsToChangingTime < 0)
+            {
+                resetSecondsRemaining();
+                //TODO-MODULARIZATION: Q_EMIT timeToChangeWallpaper();
+
+                gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsRemaining_);
+            }
+            else if (!(secondsRemaining_<(secondsToChangingTime-1) || secondsRemaining_>(secondsToChangingTime + 1))){
+                secondsRemaining_ = secondsToChangingTime;
+            }
+        }
+    }
+
+    secondsRemaining_--;
+}
+
+void TimerManager::resetSecondsRemaining(){
+    secondsRemaining_=totalSeconds_;
+    if(gv.independentIntervalEnabled) {
+        int featureIndex = gv.liveEarthRunning ? 1 : (gv.liveWebsiteRunning ? 2 : 0);
+        Global::saveSecondsLeftNow(secondsRemaining_, featureIndex);
+    }
+}
+
+void TimerManager::resetTimer(){
+    if(m_internalTimer->isActive()){
+        m_internalTimer->stop();
+        secondsRemaining_=0;
+        updateSeconds();
+        m_internalTimer->start();
+    }
 }

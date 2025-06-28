@@ -48,9 +48,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 class NonGuiManager : public QObject {
   Q_OBJECT
 public:
-    explicit NonGuiManager(QObject *parent = 0) : QObject(parent) {
-        generalTimer_ = new QTimer(this);
-    }
+    explicit NonGuiManager(QObject *parent = 0) : QObject(parent) {}
     int startProgram(int argc, char *argv[]);
     void doAction(const QString &message);
 
@@ -69,7 +67,6 @@ private:
     WallpapersFeature* wallpapersFeature_ = NULL;
 
     QTimer *trayWheelTimer_;
-    QTimer *generalTimer_ = NULL;
     QMimeData *myFile_;
     QSharedMemory *alreadyRunsMem_;
     QLocalServer *localServer_;
@@ -78,11 +75,9 @@ private:
     bool quitAfterMessagingMainApplication_;
     bool mainWindowLaunched_ = false;
     bool startedWithNone_ = false;
-    bool startedWithJustChange_ = false;
     bool startedWithLiveEarth_ = false;
     bool startedWithPotd_ = false;
     bool startedWithWebsite_ = false;
-    bool previousWasClicked_ = false;
     bool justUpdatedPotd_ = false;
     QSystemTrayIcon *trayIcon_;
     QMenu *trayIconMenu_;
@@ -117,9 +112,7 @@ private:
     void connectMainwindowWithExternalActions(MainWindow *w);
     bool loadWebsiteSnapshotPlugin();
     void connectToServer();
-    void connectToUpdateSecondsSlot();
     void disconnectFromSlot();
-    void connectToCheckInternet();
     void continueWithLiveEarth();
     void continueWithWebsite();
     void continueWithPotd();
@@ -155,7 +148,6 @@ private Q_SLOTS:
     void socketError();
     void quitNow();
     void waitForInternetConnection();
-    void updateSeconds();
     void checkPicOfDay();
     void preferencesDestroyed();
     void liveWebsiteImageReady(QImage *image, short errorCode);

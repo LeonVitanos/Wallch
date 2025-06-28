@@ -586,3 +586,9 @@ void Global::copyTextToClipboard(const QString &text){
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(text);
 }
+
+void Global::notifyNotEnoughPics()
+{
+    error("Could not get pictures or not enough pictures.");
+    desktopNotify(tr("There are not enough valid pictures for the process to continue."), false, "info");
+}

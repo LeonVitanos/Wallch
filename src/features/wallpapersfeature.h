@@ -34,6 +34,10 @@ public:
 
     void start();
     void getDelay();
+    void changeWallpaperNow();
+
+    bool previousWasClicked_ = false;
+    bool startedWithJustChange_ = false;
 
 private:
     WallpaperManager *m_wallpaperManager;
