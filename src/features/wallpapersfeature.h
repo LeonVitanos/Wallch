@@ -23,6 +23,7 @@
 
 class WallpaperManager;
 class TimerManager;
+class FileManager;
 
 class WallpapersFeature : public QObject
 {
@@ -30,11 +31,13 @@ class WallpapersFeature : public QObject
 public:
     explicit WallpapersFeature(WallpaperManager *wallpaperManager,
                                TimerManager *timerManager,
+                               FileManager *fileManager,
                                QObject *parent = nullptr);
 
     void start();
     void getDelay();
     void changeWallpaperNow();
+    bool getPicturesLocation(bool init);
 
     bool previousWasClicked_ = false;
     bool startedWithJustChange_ = false;
@@ -42,6 +45,7 @@ public:
 private:
     WallpaperManager *m_wallpaperManager;
     TimerManager *m_timerManager;
+    FileManager *m_fileManager;
 };
 
 #endif // WALLPAPERSFEATURE_H

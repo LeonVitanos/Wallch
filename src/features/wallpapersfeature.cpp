@@ -2,15 +2,17 @@
 #include "wallpapermanager.h"
 #include "timermanager.h"
 #include "settingsmanager.h"
+#include "filemanager.h"
 #include "glob.h"
-
 
 WallpapersFeature::WallpapersFeature(WallpaperManager *wallpaperManager,
                                      TimerManager *timerManager,
+                                     FileManager *fileManager,
                                      QObject *parent)
     : QObject(parent)
     , m_wallpaperManager(wallpaperManager)
     , m_timerManager(timerManager)
+    , m_fileManager(fileManager)
 {
 }
 
@@ -45,4 +47,26 @@ void WallpapersFeature::changeWallpaperNow(){
 
         m_wallpaperManager->setBackground(image, true, true, 1);
     }
+}
+
+bool WallpapersFeature::getPicturesLocation(bool init)
+{
+    if (!startedWithJustChange_ && init)
+        m_fileManager->resetWatchFolders();
+
+    m_fileManager->picturesLocationChanged();
+
+    if (gv.randomImagesEnabled) {
+        m_wallpaperManager->setRandomMode(true);
+    }
+
+    // Check for errors
+    if ( (startedWithJustChange_ && m_wallpaperManager->wallpapersCount() == 0) ||
+        (!startedWithJustChange_ && m_wallpaperManager->wallpapersCount() < LEAST_WALLPAPERS_FOR_START) )
+    {
+        Global().notifyNotEnoughPics();
+        return false;
+    }
+
+    return true;
 }

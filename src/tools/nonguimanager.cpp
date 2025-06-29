@@ -83,36 +83,6 @@ void NonGuiManager::readPictures(const QString &folder){
     }
 }
 
-//TODO-MODULARIZATION:WALLPAPERSFEATURE
-bool NonGuiManager::getPicturesLocation(bool init){
-
-    if(!wallpapersFeature_->startedWithJustChange_ && init)
-        fileManager_->resetWatchFolders();
-
-    fileManager_->picturesLocationChanged();
-
-    if(gv.randomImagesEnabled){
-        wallpaperManager_->setRandomMode(true);
-    }
-
-    if(wallpapersFeature_->startedWithJustChange_){
-        if(wallpaperManager_->wallpapersCount() == 0){
-            Global().notifyNotEnoughPics();
-            doAction("--stop");
-            return false;
-        }
-    }
-    else
-    {
-        if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START){
-            Global().notifyNotEnoughPics();
-            doAction("--stop");
-            return false;
-        }
-    }
-    return true;
-}
-
 void showUsage(short exitCode){
     Global::debug("Wallch " + QString::number(APP_VERSION, 'f', 3) + "\n"\
                   "Usage: wallch [OPTION]\n\n"\
@@ -189,7 +159,8 @@ void NonGuiManager::checkPicOfDay(){
 void NonGuiManager::continueWithWallpapers(){
     if(startedWithLiveEarth_ || startedWithWebsite_ || startedWithPotd_ || startedWithNone_){
         startedWithNone_=startedWithLiveEarth_=startedWithWebsite_=startedWithPotd_=false;
-        if(!getPicturesLocation(true)){
+        if (!wallpapersFeature_->getPicturesLocation(true)) {
+            doAction("--stop");
             return;
         }
     }
@@ -1042,7 +1013,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
             return app == NULL ? 0 : app->exec();
         }
 
-        bool gotPicLocation = getPicturesLocation(true);
+        bool gotPicLocation = wallpapersFeature_->getPicturesLocation(true);
 
         Global::resetSleepProtection(timerManager_->secondsRemaining_);
         if(gotPicLocation){
@@ -1276,7 +1247,7 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
                 }
                 else {
                     //only --change was specified... Read the pictures of the default folder
-                    if(!getPicturesLocation(true))
+                    if(!wallpapersFeature_->getPicturesLocation(true))
                         return 1;
                 }
 
@@ -1301,7 +1272,7 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
         fileManager_ = new FileManager(wallpaperManager_);
 
         // Initialize feature handlers
-        wallpapersFeature_ = new WallpapersFeature(wallpaperManager_, timerManager_);
+        wallpapersFeature_ = new WallpapersFeature(wallpaperManager_, timerManager_, fileManager_, this);
         liveEarthFeature_ = new LiveEarthFeature(imageFetcher_, this);
 
         // Initialize the main feature controller
