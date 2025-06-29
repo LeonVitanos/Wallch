@@ -1293,13 +1293,24 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
         //second level argument searching!
         QApplication app(argc, argv);
 
+        // Initialize core application services
         globalParser_ = new Global();
         timerManager_ = new TimerManager();
         imageFetcher_ = new ImageFetcher();
-        connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineBackgroundReady(QString)));
         wallpaperManager_ = new WallpaperManager();
         fileManager_ = new FileManager(wallpaperManager_);
+
+        // Initialize feature handlers
         wallpapersFeature_ = new WallpapersFeature(wallpaperManager_, timerManager_);
+        liveEarthFeature_ = new LiveEarthFeature(imageFetcher_, this);
+
+        // Initialize the main feature controller
+        featureController_ = new FeatureController(wallpapersFeature_, liveEarthFeature_, this);
+
+        // Connect main application signals
+        connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineBackgroundReady(QString)));
+        connect(timerManager_, &TimerManager::timeToChangeWallpaper, featureController_, &FeatureController::onTimeToChangeWallpaper);
+
         viralSettingsOperations();
         QApplication::setQuitOnLastWindowClosed(false);
 
@@ -1396,24 +1407,3 @@ void NonGuiManager::startFeature(int featureId) {
         this->continueWithWebsite();
     }
 }
-
-/*
- * TODO-MODULARIZATION:FeatureController
-void NonGuiManager::actionsOnWallpaperChange(){
-
-    if(gv.wallpapersRunning)
-    {
-        changeWallpaperNow();
-    }
-    else if(gv.liveEarthRunning)
-    {
-        imageFetcher_->setFetchType(FetchType::LE);
-        imageFetcher_->fetch();
-    }
-    else if(gv.liveWebsiteRunning)
-    {
-        //websiteSnapshot_->start();
-    }
-}
-*/
-

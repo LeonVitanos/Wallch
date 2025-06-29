@@ -27,6 +27,7 @@ public:
 private:
     QTimer *m_internalTimer;
     void resetSecondsRemaining();
+    void handleTimerExpiry();
 
 Q_SIGNALS:
     void timeToChangeWallpaper();

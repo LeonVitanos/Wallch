@@ -42,6 +42,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "timermanager.h"
 #include "dialoghelper.h"
 #include "wallpapersfeature.h"
+#include "liveearthfeature.h"
+#include "featurecontroller.h"
 
 #define SOCKET_SERVER_NAME "Wallch Local Socket Server"
 
@@ -65,6 +67,8 @@ private:
     Global *globalParser_ = NULL;
     ImageFetcher *imageFetcher_ = NULL;
     WallpapersFeature* wallpapersFeature_ = NULL;
+    LiveEarthFeature* liveEarthFeature_ = NULL;
+    FeatureController* featureController_ = NULL;
 
     QTimer *trayWheelTimer_;
     QMimeData *myFile_;
@@ -107,7 +111,6 @@ private:
     bool getPicturesLocation(bool init);
     bool alreadyRuns();
     void messageServer(const QString &message, bool quitAfterwards);
-    void actionsOnWallpaperChange();
     void setIndependentInterval(const QString &independentInterval);
     void connectMainwindowWithExternalActions(MainWindow *w);
     bool loadWebsiteSnapshotPlugin();

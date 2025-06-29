@@ -158,26 +158,15 @@ void TimerManager::updateSeconds(){
      */
     gv.runningTimeOfProcess = QDateTime::currentDateTime();
     if(secondsRemaining_ <= 0){
-        resetSecondsRemaining();
-        //TODO-MODULARIZATION: Q_EMIT timeToChangeWallpaper();
-
-        gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsRemaining_);
+        handleTimerExpiry();
     }
-    else
-    {
-        if(secondsRemaining_ != gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval))
-        {
-            int secondsToChangingTime = gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval);
-            if(secondsToChangingTime < 0)
-            {
-                resetSecondsRemaining();
-                //TODO-MODULARIZATION: Q_EMIT timeToChangeWallpaper();
-
-                gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsRemaining_);
-            }
-            else if (!(secondsRemaining_<(secondsToChangingTime-1) || secondsRemaining_>(secondsToChangingTime + 1))){
-                secondsRemaining_ = secondsToChangingTime;
-            }
+    else if(secondsRemaining_ != gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval)){
+        int secondsToChangingTime = gv.runningTimeOfProcess.secsTo(gv.timeToFinishProcessInterval);
+        if(secondsToChangingTime < 0){
+            handleTimerExpiry();
+        }
+        else if (!(secondsRemaining_<(secondsToChangingTime-1) || secondsRemaining_>(secondsToChangingTime + 1))){
+            secondsRemaining_ = secondsToChangingTime;
         }
     }
 
@@ -199,4 +188,11 @@ void TimerManager::resetTimer(){
         updateSeconds();
         m_internalTimer->start();
     }
+}
+
+void TimerManager::handleTimerExpiry()
+{
+    resetSecondsRemaining();
+    gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsRemaining_);
+    Q_EMIT timeToChangeWallpaper();
 }
