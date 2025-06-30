@@ -22,6 +22,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef PREFERENCES_H
 #define PREFERENCES_H
 
+class FeatureController;
+
 #include <QDialog>
 #include <QPropertyAnimation>
 
@@ -32,7 +34,7 @@ namespace Ui {
 class Preferences : public QDialog {
     Q_OBJECT
 public:
-    Preferences(QWidget *parent = 0);
+    Preferences(FeatureController *featureController, QWidget *parent = 0);
     ~Preferences();
 
 protected:
@@ -48,6 +50,7 @@ private:
     QString getCommandOfDesktopFile(const QString &file);
     QString dataToNiceString(qint64 data);
     short oldTheme;
+    FeatureController *m_featureController;
 
 private Q_SLOTS:
     void previousPage();

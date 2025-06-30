@@ -459,48 +459,6 @@ QString Global::getFilename(const QString &file){
 
 }
 
-void Global::saveSecondsLeftNow(int secondsLeft, short forType){
-    /*
-     * for_type:
-     * 0 - Wallpapers
-     * 1 - Live Earth
-     * 2 - Live Website
-     */
-
-    if(secondsLeft==-1){
-        settings->setValue("seconds_left_interval_independence", INTERVAL_INDEPENDENCE_DEFAULT_VALUE);
-    }
-    else
-    {
-        QChar front;
-        switch(forType){
-        default:
-        case 0:
-            front='p';
-            break;
-        case 1:
-            front='e';
-            break;
-        case 2:
-            front='w';
-            break;
-        }
-        QDateTime currentTime = QDateTime::currentDateTime();
-        settings->setValue("seconds_left_interval_independence",
-                           QString(front)+"."+
-                           QString::number(secondsLeft)+"."+
-                           currentTime.date().toString("yyyy")+":"+
-                           currentTime.date().toString("MM")+":"+
-                           currentTime.date().toString("dd")+":"+
-                           currentTime.time().toString("HH")+":"+
-                           currentTime.time().toString("mm")+":"+
-                           currentTime.time().toString("ss")
-                           );
-    }
-
-    settings->sync();
-}
-
 QString Global::base64Decode(const QString &string){
     return QByteArray::fromBase64(QByteArray().append(string.toUtf8()));
 }

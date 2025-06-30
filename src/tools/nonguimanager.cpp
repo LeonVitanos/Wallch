@@ -56,7 +56,7 @@ bool NonGuiManager::alreadyRuns(){
 }
 
 void NonGuiManager::onlineBackgroundReady(QString image){
-    wallpaperManager_->setBackground(image, true, gv.potdRunning, (gv.potdRunning ? 3 : 2));
+    wallpaperManager_->setBackground(image, true, featureController_->isPotdRunning(), (featureController_->isPotdRunning() ? 3 : 2));
 }
 
 void NonGuiManager::potdSetSameImage(){
@@ -107,14 +107,14 @@ void showUsage(short exitCode){
 void NonGuiManager::waitForInternetConnection(){
     Global::debug("Checking for internet connection...");
 
-    if(gv.potdRunning){
+    if(featureController_->isPotdRunning()){
         continueWithPotd();
     }
-    else if(gv.liveEarthRunning){
+    else if(featureController_->isLiveEarthRunning()){
         timerManager_->secondsRemaining_=LIVEARTH_INTERVAL;
         continueWithLiveEarth();
     }
-    else if(gv.liveWebsiteRunning){
+    else if(featureController_->isWebsiteRunning()){
         continueWithWebsite();
     }
 }
@@ -175,9 +175,7 @@ void NonGuiManager::continueWithLiveEarth(){
         imageFetcher_->setFetchType(FetchType::LE);
         imageFetcher_->fetch();
     }
-    if(gv.independentIntervalEnabled){
-        Global::saveSecondsLeftNow(timerManager_->totalSeconds_, 1);
-    }
+    timerManager_->saveSecondsLeftNow();
     timerManager_->start();
 }
 
@@ -252,9 +250,7 @@ void NonGuiManager::continueWithWebsite(){
         timerManager_->secondsRemaining_=timerManager_->totalSeconds_;
     }
     Global::resetSleepProtection(timerManager_->secondsRemaining_);
-    if(gv.independentIntervalEnabled){
-        Global::saveSecondsLeftNow(timerManager_->secondsRemaining_, 2);
-    }
+    timerManager_->saveSecondsLeftNow();
     timerManager_->start();*/
 }
 
@@ -480,9 +476,9 @@ void NonGuiManager::createTray()
     trayIconMenu_->addMenu(currentImageMenu_);
     trayIconMenu_->addSeparator();
     trayIconMenu_->addAction(wallpapersAction_);
-    if(!gv.wallpapersRunning)
+    if(!featureController_->isWallpapersRunning())
         trayIconMenu_->addAction(wallpapersOnceAction_);
-    if(gv.wallpapersRunning)
+    if(featureController_->isWallpapersRunning())
     {
         wallpapersAction_->setCheckable(true);
         wallpapersAction_->setChecked(true);
@@ -497,17 +493,17 @@ void NonGuiManager::createTray()
             trayIconMenu_->addAction(wallpapersPreviousAction_);
         }
     }
-    else if(gv.liveEarthRunning)
+    else if(featureController_->isLiveEarthRunning())
     {
         liveEarthAction_->setCheckable(true);
         liveEarthAction_->setChecked(true);
     }
-    else if(gv.potdRunning)
+    else if(featureController_->isPotdRunning())
     {
         pictureOfTheDayAction_->setCheckable(true);
         pictureOfTheDayAction_->setChecked(true);
     }
-    else if(gv.liveWebsiteRunning)
+    else if(featureController_->isWebsiteRunning())
     {
         liveWebsiteAction_->setCheckable(true);
         liveWebsiteAction_->setChecked(true);
@@ -537,7 +533,7 @@ void NonGuiManager::trayActionShowWindow()
 
 void NonGuiManager::trayActionWallpapers()
 {
-    if(!gv.wallpapersRunning){
+    if(!featureController_->isWallpapersRunning()){
         doAction("--start");
     }
     else{
@@ -642,18 +638,18 @@ void NonGuiManager::doAction(const QString &message){
 
         MainWindow *w;
 
-        if(gv.wallpapersRunning){
+        if(featureController_->isWallpapersRunning()){
             w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_,
-                               wallpaperManager_, timerManager_);
+                               wallpaperManager_, timerManager_, featureController_);
         }
-        else if(gv.liveWebsiteRunning || gv.liveEarthRunning){
+        else if(featureController_->isWebsiteRunning() || featureController_->isLiveEarthRunning()){
             w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_,
-                               timerManager_);
+                               timerManager_, featureController_);
         }
         else
         {
             w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_,
-                               timerManager_);
+                               timerManager_, featureController_);
         }
 
         connectMainwindowWithExternalActions(w);
@@ -701,7 +697,7 @@ void NonGuiManager::doAction(const QString &message){
             return;
         }
 
-        if(!gv.wallpapersRunning && !gv.processPaused){
+        if(!featureController_->isWallpapersRunning() && !gv.processPaused){
             Global::error("Cannot pause to any other process rather than Wallpapers!");
             return;
         }
@@ -726,7 +722,7 @@ void NonGuiManager::doAction(const QString &message){
 
         timerManager_->stop();
 
-        if(gv.wallpapersRunning)
+        if(featureController_->isWallpapersRunning())
         {
             wallpaperManager_->startOver();
 
@@ -734,24 +730,20 @@ void NonGuiManager::doAction(const QString &message){
 
             timerManager_->secondsRemaining_=timerManager_->totalSeconds_;
 
-            if(gv.independentIntervalEnabled){
-                //resetting the configuration!
-                Global::saveSecondsLeftNow(-1, 0);
-            }
+            timerManager_->saveSecondsLeftNow(false);
         }
-        else if(gv.liveEarthRunning || gv.liveWebsiteRunning){
+        else if(featureController_->isLiveEarthRunning() || featureController_->isWebsiteRunning()){
             timerManager_->secondsRemaining_=timerManager_->totalSeconds_;
         }
 
-        if(gv.liveEarthRunning || gv.potdRunning){
+        if(featureController_->isLiveEarthRunning() || featureController_->isPotdRunning()){
             imageFetcher_->abort();
         }
 
-        gv.wallpapersRunning=gv.liveEarthRunning=gv.potdRunning=gv.liveWebsiteRunning=false;
-        SettingsManager::updateStartup();
+        changeRunningFeature(FeatureController::Feature::None);
     }
     else if(message == "--next"){
-        if (gv.wallpapersRunning) {
+        if (featureController_->isWallpapersRunning()) {
             if (mainWindowLaunched_) {
                 Q_EMIT signalNext();
                 return;
@@ -769,7 +761,7 @@ void NonGuiManager::doAction(const QString &message){
             return;
         }
 
-        if(gv.wallpapersRunning){
+        if(featureController_->isWallpapersRunning()){
             wallpapersFeature_->previousWasClicked_=true;
             timerManager_->resetTimer();
         }
@@ -787,7 +779,7 @@ void NonGuiManager::doAction(const QString &message){
             return;
         }
         gv.preferencesDialogShown=true;
-        preferences_ = new Preferences();
+        preferences_ = new Preferences(featureController_);
         preferences_->setModal(true);
         preferences_->setAttribute(Qt::WA_DeleteOnClose);
         connect(preferences_, SIGNAL(destroyed()), this, SLOT(preferencesDestroyed()));
@@ -838,7 +830,7 @@ void NonGuiManager::doAction(const QString &message){
         //update the configuration to point to the new folder
         SettingsManager::setDefaultFolder(folder);
 
-        if(gv.wallpapersRunning)
+        if(featureController_->isWallpapersRunning())
             fileManager_->researchFolders();
     }
     else{
@@ -989,8 +981,6 @@ void NonGuiManager::viralSettingsOperations(){
 #ifdef Q_OS_LINUX
     DesktopEnvironment::setCurrentDE();
 #endif
-
-    SettingsManager::updateStartup();
 }
 
 void NonGuiManager::startProgramNormalGui(){
@@ -999,6 +989,7 @@ void NonGuiManager::startProgramNormalGui(){
     setupTray();
     mainWindowLaunched_=true;
     MainWindow *mainWindow = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_, 0, 0);
+
     connectMainwindowWithExternalActions(mainWindow);
     mainWindow->show();
 }
@@ -1030,8 +1021,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
                 wallpaperManager_->setRandomMode(true);
             }
 
-            gv.wallpapersRunning=true;
-            SettingsManager::updateStartup();
+            changeRunningFeature(FeatureController::Feature::Wallpapers);
         }
         connectToServer();
         setupTray();
@@ -1051,8 +1041,8 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
             messageServer("--earth", true);
             return app == NULL ? 0 : app->exec();
         }
-        startedWithLiveEarth_=gv.liveEarthRunning=true;
-        SettingsManager::updateStartup();
+        startedWithLiveEarth_=true;
+        changeRunningFeature(FeatureController::Feature::LiveEarth);
         timerManager_->secondsRemaining_ = LIVEARTH_INTERVAL;
         Global::resetSleepProtection(timerManager_->secondsRemaining_);
 
@@ -1072,8 +1062,8 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
             messageServer("--potd", true);
             return app == NULL ? 0 : app->exec();
         }
-        startedWithPotd_=gv.potdRunning=true;
-        SettingsManager::updateStartup();
+        startedWithPotd_=true;
+        changeRunningFeature(FeatureController::Feature::PictureOfTheDay);
 
         connectToServer();
         setupTray();
@@ -1091,8 +1081,8 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
             messageServer("--website", true);
             return app == NULL ? 0 : app->exec();
         }
-        gv.liveWebsiteRunning=startedWithWebsite_=true;
-        SettingsManager::updateStartup();
+        startedWithWebsite_=true;
+        changeRunningFeature(FeatureController::Feature::Website);
         timerManager_->secondsRemaining_=0;
         Global::resetSleepProtection(timerManager_->secondsRemaining_);
 
@@ -1318,22 +1308,13 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
     return 0;
 }
 
-void NonGuiManager::changeRunningFeature(int feature){
-    gv.wallpapersRunning = feature == 0 ? true : false;
-    gv.liveEarthRunning = feature == 1 ? true : false;
-    gv.potdRunning = feature == 2 ? true : false;
-    gv.liveWebsiteRunning = feature == 3 ? true : false;
-
-    SettingsManager::updateStartup();
-}
-
 void NonGuiManager::startFeature(int featureId) {
     // Step 1: Handle the GUI-mode toggle
     if (mainWindowLaunched_) {
-        bool isRunning = (featureId == 0 && gv.wallpapersRunning && !gv.processPaused) ||
-                         (featureId == 1 && gv.liveEarthRunning) ||
-                         (featureId == 2 && gv.potdRunning) ||
-                         (featureId == 3 && gv.liveWebsiteRunning);
+        bool isRunning = (featureId == 0 && featureController_->isWallpapersRunning() && !gv.processPaused) ||
+                         (featureId == 1 && featureController_->isLiveEarthRunning()) ||
+                         (featureId == 2 && featureController_->isPotdRunning()) ||
+                         (featureId == 3 && featureController_->isWebsiteRunning());
 
         if (isRunning) {
             Q_EMIT closeWhatsRunning();
@@ -1346,27 +1327,32 @@ void NonGuiManager::startFeature(int featureId) {
         return;
     }
 
-    if (featureId == 0 && gv.wallpapersRunning && gv.processPaused) {
+    if (featureId == 0 && featureController_->isWallpapersRunning() && gv.processPaused) {
         doAction("--pause"); // This will un-pause it
         return;
     }
 
     // Step 2: Handle the command-line toggle
-    bool wasRunning = (featureId == 0 && gv.wallpapersRunning) ||
-                      (featureId == 1 && gv.liveEarthRunning) ||
-                      (featureId == 2 && gv.potdRunning) ||
-                      (featureId == 3 && gv.liveWebsiteRunning);
+    bool wasRunning = (featureId == 0 && featureController_->isWallpapersRunning()) ||
+                      (featureId == 1 && featureController_->isLiveEarthRunning()) ||
+                      (featureId == 2 && featureController_->isPotdRunning()) ||
+                      (featureId == 3 && featureController_->isWebsiteRunning());
 
     doAction("--stop");
 
     if (wasRunning) {
         Global::debug("Toggled feature off.");
-        SettingsManager::updateStartup();
+        SettingsManager::updateStartup(featureController_->currentFeature());
         return;
     }
 
     // --- Step 3: Start the new feature
-    changeRunningFeature(featureId);
+    switch (featureId) {
+        case 0: changeRunningFeature(FeatureController::Feature::Wallpapers); break;
+        case 1: changeRunningFeature(FeatureController::Feature::LiveEarth); break;
+        case 2: changeRunningFeature(FeatureController::Feature::PictureOfTheDay); break;
+        case 3: changeRunningFeature(FeatureController::Feature::Website); break;
+    }
 
     if (featureId == 0) { // --start
         this->continueWithWallpapers();
@@ -1377,4 +1363,9 @@ void NonGuiManager::startFeature(int featureId) {
     } else if (featureId == 3) { // --website
         this->continueWithWebsite();
     }
+}
+
+void NonGuiManager::changeRunningFeature(FeatureController::Feature feature){
+    featureController_->setCurrentFeature(feature);
+    timerManager_->setCurrentFeature(feature);
 }

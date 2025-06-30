@@ -38,9 +38,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
     #include "desktopenvironment.h"
 #endif
 
-Preferences::Preferences(QWidget *parent) :
+Preferences::Preferences(FeatureController *featureController, QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::preferences)
+    ui(new Ui::preferences),
+    m_featureController(featureController)
 {
     ui->setupUi(this);
     connect(ui->reset, &QPushButton::clicked, this, &Preferences::handleResetClick);
@@ -240,7 +241,7 @@ void Preferences::handleSaveClick()
     settings->setValue("start_hidden", ui->hiddenTray_checkBox->isChecked());
 
     if(ui->startupCheckBox->isChecked())
-        SettingsManager::updateStartup();
+        SettingsManager::updateStartup(m_featureController->currentFeature());
     else{
 #ifdef Q_OS_WIN
         QSettings settings2("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);

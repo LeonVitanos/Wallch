@@ -59,6 +59,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "dialoghelper.h"
 #include "wallpaperhelper.h"
 #include "searchimages.h"
+#include "featurecontroller.h"
 
 #ifndef Q_OS_LINUX
     #include "notification.h"
@@ -89,7 +90,7 @@ class MainWindow : public QMainWindow {
 public:
     MainWindow(QSharedMemory *attachedMemory, Global *globalParser, ImageFetcher *imageFetcher_,
                WebsiteSnapshot *websiteSnapshot, WallpaperManager *wallpaperManager,
-               TimerManager *timerManager, QWidget *parent = 0);
+               TimerManager *timerManager, FeatureController *featureController, QWidget *parent = 0);
     ~MainWindow();
     void click_shortcut_next();
     Ui::MainWindow *ui;
@@ -158,6 +159,7 @@ private:
     DialogHelper *dialogHelper_;
     WallpaperHelper *wallpaperHelper_;
     SearchImages *searchImages_;
+    FeatureController *featureController_;
 
     QMovie *processingRequestGif_;
     QPropertyAnimation *rightWidgetAnimation_;
@@ -259,6 +261,7 @@ private:
     QImage scaleWallpapersPreview(QString filename);
     void iconsPathsChanged();
     bool addingImageStylesNow = false;
+    void changeRunningFeature(FeatureController::Feature feature);
 
 public Q_SLOTS:
     void addFolderForMonitor(const QString &folder);

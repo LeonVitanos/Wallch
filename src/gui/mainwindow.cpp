@@ -40,7 +40,7 @@ MainWindow *mainWindowInstance;
 
 MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, ImageFetcher *imageFetcher,
                        WebsiteSnapshot *websiteSnapshot, WallpaperManager *wallpaperManager,
-                       TimerManager *timerManager, QWidget *parent) :
+                       TimerManager *timerManager, FeatureController *featureContoller, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
@@ -51,7 +51,8 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, Imag
     attachedMemory_ = attachedMemory;
 
     wallpaperManager_ = (wallpaperManager == NULL) ? new WallpaperManager() : wallpaperManager;
-    timerManager_ = (timerManager == NULL) ? new TimerManager() : timerManager;
+    timerManager_ = timerManager;
+    featureController_ = featureContoller;
     websiteSnapshot_ = websiteSnapshot;
     initializePrivateVariables(globalParser, imageFetcher);
 
@@ -467,7 +468,7 @@ void MainWindow::applySettings()
 
 void MainWindow::continueAlreadyRunningFeature()
 {   
-    if(gv.wallpapersRunning)
+    if(featureController_->isWallpapersRunning())
     {
         loadWallpapersPage();
 
@@ -499,7 +500,7 @@ void MainWindow::continueAlreadyRunningFeature()
         }
         ui->stackedWidget->setCurrentIndex(0);
     }
-    else if(gv.liveEarthRunning)
+    else if(featureController_->isLiveEarthRunning())
     {
         ui->activate_livearth->setEnabled(false);
         ui->deactivate_livearth->setEnabled(true);
@@ -507,14 +508,14 @@ void MainWindow::continueAlreadyRunningFeature()
         handlePageButtonClick(1);
         animateProgressbarOpacity(1);
     }
-    else if(gv.potdRunning)
+    else if(featureController_->isPotdRunning())
     {
         ui->deactivate_potd->setEnabled(true);
         ui->activate_potd->setEnabled(false);
         handlePageButtonClick(2);
         startPotd(false);
     }
-    else if(gv.liveWebsiteRunning)
+    else if(featureController_->isWebsiteRunning())
     {
         ui->deactivate_website->setEnabled(true);
         ui->activate_website->setEnabled(false);
@@ -532,23 +533,21 @@ void MainWindow::continueAlreadyRunningFeature()
         handlePageButtonClick(settings->value("current_page", 0).toInt());
 
         //the app has opened normally, so there is no point in keeping a previous independent interval
-        if(gv.independentIntervalEnabled){
-            globalParser_->saveSecondsLeftNow(-1, 0);
-        }
+        timerManager_->saveSecondsLeftNow(false);
     }
 }
 
 void MainWindow::closeWhatsRunning(){
-    if(gv.wallpapersRunning){
+    if(featureController_->isWallpapersRunning()){
         handleStopButtonClick();
     }
-    else if(gv.liveEarthRunning){
+    else if(featureController_->isLiveEarthRunning()){
         handleDeactivateLiveEarthClick();
     }
-    else if(gv.potdRunning){
+    else if(featureController_->isPotdRunning()){
         handleDeactivatePotdClick();
     }
-    else if(gv.liveWebsiteRunning){
+    else if(featureController_->isWebsiteRunning()){
         handleDeactivateWebsiteClick();
     }
 }
@@ -563,7 +562,7 @@ void MainWindow::onlineRequestFailed(){
 }
 
 void MainWindow::onlineImageRequestReady(QString image){
-    wallpaperManager_->setBackground(image, true, gv.potdRunning||gv.liveEarthRunning, (gv.potdRunning ? 3 : 2));
+    wallpaperManager_->setBackground(image, true, featureController_->isPotdRunning()||featureController_->isLiveEarthRunning(), (featureController_->isPotdRunning() ? 3 : 2));
     if(gv.setAverageColor){
         setButtonColor();
     }
@@ -987,7 +986,7 @@ void MainWindow::processRequestStop(){
     if(gv.previewImagesOnScreen){
         ui->screen_label_info->clear();
     }
-    if(gv.potdRunning){
+    if(featureController_->isPotdRunning()){
         QString filename=globalParser_->getFilename(gv.wallchHomePath+POTD_IMAGE+"*");
         if(!filename.isEmpty() && ui->stackedWidget->currentIndex()==2 && QFile::exists(filename)){
             imageTransition(filename);
@@ -1111,7 +1110,7 @@ void MainWindow::handleImageStyleChange(int index)
 }
 
 void MainWindow::actionsOnWallpaperChange(){
-    if(gv.wallpapersRunning)
+    if(featureController_->isWallpapersRunning())
     {
         if(!fileManager_->currentFolderExists())
             return;
@@ -1126,29 +1125,27 @@ void MainWindow::actionsOnWallpaperChange(){
         }
         else
         {
-            if(gv.independentIntervalEnabled){
-                globalParser_->saveSecondsLeftNow(-1, 0);
-            }
+            timerManager_->saveSecondsLeftNow(false);
             changeImage();
         }
-        globalParser_->saveSecondsLeftNow(timerManager_->secondsRemaining_, 0);
+        timerManager_->saveSecondsLeftNow();
     }
-    else if(gv.liveWebsiteRunning){
+    else if(featureController_->isWebsiteRunning()){
         ui->timeout_text_label->show();
         ui->website_timeout_label->show();
         processRequestStart();
         //websiteSnapshot_->start();
         timerManager_->secondsRemaining_=globalParser_->websiteSliderValueToSeconds(ui->website_slider->value());
-        globalParser_->saveSecondsLeftNow(timerManager_->secondsRemaining_, 2);
+        timerManager_->saveSecondsLeftNow();
     }
-    else if(gv.liveEarthRunning){
+    else if(featureController_->isLiveEarthRunning()){
         processRequestStart();
         imageFetcher_->setFetchType(FetchType::LE);
         imageFetcher_->fetch();
         timerManager_->secondsRemaining_=1800;
-        globalParser_->saveSecondsLeftNow(timerManager_->secondsRemaining_, 1);
+        timerManager_->saveSecondsLeftNow();
     }
-    else if(gv.potdRunning){
+    else if(featureController_->isPotdRunning()){
         justUpdatedPotd_=true;
         //time has come
         QString lastDaySet=settings->value("last_day_potd_was_set", "").toString();
@@ -1191,7 +1188,7 @@ void MainWindow::updateSeconds(){
     if(gv.pauseOnBattery){
         if(globalParser_->runsOnBattery()){
             if(!manuallyStartedOnBattery_){
-                bool array[4] = {gv.wallpapersRunning, gv.liveEarthRunning, gv.potdRunning, gv.liveWebsiteRunning};
+                bool array[4] = {featureController_->isWallpapersRunning(), featureController_->isLiveEarthRunning(), featureController_->isPotdRunning(), featureController_->isWebsiteRunning()};
 
                 for(int i=0;i<4;i++){
                     if(array[i]){
@@ -1216,7 +1213,7 @@ void MainWindow::updateSeconds(){
     }
 #endif
 
-    if(gv.potdRunning){
+    if(featureController_->isPotdRunning()){
         if(globalParser_->timeNowToString()=="00:00"){
             if(!justUpdatedPotd_){
                 actionsOnWallpaperChange();
@@ -1257,14 +1254,14 @@ void MainWindow::updateSeconds(){
 
         ui->timeForNext->setFormat(timerManager_->secondsToHms(timerManager_->secondsRemaining_));
 
-        if(gv.wallpapersRunning)
+        if(featureController_->isWallpapersRunning())
         {
             if(timerManager_->totalSeconds_==0)
                 setProgressbarsValue(100);
             else
                 setProgressbarsValue((timerManager_->secondsRemaining_*100)/(timerManager_->totalSeconds_));
         }
-        else if(gv.liveWebsiteRunning){
+        else if(featureController_->isWebsiteRunning()){
             int totalSecs=globalParser_->websiteSliderValueToSeconds(ui->website_slider->value());
             if(totalSecs==0){
                 setProgressbarsValue(100);
@@ -1277,7 +1274,7 @@ void MainWindow::updateSeconds(){
                 ui->website_timeout_label->setText(QString::number(WEBSITE_TIMEOUT+1-(timePassedForLiveWebsiteRequest_++))+" "+tr("seconds")+"...");
             }
         }
-        else if(gv.liveEarthRunning){
+        else if(featureController_->isLiveEarthRunning()){
             setProgressbarsValue(timerManager_->secondsRemaining_*100/1800);
         }
 
@@ -1300,35 +1297,35 @@ void MainWindow::handleWebsiteSliderChange(int value)
 
 void MainWindow::stopEverythingThatsRunning(short excludingFeature)
 {
-    if(excludingFeature!=1 && gv.wallpapersRunning){
+    if(excludingFeature!=1 && featureController_->isWallpapersRunning()){
         handleStopButtonClick();
     }
-    else if(excludingFeature!=2 && gv.liveEarthRunning){
+    else if(excludingFeature!=2 && featureController_->isLiveEarthRunning()){
         handleDeactivateLiveEarthClick();
     }
-    else if(excludingFeature!=3 && gv.potdRunning){
+    else if(excludingFeature!=3 && featureController_->isPotdRunning()){
         handleDeactivatePotdClick();
     }
-    else if(excludingFeature!=5 && gv.liveWebsiteRunning){
+    else if(excludingFeature!=5 && featureController_->isWebsiteRunning()){
         handleDeactivateWebsiteClick();
     }
 }
 
 void MainWindow::pauseEverythingThatsRunning()
 {
-    if(gv.wallpapersRunning){
+    if(featureController_->isWallpapersRunning()){
         if(!gv.processPaused)
         {
             handleStartButtonClick();
         }
     }
-    else if(gv.liveEarthRunning){
+    else if(featureController_->isLiveEarthRunning()){
         handleDeactivateLiveEarthClick();
     }
-    else if(gv.potdRunning){
+    else if(featureController_->isPotdRunning()){
         handleDeactivatePotdClick();
     }
-    else if(gv.liveWebsiteRunning){
+    else if(featureController_->isWebsiteRunning()){
         handleDeactivateWebsiteClick();
     }
 }
@@ -1449,8 +1446,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
     if (actAsStart_){
 
         actAsStart_=false; //the next time act like pause is pressed
-        gv.wallpapersRunning=true;
-        SettingsManager::updateStartup();
+        changeRunningFeature(FeatureController::Feature::Wallpapers);
         startWasJustClicked_=true;
 
         ui->startButton->setText(tr("Pau&se"));
@@ -1524,9 +1520,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
         if(wallpaperManager_->wallpapersCount() != 0){
             ui->shuffle_images_checkbox->setEnabled(true);
         }
-        if(gv.independentIntervalEnabled){
-            globalParser_->saveSecondsLeftNow(timerManager_->secondsRemaining_, 0);
-        }
+        timerManager_->saveSecondsLeftNow();
     }
 }
 
@@ -1554,8 +1548,8 @@ void MainWindow::handleStopButtonClick(){
     startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
 
     stopButtonsSetEnabled(false);
-    gv.wallpapersRunning=false;
-    SettingsManager::updateStartup();
+    changeRunningFeature(FeatureController::Feature::None);
+
 #ifdef Q_OS_LINUX
     if(gv.pauseOnBattery){
         if(batteryStatusChecker_->isActive()){
@@ -1564,9 +1558,7 @@ void MainWindow::handleStopButtonClick(){
     }
 #endif
     Q_EMIT signalRecreateTray();
-    if(gv.independentIntervalEnabled){
-        globalParser_->saveSecondsLeftNow(-1, 0);
-    }
+    timerManager_->saveSecondsLeftNow(false);
 }
 
 void MainWindow::handleNextButtonClick()
@@ -1609,7 +1601,7 @@ void MainWindow::currentFolderDoesNotExist()
     int index=ui->pictures_location_comboBox->currentIndex();
     ui->pictures_location_comboBox->setItemText(index, fileManager_->currentSelectionIsASet() ? ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString()+" (0)":globalParser_->basenameOf(ui->pictures_location_comboBox->itemData(index, Qt::UserRole).toString()+" (0)" ));
 
-    if(gv.wallpapersRunning)
+    if(featureController_->isWallpapersRunning())
         handleStopButtonClick();
 
     if(fileManager_->currentSelectionIsASet())
@@ -1972,13 +1964,13 @@ void MainWindow::handlePicturesLocationChange(int index)
         if(wallpaperManager_->wallpapersCount())
             ui->wallpapersList->setCurrentRow(0);
 
-        if(gv.wallpapersRunning)
+        if(featureController_->isWallpapersRunning())
             processRunningResetPictures();
     }
     else
     {
         startButtonsSetEnabled(false);
-        if(gv.wallpapersRunning)
+        if(featureController_->isWallpapersRunning())
             handleStopButtonClick();
 
         if(gv.mainwindowLoaded)
@@ -2118,8 +2110,7 @@ void MainWindow::handleActivateLiveEarthClick()
     handlePageButtonClick(1);
     ui->activate_livearth->setEnabled(false);
     ui->deactivate_livearth->setEnabled(true);
-    gv.liveEarthRunning=true;
-    SettingsManager::updateStartup();
+    changeRunningFeature(FeatureController::Feature::LiveEarth);
     Q_EMIT signalRecreateTray();
     setProgressbarsValue(100);
     startUpdateSeconds();
@@ -2134,16 +2125,13 @@ void MainWindow::handleDeactivateLiveEarthClick()
 
     timerManager_->secondsRemaining_=0;
     imageFetcher_->abort();
-    gv.liveEarthRunning=false;
-    SettingsManager::updateStartup();
+    changeRunningFeature(FeatureController::Feature::None);
     processRequestStop();
 
     if(updateSecondsTimer_->isActive()){
         updateSecondsTimer_->stop();
     }
-    if(gv.independentIntervalEnabled){
-        globalParser_->saveSecondsLeftNow(-1, 1);
-    }
+    timerManager_->saveSecondsLeftNow(false);
     animateProgressbarOpacity(0);
     ui->deactivate_livearth->setEnabled(false);
     ui->activate_livearth->setEnabled(true);
@@ -2201,8 +2189,7 @@ void MainWindow::handleActivatePotdClick()
 void MainWindow::startPotd(bool launchNow){
     ui->deactivate_potd->setEnabled(true);
     ui->activate_potd->setEnabled(false);
-    gv.potdRunning=true;
-    SettingsManager::updateStartup();
+    changeRunningFeature(FeatureController::Feature::PictureOfTheDay);
     justUpdatedPotd_=false;
     if(launchNow){
         actionsOnWallpaperChange();
@@ -2223,8 +2210,8 @@ void MainWindow::handleDeactivatePotdClick()
     timerManager_->secondsRemaining_=0;
     processRequestStop();
     imageFetcher_->abort();
-    gv.potdRunning=false;
-    SettingsManager::updateStartup();
+    changeRunningFeature(FeatureController::Feature::None);
+
     if(updateSecondsTimer_->isActive()){
         updateSecondsTimer_->stop();
     }
@@ -2237,7 +2224,7 @@ void MainWindow::handleDeactivatePotdClick()
 }
 
 void MainWindow::restartPotdIfRunningAfterSettingChange(){
-    if(!gv.potdRunning){
+    if(!featureController_->isPotdRunning()){
         settings->setValue("potd_preferences_have_changed", true);
         settings->sync();
         return;
@@ -2251,7 +2238,7 @@ void MainWindow::restartPotdIfRunningAfterSettingChange(){
 
 void MainWindow::restartLeIfRunningAfterSettingChange()
 {
-    if (!gv.liveEarthRunning) {
+    if (!featureController_->isLiveEarthRunning()) {
         return;
     }
 
@@ -2293,8 +2280,7 @@ void MainWindow::handleActivateWebsiteClick()
 
     QApplication::processEvents(QEventLoop::AllEvents);
 
-    gv.liveWebsiteRunning=true;
-    SettingsManager::updateStartup();
+    changeRunningFeature(FeatureController::Feature::Website);
 
     Q_EMIT signalRecreateTray();
     setProgressbarsValue(100);
@@ -2314,15 +2300,12 @@ void MainWindow::handleDeactivateWebsiteClick()
     }
 
     stoppedBecauseOnBattery_=false;
-    gv.liveWebsiteRunning=false;
-    SettingsManager::updateStartup();
+    changeRunningFeature(FeatureController::Feature::None);
     timerManager_->secondsRemaining_=0;
     if(updateSecondsTimer_->isActive()){
         updateSecondsTimer_->stop();
     }
-    if(gv.independentIntervalEnabled){
-        globalParser_->saveSecondsLeftNow(-1, 2);
-    }
+    timerManager_->saveSecondsLeftNow(false);
     ui->live_website_login_widget->setEnabled(true);
     animateProgressbarOpacity(0);
 
@@ -2426,7 +2409,7 @@ void MainWindow::setWebsitePreviewImage(QImage *image){
 }
 
 void MainWindow::openWebsitePreview(bool edit){
-    if(gv.liveWebsiteRunning){
+    if(featureController_->isWebsiteRunning()){
         QMessageBox::warning(this, tr("Error"), tr("Please stop the current process and try again.")+" ("+tr("Live Website")+")");
         return;
     }
@@ -2462,7 +2445,7 @@ void MainWindow::websitePreviewDestroyed(){
 
 void MainWindow::handleWebsiteCropCheck(bool checked)
 {
-    if(gv.liveWebsiteRunning){
+    if(featureController_->isWebsiteRunning()){
         ui->website_crop_checkbox->setChecked(!checked);
         QMessageBox::warning(this, tr("Error"), tr("Please stop the current process and try again.")+" ("+tr("Live Website")+")");
         return;
@@ -2712,7 +2695,7 @@ void MainWindow::disableLiveWebsitePage(){
 
 void MainWindow::handleAddLoginDetailsCheck(bool checked)
 {
-    if(gv.liveWebsiteRunning){
+    if(featureController_->isWebsiteRunning()){
         ui->add_login_details->setChecked(!checked);
         QMessageBox::warning(this, tr("Error"), tr("Please stop the current process and try again.")+" ("+tr("Live Website")+")");
         return;
@@ -2935,7 +2918,7 @@ void MainWindow::handlePreferencesAction()
         return;
     }
     gv.preferencesDialogShown=true;
-    preferences_ = new Preferences(this);
+    preferences_ = new Preferences(featureController_, this);
     preferences_->setModal(true);
     preferences_->setAttribute(Qt::WA_DeleteOnClose);
     connect(preferences_, SIGNAL(destroyed()), this, SLOT(preferencesDestroyed()));
@@ -3181,7 +3164,7 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, long* r
        {
            //Just to note, when we plug the cable, Windows for some reason sends discharging,
            //and after 1 second sends charging so just ignore first discharging message
-           bool array[4] = {gv.wallpapersRunning, gv.liveEarthRunning, gv.potdRunning, gv.liveWebsiteRunning};
+           bool array[4] = {featureController_->isWallpapersRunning(), featureController_->isLiveEarthRunning(), featureController_->isPotdRunning(), featureController_->isWebsiteRunning()};
 
            for(int i=0;i<4;i++){
                if(array[i]){
@@ -3413,7 +3396,7 @@ void MainWindow::monitoredFoldersUpdated(){
     }
 
     if(wallpaperManager_->wallpapersCount() < LEAST_WALLPAPERS_FOR_START){
-        if(gv.wallpapersRunning)
+        if(featureController_->isWallpapersRunning())
            handleStopButtonClick();
     }
     else
@@ -3563,4 +3546,9 @@ void MainWindow::showProperties(){
 void MainWindow::handleSearchShortcut() {
     if (ui->stackedWidget->currentIndex() == 0)
         searchImages_->showHideSearchBox();
+}
+
+void MainWindow::changeRunningFeature(FeatureController::Feature feature){
+    featureController_->setCurrentFeature(feature);
+    timerManager_->setCurrentFeature(feature);
 }

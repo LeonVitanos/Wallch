@@ -28,14 +28,32 @@ class FeatureController : public QObject
 {
     Q_OBJECT
 public:
+    // This enum represents the single, current state of the application.
+    enum class Feature {
+        None,
+        Wallpapers,
+        LiveEarth,
+        PictureOfTheDay,
+        Website
+    };
+    Q_ENUM(Feature)
     explicit FeatureController(WallpapersFeature *wallpapersFeature,
                                LiveEarthFeature *liveEarthFeature,
                                QObject *parent = nullptr);
+
+    bool isWallpapersRunning() const;
+    bool isLiveEarthRunning() const;
+    bool isPotdRunning() const;
+    bool isWebsiteRunning() const;
+    Feature currentFeature() const;
+    void setCurrentFeature(Feature newFeature);
 
 public Q_SLOTS:
     void onTimeToChangeWallpaper();
 
 private:
+    Feature m_currentFeature = Feature::None;
+
     WallpapersFeature *m_wallpapersFeature;
     LiveEarthFeature *m_liveEarthFeature;
 };

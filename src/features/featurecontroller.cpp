@@ -19,7 +19,7 @@
 #include "featurecontroller.h"
 #include "wallpapersfeature.h"
 #include "liveearthfeature.h"
-#include "glob.h"
+#include "settingsmanager.h"
 
 FeatureController::FeatureController(WallpapersFeature *wallpapersFeature,
                                      LiveEarthFeature *liveEarthFeature,
@@ -32,11 +32,54 @@ FeatureController::FeatureController(WallpapersFeature *wallpapersFeature,
 
 void FeatureController::onTimeToChangeWallpaper()
 {
-    if (gv.wallpapersRunning) {
+    switch (m_currentFeature) {
+    case FeatureController::Feature::Wallpapers:
         m_wallpapersFeature->changeWallpaperNow();
-    } else if (gv.liveEarthRunning) {
+        break;
+    case FeatureController::Feature::LiveEarth:
         m_liveEarthFeature->start();
-    } else if (gv.liveWebsiteRunning) {
+        break;
+    case FeatureController::Feature::Website:
         // m_websiteFeature->start();
+        break;
+    default:
+        break;
     }
 }
+
+bool FeatureController::isWallpapersRunning() const
+{
+    return m_currentFeature == Feature::Wallpapers;
+}
+
+bool FeatureController::isLiveEarthRunning() const
+{
+    return m_currentFeature == Feature::LiveEarth;
+}
+
+bool FeatureController::isPotdRunning() const
+{
+    return m_currentFeature == Feature::PictureOfTheDay;
+}
+
+bool FeatureController::isWebsiteRunning() const
+{
+    return m_currentFeature == Feature::Website;
+}
+
+FeatureController::Feature FeatureController::currentFeature() const
+{
+    return m_currentFeature;
+}
+
+void FeatureController::setCurrentFeature(Feature newFeature)
+{
+    if (m_currentFeature == newFeature) {
+        return;
+    }
+
+    m_currentFeature = newFeature;
+
+    SettingsManager::updateStartup(m_currentFeature);
+}
+

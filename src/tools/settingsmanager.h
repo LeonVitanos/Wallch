@@ -2,6 +2,7 @@
 #define SETTINGSMANAGER_H
 
 #include <QSettings>
+#include "featurecontroller.h"
 
 extern QSettings *settings;
 
@@ -10,7 +11,7 @@ class SettingsManager
 public:
     SettingsManager();
     static void initializeSettings();
-    static void updateStartup();
+    static void updateStartup(FeatureController::Feature currentFeature);
     static void setDefaultFolder(const QString &folder);
 
 private:

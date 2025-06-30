@@ -175,10 +175,7 @@ void TimerManager::updateSeconds(){
 
 void TimerManager::resetSecondsRemaining(){
     secondsRemaining_=totalSeconds_;
-    if(gv.independentIntervalEnabled) {
-        int featureIndex = gv.liveEarthRunning ? 1 : (gv.liveWebsiteRunning ? 2 : 0);
-        Global::saveSecondsLeftNow(secondsRemaining_, featureIndex);
-    }
+    saveSecondsLeftNow();
 }
 
 void TimerManager::resetTimer(){
@@ -195,4 +192,47 @@ void TimerManager::handleTimerExpiry()
     resetSecondsRemaining();
     gv.timeToFinishProcessInterval = gv.runningTimeOfProcess.addSecs(secondsRemaining_);
     Q_EMIT timeToChangeWallpaper();
+}
+
+void TimerManager::saveSecondsLeftNow(bool keepIndependentInterval){
+    if(!gv.independentIntervalEnabled){
+        return;
+    }
+
+    if(!keepIndependentInterval){
+        settings->setValue("seconds_left_interval_independence", INTERVAL_INDEPENDENCE_DEFAULT_VALUE);
+    }
+    else
+    {
+        QChar front;
+        switch(m_currentFeature){
+            default:
+            case FeatureController::Feature::Wallpapers:
+                front='p';
+                break;
+            case FeatureController::Feature::LiveEarth:
+                front='e';
+                break;
+            case FeatureController::Feature::PictureOfTheDay:
+                front='w';
+                break;
+        }
+        QDateTime currentTime = QDateTime::currentDateTime();
+        settings->setValue("seconds_left_interval_independence",
+                           QString(front)+"."+
+                               QString::number(secondsRemaining_)+"."+
+                               currentTime.date().toString("yyyy")+":"+
+                               currentTime.date().toString("MM")+":"+
+                               currentTime.date().toString("dd")+":"+
+                               currentTime.time().toString("HH")+":"+
+                               currentTime.time().toString("mm")+":"+
+                               currentTime.time().toString("ss")
+                           );
+    }
+
+    settings->sync();
+}
+
+void TimerManager::setCurrentFeature(FeatureController::Feature feature){
+    m_currentFeature = feature;
 }

@@ -92,16 +92,11 @@ Q_DECLARE_METATYPE(DesktopStyle)
 #endif
 
 struct GlobalVar {
-    // 'Wallpapers' Feature
-    bool wallpapersRunning = false;
-
     // 'Live Earth' Feature
-    bool liveEarthRunning = false;
     QString liveEarthOnlineUrl;
     QString liveEarthOnlineUrlB;
 
     // 'POTD' Feature
-    bool potdRunning = false;
     bool potdIncludeDescription = true;
     bool potdDescriptionBottom = true;
     int potdDescriptionLeftMargin = 100;
@@ -114,7 +109,6 @@ struct GlobalVar {
     QString potdOnlineUrlB;
 
     // 'Website' Feature
-    bool liveWebsiteRunning = false;
     short websiteWaitAfterFinishSeconds = 3;
     bool websiteLoadImages = true;
     bool websiteJavaEnabled = false;
@@ -198,7 +192,6 @@ public:
     static int websiteSliderValueToSeconds(short value);
     static bool remove(const QString &files);
     static QString getFilename(const QString &file);
-    static void saveSecondsLeftNow(int secondsLeft, short forType);
     static QString base64Decode(const QString &string);
     static void resetSleepProtection(int timeoutCount);
     static void addPreviousBackground(QStringList &previous_backgrounds, const QString &image);

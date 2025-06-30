@@ -1,6 +1,7 @@
 #include "settingsmanager.h"
 #include "glob.h"
 #include "filemanager.h"
+#include <QObject>
 
 QSettings *settings = new QSettings("wallch", "Settings");
 
@@ -106,16 +107,20 @@ void SettingsManager::loadSettings(){
     gv.websiteExtraPasswords=settings->value("website_extra_passwords", QStringList()).toStringList();
 }
 
-void SettingsManager::updateStartup()
+void SettingsManager::updateStartup(FeatureController::Feature currentFeature)
 {
     if(!settings->value("Startup", true).toBool())
         return;
 
-    QString arguments = gv.wallpapersRunning ? (settings->value("Once", false).toBool() ? "--change" : "--start") :
-        gv.liveEarthRunning ? "--earth" :
-        gv.potdRunning ? "--potd" :
-        gv.liveWebsiteRunning ? "--website" :
-        settings->value("start_hidden", false).toBool() ? "--none" : "";
+    QString arguments;
+    switch (currentFeature) {
+        case FeatureController::Feature::Wallpapers: arguments = settings->value("Once", false).toBool() ? "--change" : "--start"; break;
+        case FeatureController::Feature::LiveEarth: arguments = "--earth"; break;
+        case FeatureController::Feature::PictureOfTheDay: arguments = "--potd"; break;
+        case FeatureController::Feature::Website: arguments = "--website"; break;
+        case FeatureController::Feature::None:
+        default: arguments = settings->value("start_hidden", false).toBool() ? "--none" : ""; break;
+    }
 
 #ifdef Q_OS_WIN
     QSettings windowsSettings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
@@ -138,11 +143,33 @@ void SettingsManager::updateStartup()
         Global::remove(gv.homePath+AUTOSTART_DIR+"/"+BOOT_DESKTOP_FILE);
 
     if(!arguments.isEmpty()){
-        QString desktopFileComment = gv.wallpapersRunning ? (settings->value("Once", false).toBool() ? "Sets a random picture from the list as background" : "Start Changing Wallpapers") :
-                                         gv.liveEarthRunning ? "Enable Live Earth" :
-                                         gv.potdRunning ? "Enable Picture of the Day" :
-                                         gv.liveWebsiteRunning ? "Enable Live Website" :
-                                         settings->value("start_hidden", false).toBool() ? "Start Wallch hidden in tray" : "";
+        QString desktopFileComment;
+        switch (currentFeature) {
+        case FeatureController::Feature::Wallpapers:
+            desktopFileComment = settings->value("Once", false).toBool()
+                                     ? QObject::tr("Sets a random picture from the list as background")
+                                     : QObject::tr("Start Changing Wallpapers");
+            break;
+
+        case FeatureController::Feature::LiveEarth:
+            desktopFileComment = QObject::tr("Enable Live Earth");
+            break;
+
+        case FeatureController::Feature::PictureOfTheDay:
+            desktopFileComment = QObject::tr("Enable Picture of the Day");
+            break;
+
+        case FeatureController::Feature::Website:
+            desktopFileComment = QObject::tr("Enable Live Website");
+            break;
+
+        case FeatureController::Feature::None:
+        default:
+            desktopFileComment = settings->value("start_hidden", false).toBool()
+                                     ? QObject::tr("Start Wallch hidden in tray")
+                                     : "";
+            break;
+        }
 
         QString desktopFileCommand = "/usr/bin/wallch " + arguments;
 

@@ -125,8 +125,8 @@ private:
     void potdSetSameImage();
     int processArguments(QApplication *app, QStringList arguments);
     void startProgramNormalGui();
-    void changeRunningFeature(int feature);
     void startFeature(int featureId);
+    void changeRunningFeature(FeatureController::Feature feature);
 
 private Q_SLOTS:
     void newSocketConnection();
