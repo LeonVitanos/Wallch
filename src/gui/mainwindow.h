@@ -265,6 +265,19 @@ private:
 
 public Q_SLOTS:
     void addFolderForMonitor(const QString &folder);
+    void justChangeWallpaper();
+    void handleStartButtonClick();
+    void handlePreviousButtonClick();
+    void handleNextButtonClick();
+    void handleActivateLiveEarthClick();
+    void handleActivatePotdClick();
+    void handleActivateWebsiteClick();
+    void closeWhatsRunning();
+    void handlePreferencesAction();
+    void handleAboutAction();
+    void doQuit();
+    void showNormal();
+    void hideOrShow();
 
 private Q_SLOTS:
 #ifdef Q_OS_LINUX
@@ -273,7 +286,6 @@ private Q_SLOTS:
     void handleSearchShortcut();
     void timeSpinboxChanged();
     void intervalTypeChanged();
-    void closeWhatsRunning();
     void checkBatteryStatus();
     void updateTiming();
     void changePathsToIcons();
@@ -300,7 +312,6 @@ private Q_SLOTS:
     void bottomWidgetsAnimation();
     void setAverageColor(const QString &image);
     void updateScreenLabel();
-    void hideOrShow();
     void picturesLocationsChanged();
     void preferencesDestroyed();
     void lePointDestroyed();
@@ -314,7 +325,6 @@ private Q_SLOTS:
     void delayed_pictures_location_change();
     void restartPotdIfRunningAfterSettingChange();
     void restartLeIfRunningAfterSettingChange();
-    void justChangeWallpaper();
     void setPreviewImage();
     void unhoverMenuButton();
     void beginFixCacheForFolders();
@@ -322,13 +332,10 @@ private Q_SLOTS:
     void preview_changed();
     void deChanged();
     void update_website_settings();
-    void doQuit();
     void onlineRequestFailed();
     void onlineImageRequestReady(QString image);
     void handleHistoryAction();
     void handleContentsAction();
-    void handlePreviousButtonClick();
-    void handleNextButtonClick();
     void handleTimerSliderChange(int value);
     void openWebsitePreview(bool);
     void handleWebsiteCropCheck(bool checked);
@@ -346,14 +353,8 @@ private Q_SLOTS:
     void handleScreenResolutionAction();
     void handlePotdViewerClick();
     void handleAddLoginDetailsCheck(bool checked);
-    void handleAboutAction();
-    void handlePreferencesAction();
 
     void handleFeatureStart();
-    void handleStartButtonClick();
-    void handleActivateLiveEarthClick();
-    void handleActivatePotdClick();
-    void handleActivateWebsiteClick();
 
     void handleStopButtonClick();
     void handleDeactivateLiveEarthClick();

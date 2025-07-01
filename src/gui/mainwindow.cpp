@@ -196,6 +196,13 @@ void MainWindow::hideOrShow()
         this->hide();
 }
 
+void MainWindow::showNormal()
+{
+    QWidget::showNormal();
+    raise();
+    activateWindow();
+}
+
 void MainWindow::connectSignalSlots(){
     connect(ui->previous_Button, &QPushButton::clicked, this, &MainWindow::handlePreviousButtonClick);
     connect(ui->next_Button, &QPushButton::clicked, this, &MainWindow::handleNextButtonClick);

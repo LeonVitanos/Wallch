@@ -918,25 +918,24 @@ void NonGuiManager::setIndependentInterval(const QString &independentInterval){
 }
 
 void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
-    //connects MainWindow with command line messages.
-    QObject::connect(nongui, SIGNAL(signalOnce()), w, SLOT(justChangeWallpaper()));
-    QObject::connect(nongui, SIGNAL(signalPause()), w, SLOT(handleStartButtonClick()));
-    QObject::connect(nongui, SIGNAL(signalPrevious()), w, SLOT(handlePreviousButtonClick()));
-    QObject::connect(nongui, SIGNAL(signalNext()), w, SLOT(handleNextButtonClick()));
-    QObject::connect(nongui, SIGNAL(signalStart()), w, SLOT(handleStartButtonClick()));
-    QObject::connect(nongui, SIGNAL(signalActivateLivearth()), w, SLOT(handleActivateLiveEarthClick()));
-    QObject::connect(nongui, SIGNAL(signalActivatePotd()), w, SLOT(handleActivatePotdClick()));
-    QObject::connect(nongui, SIGNAL(signalActivateLiveWebsite()), w, SLOT(handleActivateWebsiteClick()));
-    QObject::connect(nongui, SIGNAL(closeWhatsRunning()), w, SLOT(closeWhatsRunning()));
-    QObject::connect(nongui, SIGNAL(signalShowPreferences()), w, SLOT(handlePreferencesAction()));
-    QObject::connect(nongui, SIGNAL(signalShowAbout()), w, SLOT(handleAboutAction()));
-    QObject::connect(nongui, SIGNAL(signalQuit()), w, SLOT(doQuit()));
-    QObject::connect(nongui, &NonGuiManager::signalDeleteCurrent, wallpaperManager_->deleteCurrentBackgroundImage);
-    QObject::connect(nongui, &NonGuiManager::signalAddFolderForMonitor, w, &MainWindow::addFolderForMonitor);
-    QObject::connect(nongui, SIGNAL(signalFocus()), w, SLOT(showNormal()));
-    QObject::connect(nongui, SIGNAL(signalHideOrShow()), w, SLOT(hideOrShow()));
-    QObject::connect(w, SIGNAL(signalUncheckRunningFeatureOnTray()), nongui , SLOT(uncheckRunningFeatureOnTray()));
-    QObject::connect(w, SIGNAL(signalRecreateTray()), nongui , SLOT(createTray()));
+    connect(this, &NonGuiManager::signalOnce, w, &MainWindow::justChangeWallpaper);
+    connect(this, &NonGuiManager::signalPause, w, &MainWindow::handleStartButtonClick);
+    connect(this, &NonGuiManager::signalPrevious, w, &MainWindow::handlePreviousButtonClick);
+    connect(this, &NonGuiManager::signalNext, w, &MainWindow::handleNextButtonClick);
+    connect(this, &NonGuiManager::signalStart, w, &MainWindow::handleStartButtonClick);
+    connect(this, &NonGuiManager::signalActivateLivearth, w, &MainWindow::handleActivateLiveEarthClick);
+    connect(this, &NonGuiManager::signalActivatePotd, w, &MainWindow::handleActivatePotdClick);
+    connect(this, &NonGuiManager::signalActivateLiveWebsite, w, &MainWindow::handleActivateWebsiteClick);
+    connect(this, &NonGuiManager::closeWhatsRunning, w, &MainWindow::closeWhatsRunning);
+    connect(this, &NonGuiManager::signalShowPreferences, w, &MainWindow::handlePreferencesAction);
+    connect(this, &NonGuiManager::signalShowAbout, w, &MainWindow::handleAboutAction);
+    connect(this, &NonGuiManager::signalQuit, w, &MainWindow::doQuit);
+    connect(this, &NonGuiManager::signalDeleteCurrent, wallpaperManager_, &WallpaperManager::deleteCurrentBackgroundImage);
+    connect(this, &NonGuiManager::signalAddFolderForMonitor, w, &MainWindow::addFolderForMonitor);
+    connect(this, &NonGuiManager::signalFocus, w, &MainWindow::showNormal);
+    connect(this, &NonGuiManager::signalHideOrShow, w, &MainWindow::hideOrShow);
+    connect(w, &MainWindow::signalUncheckRunningFeatureOnTray, this, &NonGuiManager::uncheckRunningFeatureOnTray);
+    connect(w, &MainWindow::signalRecreateTray, this, &NonGuiManager::createTray);
 }
 
 void NonGuiManager::liveWebsiteImageReady(QImage *image, short errorCode){
