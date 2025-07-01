@@ -22,6 +22,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef NONGUI_H
 #define NONGUI_H
 
+class FeatureController;
+class TimerManager;
+class WallpaperManager;
+class ImageFetcher;
+class FileManager;
+class Global;
+class WallpapersFeature;
+class LiveEarthFeature;
+
 #include <QTimer>
 #include <QSettings>
 #include <QObject>
@@ -50,7 +59,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 class NonGuiManager : public QObject {
   Q_OBJECT
 public:
-    explicit NonGuiManager(QObject *parent = 0) : QObject(parent) {}
+    explicit NonGuiManager(FeatureController *featureController,
+                         TimerManager *timerManager,
+                         WallpaperManager *wallpaperManager,
+                         ImageFetcher *imageFetcher,
+                         FileManager *fileManager,
+                         Global *globalParser,
+                         WallpapersFeature *wallpapersFeature,
+                         LiveEarthFeature *liveEarthFeature,
+                         QObject *parent = nullptr);
     int startProgram(int argc, char *argv[]);
     void doAction(const QString &message);
 
@@ -58,17 +75,18 @@ protected:
     bool eventFilter(QObject *object, QEvent *event);
 
 private:
-    WallpaperManager *wallpaperManager_ = NULL;
-    FileManager *fileManager_ = NULL;
-    TimerManager *timerManager_ = NULL;
+    FeatureController* featureController_;
+    TimerManager *timerManager_;
+    WallpaperManager *wallpaperManager_;
+    ImageFetcher *imageFetcher_;
+    FileManager *fileManager_;
+    Global *globalParser_;
+    WallpapersFeature* wallpapersFeature_;
+    LiveEarthFeature* liveEarthFeature_;
+
     Preferences *preferences_;
     DialogHelper *dialogHelper_;
     WebsiteSnapshot *websiteSnapshot_=NULL;
-    Global *globalParser_ = NULL;
-    ImageFetcher *imageFetcher_ = NULL;
-    WallpapersFeature* wallpapersFeature_ = NULL;
-    LiveEarthFeature* liveEarthFeature_ = NULL;
-    FeatureController* featureController_ = NULL;
 
     QTimer *trayWheelTimer_;
     QMimeData *myFile_;
@@ -123,7 +141,7 @@ private:
     void getDelay();
     void readPictures(const QString &folder);
     void potdSetSameImage();
-    int processArguments(QApplication *app, QStringList arguments);
+    int processArguments(const QStringList &arguments);
     void startProgramNormalGui();
     void startFeature(int featureId);
     void changeRunningFeature(FeatureController::Feature feature);

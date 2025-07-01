@@ -43,6 +43,28 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define CHECK_INTERNET_INTERVAL 10000
 
+NonGuiManager::NonGuiManager(FeatureController *featureController,
+                             TimerManager *timerManager,
+                             WallpaperManager *wallpaperManager,
+                             ImageFetcher *imageFetcher,
+                             FileManager *fileManager,
+                             Global *globalParser,
+                             WallpapersFeature *wallpapersFeature,
+                             LiveEarthFeature *liveEarthFeature,
+                             QObject *parent)
+    : QObject(parent)
+    , featureController_(featureController)
+    , timerManager_(timerManager)
+    , wallpaperManager_(wallpaperManager)
+    , imageFetcher_(imageFetcher)
+    , fileManager_(fileManager)
+    , globalParser_(globalParser)
+    , wallpapersFeature_(wallpapersFeature)
+    , liveEarthFeature_(liveEarthFeature)
+{
+    connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineBackgroundReady(QString)));
+}
+
 bool NonGuiManager::alreadyRuns(){
     alreadyRunsMem_ = new QSharedMemory("Wallch Memory", this);
     if(alreadyRunsMem_->attach(QSharedMemory::ReadOnly)){
@@ -327,9 +349,18 @@ void NonGuiManager::messageServer(const QString &message, bool quitAfterwards){
 }
 
 void NonGuiManager::socketError(){
-    if(quitAfterMessagingMainApplication_){
-        //it should quit, but sending the message failed. Assume that the instance failed and start a new one.
-        processArguments(NULL, QStringList() << QString() << messageToSendToServer_);
+    // This function is called when we fail to send a message to another instance.
+    if (quitAfterMessagingMainApplication_) {
+        // The failure implies the other instance has crashed.
+
+        Global::debug("Could not connect to running instance. Assuming it has crashed.");
+
+        if (messageToSendToServer_ == "--focus") {
+            Global::debug("Recovering by launching a new GUI window.");
+            startProgramNormalGui();
+        } else {
+            processArguments(QStringList() << QString() << messageToSendToServer_);
+        }
     }
 }
 
@@ -636,21 +667,13 @@ void NonGuiManager::doAction(const QString &message){
 
         mainWindowLaunched_=true;
 
-        MainWindow *w;
-
-        if(featureController_->isWallpapersRunning()){
-            w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_,
-                               wallpaperManager_, timerManager_, featureController_);
-        }
-        else if(featureController_->isWebsiteRunning() || featureController_->isLiveEarthRunning()){
-            w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_,
-                               timerManager_, featureController_);
-        }
-        else
-        {
-            w = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_,
-                               timerManager_, featureController_);
-        }
+        MainWindow *w = new MainWindow(alreadyRunsMem_,
+                                       globalParser_,
+                                       imageFetcher_,
+                                       websiteSnapshot_,
+                                       wallpaperManager_,
+                                       timerManager_,
+                                       featureController_);
 
         connectMainwindowWithExternalActions(w);
         w->show();
@@ -988,20 +1011,26 @@ void NonGuiManager::startProgramNormalGui(){
 
     setupTray();
     mainWindowLaunched_=true;
-    MainWindow *mainWindow = new MainWindow(alreadyRunsMem_, globalParser_, imageFetcher_, websiteSnapshot_, wallpaperManager_, 0, 0);
+    MainWindow *mainWindow = new MainWindow(alreadyRunsMem_,
+                                            globalParser_,
+                                            imageFetcher_,
+                                            websiteSnapshot_,
+                                            wallpaperManager_,
+                                            timerManager_,
+                                            featureController_);
 
     connectMainwindowWithExternalActions(mainWindow);
     mainWindow->show();
 }
 
-int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
-    //getting custom argc and not the original in case processArguments is not called with the original process arguments
+int NonGuiManager::processArguments(const QStringList &arguments)
+{
     int argc = arguments.count();
 
     if(arguments.contains("--start")){
         if(alreadyRuns()){
             messageServer("--start", true);
-            return app == NULL ? 0 : app->exec();
+            return 0;
         }
 
         bool gotPicLocation = wallpapersFeature_->getPicturesLocation(true);
@@ -1030,7 +1059,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
             timerManager_->start();
         }
 
-        return app == NULL ? 0 : app->exec();
+        return 0;
     }
     else if(arguments.contains("--earth")){
         if(argc > 2){
@@ -1039,7 +1068,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         }
         if(alreadyRuns()){
             messageServer("--earth", true);
-            return app == NULL ? 0 : app->exec();
+            return 0;
         }
         startedWithLiveEarth_=true;
         changeRunningFeature(FeatureController::Feature::LiveEarth);
@@ -1051,7 +1080,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
 
         continueWithLiveEarth();
 
-        return app == NULL ? 0 : app->exec();
+        return 0;
     }
     else if(arguments.contains("--potd")){
         if(argc > 2){
@@ -1060,7 +1089,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         }
         if(alreadyRuns()){
             messageServer("--potd", true);
-            return app == NULL ? 0 : app->exec();
+            return 0;
         }
         startedWithPotd_=true;
         changeRunningFeature(FeatureController::Feature::PictureOfTheDay);
@@ -1070,7 +1099,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
 
         continueWithPotd();
 
-        return app == NULL ? 0 : app->exec();
+        return 0;
     }
     else if(arguments.contains("--website")){
         if(argc>2){
@@ -1079,7 +1108,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         }
         if(alreadyRuns()){
             messageServer("--website", true);
-            return app == NULL ? 0 : app->exec();
+            return 0;
         }
         startedWithWebsite_=true;
         changeRunningFeature(FeatureController::Feature::Website);
@@ -1092,7 +1121,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         websiteSnapshot_ = new WebsiteSnapshot();
 
         continueWithWebsite();
-        return app == NULL ? 0 : app->exec();
+        return 0;
     }
     else if(arguments.contains("--quit") || arguments.contains("--stop") || arguments.contains("--next") || arguments.contains("--previous") || arguments.contains("--pause")){
         if(argc > 2){
@@ -1114,7 +1143,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         else
         {
             Global::error("No instance seems to be running.");
-            exit(1);
+            return 1;
         }
     }
     else if(arguments.contains("--none")){
@@ -1130,20 +1159,13 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
         connectToServer();
         setupTray();
 
-        return app == NULL ? 0 : app->exec();
+        return 0;
     }
     else if(arguments.contains("--focus")){
-        if(app == NULL){
-            //previous wallch instance crashed and tried to send the message focus to it.
-            startProgramNormalGui();
+        if(alreadyRuns()){
+            messageServer("--focus", true);
         }
-        else
-        {
-            //normally called with the --focus argument, attempt to send the message to the server
-            if(alreadyRuns())
-                messageServer("--focus", true);
-        }
-        return app == NULL ? 0 : app->exec();
+        return 0;
     }
     else
     {
@@ -1160,7 +1182,7 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
                 if(alreadyRuns()){
                     Global::debug("Folder '"+currentFolder+"' has been sent to the already running instance of Wallch for monitoring.");
                     messageServer("MONITOR:"+currentFolder, true);
-                    return app == NULL ? 0 : app->exec();
+                    return 0;
                 }
                 else
                 {
@@ -1178,24 +1200,24 @@ int NonGuiManager::processArguments(QApplication *app, QStringList arguments){
 
 int NonGuiManager::startProgram(int argc, char *argv[]){
     if(argc > 1){
-
+        // First-level parsing for one-off commands that exit immediately
 #ifdef Q_OS_WIN
-    if(settings->value("startup_timeout", 3).toInt()!=0)
-        Sleep(settings->value("startup_timeout", 3).toInt()*1000);
+        if(settings->value("startup_timeout", 3).toInt()!=0)
+            Sleep(settings->value("startup_timeout", 3).toInt()*1000);
 #endif
 
-        const struct option longopts[] =
-        {
-            {"version",   ARG_NOT_REQ,        0, 'v'},
-            {"help",      ARG_NOT_REQ,        0, 'h'},
-            {"change",     ARG_OPT,  0, 'c'},
-            {0,0,0,0},
+        const struct option longopts[] = {
+            {"version", ARG_NOT_REQ, 0, 'v'},
+            {"help", ARG_NOT_REQ, 0, 'h'},
+            {"change", ARG_OPT, 0, 'c'},
+            {0, 0, 0, 0},
         };
 
         int index;
         int iarg=0;
 
-        opterr=0; //turn off getopt error message
+        opterr=0; // Turn off getopt error message
+        optind=1; // Reset getopt for safe re-parsing
 
         while(iarg != -1)
         {
@@ -1204,31 +1226,20 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
             {
             case 'h':
                 showUsage(0);
-                break;
+                return 1;
             case 'v':
                 Global::debug("Wallch - Wallpaper Changer, Version " + QString::number(APP_VERSION, 'f', 3));
-                return 0;
-                break;
+                return 1;
             case 'c':
             {
-                /*
-                 * Just change the current image. This argument always launches when called
-                 * correctly (it doesn't matter whether wallch is already running or not)
-                */
-
-                viralSettingsOperations();
-
-                wallpaperManager_ = new WallpaperManager();
                 wallpapersFeature_->startedWithJustChange_=true;
 
                 if(optarg){
-                    //probably the user has specified a folder for working with --change.
                     if(index!=2 || argc > 3)
                         showUsage(1);
 
                     QString directoryToReadFrom=QString(optarg);
                     if(QDir(directoryToReadFrom).exists())
-                        //It is a directory. Read its contents instead of the default directory.
                         readPictures(QDir(directoryToReadFrom).absolutePath());
                     else{
                         Global::error(directoryToReadFrom+" - No such directory.");
@@ -1236,76 +1247,39 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
                     }
                 }
                 else {
-                    //only --change was specified... Read the pictures of the default folder
                     if(!wallpapersFeature_->getPicturesLocation(true))
                         return 1;
                 }
 
-                if(gv.setAverageColor)
-                    wallpaperManager_->setBackground(wallpaperManager_->randomButNotCurrentWallpaper(), true, true, 1);
-                else
-                    wallpaperManager_->setBackground(wallpaperManager_->randomButNotCurrentWallpaper(), true, true, 1);
-
-                return 0;
+                wallpaperManager_->setBackground(wallpaperManager_->randomButNotCurrentWallpaper(), true, true, 1);
+                return 1;
             }
             }
         }
 
-        //second level argument searching!
-        QApplication app(argc, argv);
-
-        // Initialize core application services
-        globalParser_ = new Global();
-        timerManager_ = new TimerManager();
-        imageFetcher_ = new ImageFetcher();
-        wallpaperManager_ = new WallpaperManager();
-        fileManager_ = new FileManager(wallpaperManager_);
-
-        // Initialize feature handlers
-        wallpapersFeature_ = new WallpapersFeature(wallpaperManager_, timerManager_, fileManager_, this);
-        liveEarthFeature_ = new LiveEarthFeature(imageFetcher_, this);
-
-        // Initialize the main feature controller
-        featureController_ = new FeatureController(wallpapersFeature_, liveEarthFeature_, this);
-
-        // Connect main application signals
-        connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineBackgroundReady(QString)));
-        connect(timerManager_, &TimerManager::timeToChangeWallpaper, featureController_, &FeatureController::onTimeToChangeWallpaper);
-
-        viralSettingsOperations();
-        QApplication::setQuitOnLastWindowClosed(false);
-
-        if(!gv.randomImagesEnabled)
-            wallpaperManager_->setRandomMode(false);
-        else
-            srand(QDateTime::currentMSecsSinceEpoch());
+        // Second-level parsing for long-running commands
 
         if(startedWithLiveEarth_ || startedWithWebsite_ || !startedWithPotd_){
-            gv.independentIntervalEnabled = settings->value("independent_interval_enabled", true).toBool();
-            if(gv.independentIntervalEnabled) //check if there is an interval to follow
+            if(settings->value("independent_interval_enabled", true).toBool())
                 setIndependentInterval(settings->value("seconds_left_interval_independence", INTERVAL_INDEPENDENCE_DEFAULT_VALUE).toString());
         }
-        else
-            gv.independentIntervalEnabled=false;
 
-        return processArguments(&app, QCoreApplication::arguments());
+        // processArguments will parse the remaining arguments and start the correct feature.
+        return processArguments(QCoreApplication::arguments());
+
     }
     else{
-        //we have no arguments, proceed
-        QApplication app(argc, argv);
+        // No arguments were provided, start the full GUI
 
-        viralSettingsOperations();
-        QApplication::setQuitOnLastWindowClosed(false);
         if(alreadyRuns()){
             messageServer("--focus", true);
-            return app.exec();
+            return 0;
         }
+
         startProgramNormalGui();
 
-        return app.exec();
+        return 0;
     }
-
-    return 0;
 }
 
 void NonGuiManager::startFeature(int featureId) {

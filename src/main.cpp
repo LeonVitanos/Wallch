@@ -21,6 +21,16 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "nonguimanager.h"
 #include "glob.h"
+#include "settingsmanager.h"
+#include "features/featurecontroller.h"
+#include "features/wallpapersfeature.h"
+#include "features/liveearthfeature.h"
+#include "tools/timermanager.h"
+#include "tools/wallpapermanager.h"
+#include "tools/imagefetcher.h"
+#include "tools/filemanager.h"
+#include "tools/glob.h"
+#include <QApplication>
 #include <QLoggingCategory>
 
 struct GlobalVar gv;
@@ -29,9 +39,49 @@ NonGuiManager *nongui;
 
 int main(int argc, char *argv[])
 {
+    QApplication app(argc, argv);
+
     // Disable warnings about corrupt ICC color profiles in user images.
     QLoggingCategory::setFilterRules("qt.gui.icc.warning=false");
 
-    nongui = new NonGuiManager();
-    return nongui->startProgram(argc, argv);
+    // 1. Initialize core utilities that have no dependencies.
+    SettingsManager::initializeSettings();
+
+    // 2. Create the low-level, shared tools and managers.
+    auto globalParser = new Global();
+    auto timerManager = new TimerManager(&app);
+    auto wallpaperManager = new WallpaperManager(&app);
+    auto imageFetcher = new ImageFetcher(&app);
+    auto fileManager = new FileManager(wallpaperManager);
+
+    // 3. Create the individual feature handlers, injecting their dependencies.
+    auto wallpapersFeature = new WallpapersFeature(wallpaperManager, timerManager, fileManager, &app);
+    auto liveEarthFeature = new LiveEarthFeature(imageFetcher, &app); // Live Earth might also need an image fetcher
+
+    // 4. Create the core controllers that depend on the feature handlers.
+    auto featureController = new FeatureController(wallpapersFeature, liveEarthFeature, &app);
+
+    // 5. Wire up the core components. The timer should tell the FeatureController when to act.
+    QObject::connect(timerManager, &TimerManager::timeToChangeWallpaper,
+                     featureController, &FeatureController::onTimeToChangeWallpaper);
+
+    // 6. Create the main application manager and INJECT the dependencies.
+    NonGuiManager nonGuiManager(featureController,
+                                timerManager,
+                                wallpaperManager,
+                                imageFetcher,
+                                fileManager,
+                                globalParser,
+                                wallpapersFeature,
+                                liveEarthFeature);
+
+    // 7. Tell the fully constructed manager to start the program.
+    int exitCode = nonGuiManager.startProgram(argc, argv);
+
+    // 8. Let Qt run its event loop.
+    if (exitCode == 0) {
+        return app.exec();
+    } else {
+        return exitCode;
+    }
 }
