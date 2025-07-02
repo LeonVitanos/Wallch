@@ -64,6 +64,7 @@ public:
                          WallpaperManager *wallpaperManager,
                          ImageFetcher *imageFetcher,
                          FileManager *fileManager,
+                         DialogHelper *dialogHelper,
                          Global *globalParser,
                          WallpapersFeature *wallpapersFeature,
                          LiveEarthFeature *liveEarthFeature,
@@ -80,12 +81,12 @@ private:
     WallpaperManager *wallpaperManager_;
     ImageFetcher *imageFetcher_;
     FileManager *fileManager_;
+    DialogHelper *dialogHelper_;
     Global *globalParser_;
     WallpapersFeature* wallpapersFeature_;
     LiveEarthFeature* liveEarthFeature_;
 
     Preferences *preferences_;
-    DialogHelper *dialogHelper_;
     WebsiteSnapshot *websiteSnapshot_=NULL;
 
     QTimer *trayWheelTimer_;

@@ -27,6 +27,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <QTreeWidgetItem>
 #include <QMenu>
+#include <QDialog>
+#include <QGroupBox>
+#include <QGridLayout>
 
 namespace Ui {
     class history;
@@ -37,7 +40,9 @@ class History : public QDialog
     Q_OBJECT
 
 public:
-    explicit History(WallpaperManager *wallpaperManager, QWidget *parent = 0);
+    explicit History(WallpaperManager *wallpaperManager,
+                     DialogHelper *dialogHelper,
+                     QWidget *parent = 0);
     ~History();
 
 private:

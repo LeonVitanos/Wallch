@@ -40,18 +40,20 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory,
                        ImageFetcher *imageFetcher,
                        WebsiteSnapshot *websiteSnapshot,
                        WallpaperManager *wallpaperManager,
+                       DialogHelper *dialogHelper,
                        TimerManager *timerManager,
                        FeatureController *featureController,
                        QWidget *parent) :
     QMainWindow(parent),
+    ui(new Ui::MainWindow),
     attachedMemory_(attachedMemory),
     globalParser_(globalParser),
     imageFetcher_(imageFetcher),
     websiteSnapshot_(websiteSnapshot),
     wallpaperManager_(wallpaperManager),
+    dialogHelper_(dialogHelper),
     timerManager_(timerManager),
-    featureController_(featureController),
-    ui(new Ui::MainWindow)
+    featureController_(featureController)
 {
     ui->setupUi(this);
 
@@ -358,7 +360,6 @@ void MainWindow::initializePrivateVariables(){
     opacityEffect2_ = new QGraphicsOpacityEffect(this);
     scaleWatcher_ = new QFutureWatcher<QImage>(this);
     fileManager_ = new FileManager(wallpaperManager_);
-    dialogHelper_ = new DialogHelper();
     wallpaperHelper_ = new WallpaperHelper(wallpaperManager_, ui->wallpapersList);
 
     increaseOpacityAnimation = new QPropertyAnimation();
@@ -2867,7 +2868,7 @@ void MainWindow::handleHistoryAction()
         return;
     }
     historyShown_=true;
-    history_ = new History (wallpaperManager_, this);
+    history_ = new History (wallpaperManager_, dialogHelper_, this);
     history_->setModal(true);
     history_->setAttribute(Qt::WA_DeleteOnClose);
     connect(history_, SIGNAL(destroyed()), this, SLOT(historyDestroyed()));

@@ -35,9 +35,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <QSettings>
 #include <QImageReader>
 
-History::History(WallpaperManager *wallpaperManager, QWidget *parent) :
+History::History(WallpaperManager *wallpaperManager,
+                 DialogHelper *dialogHelper,
+                 QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::history)
+    ui(new Ui::history),
+    wallpaperManager_(wallpaperManager),
+    dialogHelper_(dialogHelper)
 {
     ui->setupUi(this);
     connect(ui->daysTree, &QTreeWidget::itemClicked, this, &History::handleDaysTreeItemClick);
@@ -47,7 +51,6 @@ History::History(WallpaperManager *wallpaperManager, QWidget *parent) :
     connect(ui->historyInfo, &QListWidget::customContextMenuRequested, this, &History::handleHistoryInfoContextMenu);
 
     wallpaperManager_ = wallpaperManager;
-    dialogHelper_ = new DialogHelper();
 
     ui->keepHistory->setChecked(settings->value("history", true).toBool());
     readHistoryFiles();
@@ -269,7 +272,7 @@ void History::showProperties(){
     if(!ui->historyInfo->currentItem()->isSelected())
         return;
 
-    dialogHelper_->showPropertiesDialog(-1, 0, ui->historyInfo->currentItem()->data(11).toString());
+    dialogHelper_->showPropertiesDialog(-1, ui->historyInfo->currentItem()->data(11).toString());
 }
 
 void History::launchInBrowser(){

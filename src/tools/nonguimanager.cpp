@@ -48,6 +48,7 @@ NonGuiManager::NonGuiManager(FeatureController *featureController,
                              WallpaperManager *wallpaperManager,
                              ImageFetcher *imageFetcher,
                              FileManager *fileManager,
+                             DialogHelper *dialogHelper,
                              Global *globalParser,
                              WallpapersFeature *wallpapersFeature,
                              LiveEarthFeature *liveEarthFeature,
@@ -58,6 +59,7 @@ NonGuiManager::NonGuiManager(FeatureController *featureController,
     , wallpaperManager_(wallpaperManager)
     , imageFetcher_(imageFetcher)
     , fileManager_(fileManager)
+    , dialogHelper_(dialogHelper)
     , globalParser_(globalParser)
     , wallpapersFeature_(wallpapersFeature)
     , liveEarthFeature_(liveEarthFeature)
@@ -672,6 +674,7 @@ void NonGuiManager::doAction(const QString &message){
                                        imageFetcher_,
                                        websiteSnapshot_,
                                        wallpaperManager_,
+                                       dialogHelper_,
                                        timerManager_,
                                        featureController_);
 
@@ -1015,6 +1018,7 @@ void NonGuiManager::startProgramNormalGui(){
                                             imageFetcher_,
                                             websiteSnapshot_,
                                             wallpaperManager_,
+                                            dialogHelper_,
                                             timerManager_,
                                             featureController_);
 

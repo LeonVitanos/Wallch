@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "tools/imagefetcher.h"
 #include "tools/filemanager.h"
 #include "tools/glob.h"
+#include "tools/dialoghelper.h"
 #include <QApplication>
 #include <QLoggingCategory>
 
@@ -53,6 +54,7 @@ int main(int argc, char *argv[])
     auto wallpaperManager = new WallpaperManager(&app);
     auto imageFetcher = new ImageFetcher(&app);
     auto fileManager = new FileManager(wallpaperManager);
+    auto dialogHelper = new DialogHelper(wallpaperManager, &app);
 
     // 3. Create the individual feature handlers, injecting their dependencies.
     auto wallpapersFeature = new WallpapersFeature(wallpaperManager, timerManager, fileManager, &app);
@@ -71,6 +73,7 @@ int main(int argc, char *argv[])
                                 wallpaperManager,
                                 imageFetcher,
                                 fileManager,
+                                dialogHelper,
                                 globalParser,
                                 wallpapersFeature,
                                 liveEarthFeature);

@@ -57,6 +57,7 @@
 #include "wallpaperhelper.h"
 #include "searchimages.h"
 #include "featurecontroller.h"
+#include "silenced_qfuturewatcher.h" // IWYU pragma: keep
 
 #ifndef Q_OS_LINUX
     #include "notification.h"
@@ -90,6 +91,7 @@ public:
                ImageFetcher *imageFetcher,
                WebsiteSnapshot *websiteSnapshot,
                WallpaperManager *wallpaperManager,
+               DialogHelper *dialogHelper,
                TimerManager *timerManager,
                FeatureController *featureController,
                QWidget *parent = 0);
@@ -122,7 +124,14 @@ private:
 #endif
 
     QSharedMemory *attachedMemory_;
+    Global *globalParser_;
+    ImageFetcher *imageFetcher_;
+    WebsiteSnapshot *websiteSnapshot_;
     WallpaperManager *wallpaperManager_;
+    DialogHelper *dialogHelper_;
+    TimerManager *timerManager_;
+    FeatureController *featureController_;
+
     FileManager *fileManager_;
     ColorManager *colorManager_;
     CacheManager *cacheManager_;
@@ -157,11 +166,8 @@ private:
     PicturesLocations *locations_;
     PotdPreview *potdPreview_;
     WebsitePreview *webPreview_;
-    TimerManager *timerManager_;
-    DialogHelper *dialogHelper_;
     WallpaperHelper *wallpaperHelper_;
     SearchImages *searchImages_;
-    FeatureController *featureController_;
 
     QMovie *processingRequestGif_;
     QPropertyAnimation *rightWidgetAnimation_;
@@ -171,14 +177,11 @@ private:
     QGraphicsOpacityEffect* opacityEffect2_;
     QPropertyAnimation *increaseOpacityAnimation;
     QPropertyAnimation *decreaseOpacityAnimation;
-    WebsiteSnapshot *websiteSnapshot_;
     QIcon imageLoading_;
     bool appAboutToClose_ = false;
     bool stoppedBecauseOnBattery_ = false;
     bool currentlyUpdatingIcons_ = false;
     bool processingOnlineRequest_;
-    Global *globalParser_ = NULL;
-    ImageFetcher *imageFetcher_ = NULL;
     int previouslyRunningFeature_ = 0;
     double imagePreviewResizeFactorX_;
     double imagePreviewResizeFactorY_;
