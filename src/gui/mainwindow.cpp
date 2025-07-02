@@ -1,22 +1,19 @@
 /*
-Wallch - Wallpaper Changer
-A tool for changing Desktop Wallpapers automatically
-with lots of features
-Copyright © 2010-2014 by Alex Solanos and Leon Vitanos
+ Wallch - A Modern, Cross-Platform Wallpaper Changer
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 3
-of the License, or (at your option) any later version.
+ Copyright © 2010-2025, The Wallch Team.
+ Original Authors (2010-2015): Alexandros Solanos, Leon Vitanos
+ Modernization & New Code (2025-): Leon Vitanos
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
 */
 
 #include <QMimeData>
@@ -38,23 +35,29 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 MainWindow *mainWindowInstance;
 
-MainWindow::MainWindow(QSharedMemory *attachedMemory, Global *globalParser, ImageFetcher *imageFetcher,
-                       WebsiteSnapshot *websiteSnapshot, WallpaperManager *wallpaperManager,
-                       TimerManager *timerManager, FeatureController *featureContoller, QWidget *parent) :
+MainWindow::MainWindow(QSharedMemory *attachedMemory,
+                       Global *globalParser,
+                       ImageFetcher *imageFetcher,
+                       WebsiteSnapshot *websiteSnapshot,
+                       WallpaperManager *wallpaperManager,
+                       TimerManager *timerManager,
+                       FeatureController *featureController,
+                       QWidget *parent) :
     QMainWindow(parent),
+    attachedMemory_(attachedMemory),
+    globalParser_(globalParser),
+    imageFetcher_(imageFetcher),
+    websiteSnapshot_(websiteSnapshot),
+    wallpaperManager_(wallpaperManager),
+    timerManager_(timerManager),
+    featureController_(featureController),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
     mainWindowInstance = this;
 
-    attachedMemory_ = attachedMemory;
-
-    wallpaperManager_ = (wallpaperManager == NULL) ? new WallpaperManager() : wallpaperManager;
-    timerManager_ = timerManager;
-    featureController_ = featureContoller;
-    websiteSnapshot_ = websiteSnapshot;
-    initializePrivateVariables(globalParser, imageFetcher);
+    initializePrivateVariables();
 
     getScreenResolution(QGuiApplication::primaryScreen()->geometry());
     getScreenAvailableResolution(QGuiApplication::primaryScreen()->availableGeometry());
@@ -349,9 +352,7 @@ void MainWindow::changeCurrentTheme(){
     }
 }
 
-void MainWindow::initializePrivateVariables(Global *globalParser, ImageFetcher *imageFetcher){
-    globalParser_ = (globalParser_ == NULL) ? new Global() : globalParser;
-    imageFetcher_ = (imageFetcher == NULL) ? new ImageFetcher() : imageFetcher;
+void MainWindow::initializePrivateVariables(){
     cacheManager_ = new CacheManager();
     opacityEffect_ = new QGraphicsOpacityEffect(this);
     opacityEffect2_ = new QGraphicsOpacityEffect(this);

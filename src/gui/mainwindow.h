@@ -1,22 +1,19 @@
 /*
-Wallch - Wallpaper Changer
-A tool for changing Desktop Wallpapers automatically
-with lots of features
-Copyright © 2010-2014 by Alex Solanos and Leon Vitanos
+ Wallch - A Modern, Cross-Platform Wallpaper Changer
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 3
-of the License, or (at your option) any later version.
+ Copyright © 2010-2025, The Wallch Team.
+ Original Authors (2010-2015): Alexandros Solanos, Leon Vitanos
+ Modernization & New Code (2025-): Leon Vitanos
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
 */
 
 #ifndef MAINWINDOW_H
@@ -88,9 +85,14 @@ namespace Ui {
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    MainWindow(QSharedMemory *attachedMemory, Global *globalParser, ImageFetcher *imageFetcher_,
-               WebsiteSnapshot *websiteSnapshot, WallpaperManager *wallpaperManager,
-               TimerManager *timerManager, FeatureController *featureController, QWidget *parent = 0);
+    MainWindow(QSharedMemory *attachedMemory,
+               Global *globalParser,
+               ImageFetcher *imageFetcher,
+               WebsiteSnapshot *websiteSnapshot,
+               WallpaperManager *wallpaperManager,
+               TimerManager *timerManager,
+               FeatureController *featureController,
+               QWidget *parent = 0);
     ~MainWindow();
     void click_shortcut_next();
     Ui::MainWindow *ui;
@@ -224,7 +226,7 @@ private:
     QPoint calculateSettingsMenuPos();
     void continueAlreadyRunningFeature();
     void applySettings();
-    void initializePrivateVariables(Global *globalParser, ImageFetcher *imageFetcher);
+    void initializePrivateVariables();
     void setupMenu();
     void connectSignalSlots();
     void startUpdateSeconds();    
