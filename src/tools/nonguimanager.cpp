@@ -515,7 +515,7 @@ void NonGuiManager::createTray()
     {
         wallpapersAction_->setCheckable(true);
         wallpapersAction_->setChecked(true);
-        if(gv.processPaused){
+        if(wallpapersFeature_->isPaused()){
             wallpapersPauseAction_->setText("   "+tr("Start"));
             trayIconMenu_->addAction(wallpapersPauseAction_);
         }
@@ -723,20 +723,20 @@ void NonGuiManager::doAction(const QString &message){
             return;
         }
 
-        if(!featureController_->isWallpapersRunning() && !gv.processPaused){
+        if(!featureController_->isWallpapersRunning() && !wallpapersFeature_->isPaused()){
             Global::error("Cannot pause to any other process rather than Wallpapers!");
             return;
         }
-        if(!gv.processPaused){
+        if(!wallpapersFeature_->isPaused()){
             Global::debug("Pausing the Wallpapers process.");
             timerManager_->stop();
-            gv.processPaused=true;
+            wallpapersFeature_->setPaused(true);
         }
         else
         {
             Global::resetSleepProtection(timerManager_->secondsRemaining_);
             Global::debug("Continuing from the pause...");
-            gv.processPaused=false;
+            wallpapersFeature_->setPaused(false);
             timerManager_->start();
         }
     }
@@ -752,7 +752,7 @@ void NonGuiManager::doAction(const QString &message){
         {
             wallpaperManager_->startOver();
 
-            gv.processPaused=false;
+            wallpapersFeature_->setPaused(false);
 
             timerManager_->secondsRemaining_=timerManager_->totalSeconds_;
 
@@ -1288,7 +1288,7 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
 void NonGuiManager::startFeature(int featureId) {
     // Step 1: Handle the GUI-mode toggle
     if (mainWindowLaunched_) {
-        bool isRunning = (featureId == 0 && featureController_->isWallpapersRunning() && !gv.processPaused) ||
+        bool isRunning = (featureId == 0 && featureController_->isWallpapersRunning() && !wallpapersFeature_->isPaused()) ||
                          (featureId == 1 && featureController_->isLiveEarthRunning()) ||
                          (featureId == 2 && featureController_->isPotdRunning()) ||
                          (featureId == 3 && featureController_->isWebsiteRunning());
@@ -1304,7 +1304,7 @@ void NonGuiManager::startFeature(int featureId) {
         return;
     }
 
-    if (featureId == 0 && featureController_->isWallpapersRunning() && gv.processPaused) {
+    if (featureId == 0 && featureController_->isWallpapersRunning() && wallpapersFeature_->isPaused()) {
         doAction("--pause"); // This will un-pause it
         return;
     }

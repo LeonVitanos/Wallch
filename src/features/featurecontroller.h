@@ -45,11 +45,18 @@ public:
     bool isLiveEarthRunning() const;
     bool isPotdRunning() const;
     bool isWebsiteRunning() const;
+
+    bool isFeaturePaused() const;
+
     Feature currentFeature() const;
     void setCurrentFeature(Feature newFeature);
+    void setPaused(bool paused);
 
 public Q_SLOTS:
     void onTimeToChangeWallpaper();
+
+Q_SIGNALS:
+    void pausedStateChanged(bool isPaused);
 
 private:
     Feature m_currentFeature = Feature::None;

@@ -135,7 +135,6 @@ struct GlobalVar {
     bool randomImagesEnabled = false;
     bool firstTimeout = false;
     bool symlinks = false;
-    bool processPaused = false;
     bool saveHistory = true;
     int randomTimeFrom = 300;
     int randomTimeTo = 1200;

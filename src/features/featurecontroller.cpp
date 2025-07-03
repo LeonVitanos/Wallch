@@ -83,3 +83,19 @@ void FeatureController::setCurrentFeature(Feature newFeature)
     SettingsManager::updateStartup(m_currentFeature);
 }
 
+bool FeatureController::isFeaturePaused() const
+{
+    if (m_currentFeature == Feature::Wallpapers) {
+        return m_wallpapersFeature->isPaused();
+    }
+    return false;
+}
+
+void FeatureController::setPaused(bool paused)
+{
+    if (m_currentFeature == Feature::Wallpapers) {
+        m_wallpapersFeature->setPaused(paused);
+    }
+}
+
+

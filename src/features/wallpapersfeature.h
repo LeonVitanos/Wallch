@@ -42,10 +42,18 @@ public:
     bool previousWasClicked_ = false;
     bool startedWithJustChange_ = false;
 
+    bool isPaused() const;
+    void setPaused(bool paused);
+
+Q_SIGNALS:
+    void pausedStateChanged(bool isPaused);
+
 private:
     WallpaperManager *m_wallpaperManager;
     TimerManager *m_timerManager;
     FileManager *m_fileManager;
+
+    bool m_isPaused = false;
 };
 
 #endif // WALLPAPERSFEATURE_H

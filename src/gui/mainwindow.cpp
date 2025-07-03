@@ -272,6 +272,8 @@ void MainWindow::connectSignalSlots(){
     connect(QGuiApplication::primaryScreen(), SIGNAL(geometryChanged(QRect)), this, SLOT(getScreenResolution(QRect)));
     connect(QGuiApplication::primaryScreen(), SIGNAL(availableGeometryChanged(QRect)), this, SLOT(getScreenAvailableResolution(QRect)));
 
+    connect(featureController_, &FeatureController::pausedStateChanged, this, &MainWindow::onPausedStateChanged);
+
 #ifdef Q_OS_LINUX
     dconf = new QProcess(this);
     connect(dconf, SIGNAL(readyReadStandardOutput()), this, SLOT(dconfChanges()));
@@ -481,11 +483,12 @@ void MainWindow::continueAlreadyRunningFeature()
     {
         loadWallpapersPage();
 
-        if(gv.processPaused){
+        if(featureController_->isFeaturePaused()){
             actAsStart_=true;
             ui->startButton->setText(tr("&Start"));
             ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
             animateProgressbarOpacity(1);
+            onPausedStateChanged(true);
             timerManager_->findSeconds(true);
             timerManager_->secondsRemaining_ += 1;
             globalParser_->resetSleepProtection(timerManager_->secondsRemaining_);
@@ -501,6 +504,7 @@ void MainWindow::continueAlreadyRunningFeature()
             ui->startButton->setText(tr("Pau&se"));
             ui->startButton->setIcon(QIcon::fromTheme("media-playback-pause", QIcon(":/images/media-playback-pause.png")));
             animateProgressbarOpacity(1);
+            onPausedStateChanged(false);
             timerManager_->findSeconds(true);
             startWasJustClicked_=true;
             startUpdateSeconds();
@@ -1323,7 +1327,7 @@ void MainWindow::stopEverythingThatsRunning(short excludingFeature)
 void MainWindow::pauseEverythingThatsRunning()
 {
     if(featureController_->isWallpapersRunning()){
-        if(!gv.processPaused)
+        if(!featureController_->isFeaturePaused())
         {
             handleStartButtonClick();
         }
@@ -1453,48 +1457,32 @@ void MainWindow::startPauseWallpaperChangingProcess(){
         return;
     }
     if (actAsStart_){
+        const bool wasPaused = featureController_->isFeaturePaused();
 
-        actAsStart_=false; //the next time act like pause is pressed
-        changeRunningFeature(FeatureController::Feature::Wallpapers);
-        startWasJustClicked_=true;
+        if (!wasPaused) {
+            changeRunningFeature(FeatureController::Feature::Wallpapers);
 
-        ui->startButton->setText(tr("Pau&se"));
-        stopButtonsSetEnabled(true);
-        previousAndNextButtonsSetEnabled(true);
-        ui->startButton->setIcon(QIcon::fromTheme("media-playback-pause", QIcon(":/images/media-playback-pause.png")));
-
-        QApplication::processEvents(QEventLoop::AllEvents);
-
-        shuffleWasChecked_=ui->shuffle_images_checkbox->isChecked();
-
-        if(!gv.processPaused){
-            if(shuffleWasChecked_){
-                if(firstRandomImageIsntRandom_){
-                    firstRandomImageIsntRandom_=false;
-                    if(ui->wallpapersList->currentItem()->isSelected())
+            shuffleWasChecked_ = ui->shuffle_images_checkbox->isChecked();
+            if (shuffleWasChecked_) {
+                if (firstRandomImageIsntRandom_) {
+                    firstRandomImageIsntRandom_ = false;
+                    if (ui->wallpapersList->currentItem()->isSelected())
                         wallpaperManager_->setRandomMode(true, -1, ui->wallpapersList->currentRow());
-                }
-                else
+                } else {
                     wallpaperManager_->setRandomMode(true);
-            }
-            else
+                }
+            } else {
                 wallpaperManager_->setRandomMode(false);
+            }
         }
 
-        if(gv.processPaused){
-            //If the process was paused, then we need to continue from where it is left, not from the next second
-            timerManager_->secondsRemaining_+=1;
+        if (wasPaused) {
+            timerManager_->secondsRemaining_ += 1;
         }
+
+        startWasJustClicked_ = true;
 
         globalParser_->resetSleepProtection(timerManager_->secondsRemaining_);
-
-        if(!gv.processPaused)
-            //if the process wasn't paused, then the progressbar is hidden. Add an animation so as to show it
-            animateProgressbarOpacity(1);
-
-        gv.processPaused=false;
-
-        Q_EMIT signalRecreateTray();
 
         if(gv.pauseOnBattery){
             if(globalParser_->runsOnBattery()){
@@ -1512,23 +1500,13 @@ void MainWindow::startPauseWallpaperChangingProcess(){
             }
         }
 
-        startUpdateSeconds();
+        featureController_->setPaused(false);
+
         handlePageButtonClick(0);
     }
     else
     {
-        actAsStart_=true; //<- the next time act like start is pressed
-        gv.processPaused=true;
-        stoppedBecauseOnBattery_=false;
-        ui->startButton->setText(tr("&Start"));
-        ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
-        Q_EMIT signalRecreateTray();
-        updateSecondsTimer_->stop();
-        ui->timeForNext->setFormat(ui->timeForNext->format()+" - Paused.");
-        previousAndNextButtonsSetEnabled(false);
-        if(wallpaperManager_->wallpapersCount() != 0){
-            ui->shuffle_images_checkbox->setEnabled(true);
-        }
+        featureController_->setPaused(true);
         timerManager_->saveSecondsLeftNow();
     }
 }
@@ -1546,7 +1524,7 @@ void MainWindow::handleStopButtonClick(){
     ui->startButton->setText(tr("&Start"));
     ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
     animateProgressbarOpacity(0);
-    gv.processPaused=false;
+    featureController_->setPaused(false);
     firstRandomImageIsntRandom_=false;
     timerManager_->secondsRemaining_=0;
     if(updateSecondsTimer_->isActive()){
@@ -3549,7 +3527,7 @@ void MainWindow::showProperties(){
     if(!ui->wallpapersList->currentItem()->isSelected() || ui->stackedWidget->currentIndex()!=0)
         return;
 
-    dialogHelper_->showPropertiesDialog(ui->wallpapersList->currentRow(), wallpaperManager_);
+    dialogHelper_->showPropertiesDialog(ui->wallpapersList->currentRow());
 }
 
 void MainWindow::handleSearchShortcut() {
@@ -3560,4 +3538,28 @@ void MainWindow::handleSearchShortcut() {
 void MainWindow::changeRunningFeature(FeatureController::Feature feature){
     featureController_->setCurrentFeature(feature);
     timerManager_->setCurrentFeature(feature);
+}
+
+void MainWindow::onPausedStateChanged(bool isPaused)
+{
+    if (isPaused) {
+        actAsStart_ = true;
+        ui->startButton->setText(tr("&Start"));
+        ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
+        updateSecondsTimer_->stop();
+        ui->timeForNext->setFormat(ui->timeForNext->format() + " - Paused.");
+        previousAndNextButtonsSetEnabled(false);
+        if (wallpaperManager_->wallpapersCount() != 0) {
+            ui->shuffle_images_checkbox->setEnabled(true);
+        }
+    } else {
+        actAsStart_ = false;
+        ui->startButton->setText(tr("Pau&se"));
+        ui->startButton->setIcon(QIcon::fromTheme("media-playback-pause", QIcon(":/images/media-playback-pause.png")));
+        stopButtonsSetEnabled(true);
+        previousAndNextButtonsSetEnabled(true);
+        animateProgressbarOpacity(1);
+        startUpdateSeconds();
+    }
+    Q_EMIT signalRecreateTray();
 }

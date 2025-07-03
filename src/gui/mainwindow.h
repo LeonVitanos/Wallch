@@ -408,6 +408,8 @@ private Q_SLOTS:
     void openImageFolderMassive();
     void showProperties();
 
+    void onPausedStateChanged(bool isPaused);
+
 Q_SIGNALS:
      void fixLivewebsiteButtons();
      void monitorCheck();

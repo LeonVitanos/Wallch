@@ -70,3 +70,18 @@ bool WallpapersFeature::getPicturesLocation(bool init)
 
     return true;
 }
+
+bool WallpapersFeature::isPaused() const
+{
+    return m_isPaused;
+}
+
+void WallpapersFeature::setPaused(bool paused)
+{
+    if (m_isPaused == paused) {
+        return;
+    }
+
+    m_isPaused = paused;
+    Q_EMIT pausedStateChanged(m_isPaused);
+}
