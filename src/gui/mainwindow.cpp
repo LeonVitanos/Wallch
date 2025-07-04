@@ -483,35 +483,19 @@ void MainWindow::continueAlreadyRunningFeature()
     {
         loadWallpapersPage();
 
-        if(featureController_->isFeaturePaused()){
-            actAsStart_=true;
-            ui->startButton->setText(tr("&Start"));
-            ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
-            animateProgressbarOpacity(1);
-            onPausedStateChanged(true);
+        const bool isPaused = featureController_->isFeaturePaused();
+        onPausedStateChanged(isPaused);
+        if (isPaused) {
             timerManager_->findSeconds(true);
             timerManager_->secondsRemaining_ += 1;
             globalParser_->resetSleepProtection(timerManager_->secondsRemaining_);
             updateSeconds();
-            stopButtonsSetEnabled(true);
-            previousAndNextButtonsSetEnabled(false);
-            ui->timeForNext->setFormat(ui->timeForNext->format()+" - Paused.");
-        }
-        else
-        {
-            //starting the process...
-            actAsStart_=false;
-            ui->startButton->setText(tr("Pau&se"));
-            ui->startButton->setIcon(QIcon::fromTheme("media-playback-pause", QIcon(":/images/media-playback-pause.png")));
-            animateProgressbarOpacity(1);
-            onPausedStateChanged(false);
+        } else {
             timerManager_->findSeconds(true);
-            startWasJustClicked_=true;
-            startUpdateSeconds();
-            stopButtonsSetEnabled(true);
-            previousAndNextButtonsSetEnabled(true);
+            startWasJustClicked_ = true;
         }
         ui->stackedWidget->setCurrentIndex(0);
+        ui->stopButton->setEnabled(true);
     }
     else if(featureController_->isLiveEarthRunning())
     {
@@ -539,7 +523,7 @@ void MainWindow::continueAlreadyRunningFeature()
     else
     {   //nothing's running, so just open the application..
 
-        stopButtonsSetEnabled(false);
+        ui->stopButton->setEnabled(false);
         previousAndNextButtonsSetEnabled(false);
 
         hideTimeForNext();
@@ -1327,10 +1311,7 @@ void MainWindow::stopEverythingThatsRunning(short excludingFeature)
 void MainWindow::pauseEverythingThatsRunning()
 {
     if(featureController_->isWallpapersRunning()){
-        if(!featureController_->isFeaturePaused())
-        {
-            handleStartButtonClick();
-        }
+        featureController_->setPaused(true);
     }
     else if(featureController_->isLiveEarthRunning()){
         handleDeactivateLiveEarthClick();
@@ -1500,12 +1481,14 @@ void MainWindow::startPauseWallpaperChangingProcess(){
             }
         }
 
+        updateWallpaperUiForState(WallpaperUiState::Running);
         featureController_->setPaused(false);
 
         handlePageButtonClick(0);
     }
     else
     {
+        updateWallpaperUiForState(WallpaperUiState::Paused);
         featureController_->setPaused(true);
         timerManager_->saveSecondsLeftNow();
     }
@@ -1515,26 +1498,16 @@ void MainWindow::handleStopButtonClick(){
     if (!ui->stopButton->isEnabled())
         return;
 
+    updateWallpaperUiForState(WallpaperUiState::Stopped);
+    featureController_->setPaused(true);
+
+    //TODO: Rest of the code to be removed in the future:
     if(wallpaperManager_->wallpapersCount()!=0)
         ui->shuffle_images_checkbox->setEnabled(true);
 
     stoppedBecauseOnBattery_=false;
-    wallpaperManager_->startOver();
-    actAsStart_=true;
-    ui->startButton->setText(tr("&Start"));
-    ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
-    animateProgressbarOpacity(0);
-    featureController_->setPaused(false);
     firstRandomImageIsntRandom_=false;
     timerManager_->secondsRemaining_=0;
-    if(updateSecondsTimer_->isActive()){
-        updateSecondsTimer_->stop();
-    }
-    previousAndNextButtonsSetEnabled(false);
-
-    startButtonsSetEnabled(wallpaperManager_->wallpapersCount() >= LEAST_WALLPAPERS_FOR_START);
-
-    stopButtonsSetEnabled(false);
     changeRunningFeature(FeatureController::Feature::None);
 
 #ifdef Q_OS_LINUX
@@ -1544,7 +1517,6 @@ void MainWindow::handleStopButtonClick(){
         }
     }
 #endif
-    Q_EMIT signalRecreateTray();
     timerManager_->saveSecondsLeftNow(false);
 }
 
@@ -1719,13 +1691,9 @@ void MainWindow::startButtonsSetEnabled(bool enabled)
     ui->startButton->setEnabled(enabled);
 }
 
-void MainWindow::stopButtonsSetEnabled(bool enabled)
-{
-    ui->stopButton->setEnabled(enabled);
-}
-
 void MainWindow::previousAndNextButtonsSetEnabled(bool enabled){
-    ui->next_Button->setEnabled(enabled); ui->previous_Button->setEnabled(enabled);
+    ui->next_Button->setEnabled(enabled);
+    ui->previous_Button->setEnabled(enabled);
 }
 
 void MainWindow::addPicturesToWallpaperList(const QStringList &pictures){
@@ -3543,23 +3511,46 @@ void MainWindow::changeRunningFeature(FeatureController::Feature feature){
 void MainWindow::onPausedStateChanged(bool isPaused)
 {
     if (isPaused) {
-        actAsStart_ = true;
-        ui->startButton->setText(tr("&Start"));
-        ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
         updateSecondsTimer_->stop();
-        ui->timeForNext->setFormat(ui->timeForNext->format() + " - Paused.");
-        previousAndNextButtonsSetEnabled(false);
-        if (wallpaperManager_->wallpapersCount() != 0) {
-            ui->shuffle_images_checkbox->setEnabled(true);
-        }
     } else {
+        startUpdateSeconds();
+    }
+}
+
+void MainWindow::updateWallpaperUiForState(WallpaperUiState state){
+    switch (state) {
+    case WallpaperUiState::Running:
         actAsStart_ = false;
         ui->startButton->setText(tr("Pau&se"));
         ui->startButton->setIcon(QIcon::fromTheme("media-playback-pause", QIcon(":/images/media-playback-pause.png")));
-        stopButtonsSetEnabled(true);
+        ui->timeForNext->setFormat(timerManager_->secondsToMinutesHoursDays(timerManager_->totalSeconds_));
+        if(!featureController_->isFeaturePaused()){
+            animateProgressbarOpacity(1);
+        }
+        ui->stopButton->setEnabled(true);
         previousAndNextButtonsSetEnabled(true);
-        animateProgressbarOpacity(1);
-        startUpdateSeconds();
+        ui->shuffle_images_checkbox->setEnabled(false);
+        break;
+
+    case WallpaperUiState::Stopped:
+    case WallpaperUiState::Paused:
+        actAsStart_ = true;
+        ui->startButton->setText(tr("&Start"));
+        ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
+        ui->shuffle_images_checkbox->setEnabled(true);
+        previousAndNextButtonsSetEnabled(false);
+
+        if (state == WallpaperUiState::Paused) {
+            ui->timeForNext->setFormat(ui->timeForNext->format() + " - Paused.");
+            ui->stopButton->setEnabled(true);
+
+        } else {
+            ui->timeForNext->setFormat(timerManager_->secondsToMinutesHoursDays(timerManager_->totalSeconds_));
+            animateProgressbarOpacity(0);
+            ui->stopButton->setEnabled(false);
+        }
+        break;
+
     }
     Q_EMIT signalRecreateTray();
 }

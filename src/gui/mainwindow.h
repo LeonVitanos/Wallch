@@ -221,7 +221,6 @@ private:
     void actionsOnClose();
     void changeImage();
     void startButtonsSetEnabled(bool enabled);
-    void stopButtonsSetEnabled(bool enabled);
     void previousAndNextButtonsSetEnabled(bool enabled);
     void startPotd(bool launchNow);
     void setupKeyboardShortcuts();
@@ -267,6 +266,13 @@ private:
     void iconsPathsChanged();
     bool addingImageStylesNow = false;
     void changeRunningFeature(FeatureController::Feature feature);
+
+    enum class WallpaperUiState {
+        Running,
+        Paused,
+        Stopped
+    };
+    void updateWallpaperUiForState(WallpaperUiState state);
 
 public Q_SLOTS:
     void addFolderForMonitor(const QString &folder);

@@ -28,6 +28,7 @@ FeatureController::FeatureController(WallpapersFeature *wallpapersFeature,
     , m_wallpapersFeature(wallpapersFeature)
     , m_liveEarthFeature(liveEarthFeature)
 {
+    connect(m_wallpapersFeature, &WallpapersFeature::pausedStateChanged, this, &FeatureController::pausedStateChanged);
 }
 
 void FeatureController::onTimeToChangeWallpaper()

@@ -27,6 +27,8 @@ public:
     void saveSecondsLeftNow(bool keepIndependentInterval=true);
     void setCurrentFeature(FeatureController::Feature feature);
 
+    bool isActive() const;
+
 private:
     QTimer *m_internalTimer;
     void resetSecondsRemaining();

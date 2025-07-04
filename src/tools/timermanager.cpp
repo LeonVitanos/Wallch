@@ -142,6 +142,11 @@ QString TimerManager::secondsToMh(int seconds)
     return QString("");
 }
 
+bool TimerManager::isActive() const
+{
+    return m_internalTimer->isActive();
+}
+
 void TimerManager::start(bool potd) {
     m_internalTimer->start(potd ? 59500 : 1000); // Ticks every second
 }

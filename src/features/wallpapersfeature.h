@@ -34,7 +34,6 @@ public:
                                FileManager *fileManager,
                                QObject *parent = nullptr);
 
-    void start();
     void getDelay();
     void changeWallpaperNow();
     bool getPicturesLocation(bool init);
@@ -53,7 +52,7 @@ private:
     TimerManager *m_timerManager;
     FileManager *m_fileManager;
 
-    bool m_isPaused = false;
+    bool m_isPaused = true;
 };
 
 #endif // WALLPAPERSFEATURE_H

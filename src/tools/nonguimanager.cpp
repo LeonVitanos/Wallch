@@ -189,7 +189,7 @@ void NonGuiManager::continueWithWallpapers(){
         }
     }
 
-    wallpapersFeature_->start();
+    wallpapersFeature_->setPaused(false);
 }
 
 void NonGuiManager::continueWithLiveEarth(){

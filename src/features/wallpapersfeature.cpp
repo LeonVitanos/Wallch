@@ -16,14 +16,6 @@ WallpapersFeature::WallpapersFeature(WallpaperManager *wallpaperManager,
 {
 }
 
-void WallpapersFeature::start()
-{
-    getDelay();
-    m_timerManager->secondsRemaining_ = 0;
-    Global::resetSleepProtection(m_timerManager->secondsRemaining_);
-    m_timerManager->start();
-}
-
 void WallpapersFeature::getDelay()
 {
     m_timerManager->totalSeconds_=settings->value("delay", DEFAULT_SLIDER_DELAY).toInt();
@@ -78,10 +70,18 @@ bool WallpapersFeature::isPaused() const
 
 void WallpapersFeature::setPaused(bool paused)
 {
-    if (m_isPaused == paused) {
-        return;
+    m_isPaused = paused;
+
+    if (!m_isPaused) {
+        if (!m_timerManager->isActive()) {
+            getDelay();
+            m_timerManager->secondsRemaining_ = 0;
+            Global::resetSleepProtection(m_timerManager->secondsRemaining_);
+        }
+        m_timerManager->start();
+    } else {
+        m_timerManager->stop();
     }
 
-    m_isPaused = paused;
     Q_EMIT pausedStateChanged(m_isPaused);
 }
