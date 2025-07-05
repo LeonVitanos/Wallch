@@ -31,6 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "tools/filemanager.h"
 #include "tools/glob.h"
 #include "tools/dialoghelper.h"
+#include "tools/traymanager.h"
 #include <QApplication>
 #include <QLoggingCategory>
 
@@ -62,6 +63,7 @@ int main(int argc, char *argv[])
 
     // 4. Create the core controllers that depend on the feature handlers.
     auto featureController = new FeatureController(wallpapersFeature, liveEarthFeature, &app);
+    auto trayManager = new TrayManager(featureController, wallpaperManager, dialogHelper, &app);
 
     // 5. Wire up the core components. The timer should tell the FeatureController when to act.
     QObject::connect(timerManager, &TimerManager::timeToChangeWallpaper,
@@ -77,6 +79,12 @@ int main(int argc, char *argv[])
                                 globalParser,
                                 wallpapersFeature,
                                 liveEarthFeature);
+
+    QObject::connect(trayManager, &TrayManager::featureActionRequested, &nonGuiManager, &NonGuiManager::doAction);
+    QObject::connect(trayManager, &TrayManager::showMainWindowRequested, &nonGuiManager, [&nonGuiManager](){nonGuiManager.doAction("--focus");});
+    QObject::connect(&nonGuiManager, &NonGuiManager::trayNeedsUpdate, trayManager, &TrayManager::updateMenu);
+    QObject::connect(&nonGuiManager, &NonGuiManager::trayUncheckRequested, trayManager, &TrayManager::uncheckAllActions);
+    trayManager->show();
 
     // 7. Tell the fully constructed manager to start the program.
     int exitCode = nonGuiManager.startProgram(argc, argv);

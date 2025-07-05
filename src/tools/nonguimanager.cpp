@@ -383,261 +383,6 @@ void NonGuiManager::quitNow(){
     qApp->exit(0);
 }
 
-
-
-//System tray icon Code
-void NonGuiManager::setupTray()
-{
-    showWindowAction_ = new QAction(tr("Show"), this);
-    connect(showWindowAction_, SIGNAL(triggered()), this, SLOT(trayActionShowWindow()));
-
-    openCurrentImageAction_ = new QAction(tr("Open Image"), this);
-    connect(openCurrentImageAction_, &QAction::triggered, wallpaperManager_->openCurrentBackgroundImage);
-
-    openCurrentImageFolderAction_ = new QAction(tr("Open Folder"), this);
-    connect(openCurrentImageFolderAction_, &QAction::triggered, wallpaperManager_->openCurrentBackgroundFolder);
-
-    copyCurrentImageAction_ = new QAction(tr("Copy Image"), this);
-    connect(copyCurrentImageAction_, &QAction::triggered, wallpaperManager_->copyCurrentBackgroundImage);
-
-    copyCurrentImagePathAction_ = new QAction(tr("Copy Path"), this);
-    connect(copyCurrentImagePathAction_, &QAction::triggered, wallpaperManager_->copyCurrentBackgroundPath);
-
-    deleteCurrentImageAction_ = new QAction(tr("Delete"), this);
-    connect(deleteCurrentImageAction_, &QAction::triggered, wallpaperManager_->deleteCurrentBackgroundImage);
-
-    openCurrentImagePropertiesAction_ = new QAction(tr("Properties"), this);
-    connect(openCurrentImagePropertiesAction_, &QAction::triggered, this, [=] { dialogHelper_->showPropertiesDialog(); });
-
-    wallpapersAction_ = new QAction(tr("Wallpapers"), this);
-    connect(wallpapersAction_, SIGNAL(triggered()), this, SLOT(trayActionWallpapers()));
-
-    wallpapersOnceAction_ = new QAction("   "+tr("Change wallpaper once"), this);
-    connect(wallpapersOnceAction_, SIGNAL(triggered()), this, SLOT(trayActionWallpapersOnce()));
-
-    wallpapersPauseAction_ = new QAction("   "+tr("Pause"), this);
-    connect(wallpapersPauseAction_, SIGNAL(triggered()), this, SLOT(trayActionWallpapersPause()));
-
-    wallpapersNextAction_ = new QAction("   "+tr("Next"), this);
-    connect(wallpapersNextAction_, SIGNAL(triggered()), this, SLOT(trayActionWallpapersNext()));
-
-    wallpapersPreviousAction_ = new QAction("   "+tr("Previous"), this);
-    connect(wallpapersPreviousAction_, SIGNAL(triggered()), this, SLOT(trayActionWallpapersPrevious()));
-
-    liveEarthAction_ = new QAction(tr("Live Earth"), this);
-    connect(liveEarthAction_, SIGNAL(triggered()), this, SLOT(trayActionLiveEarth()));
-
-    pictureOfTheDayAction_ = new QAction(tr("Picture Of The Day"), this);
-    connect(pictureOfTheDayAction_, SIGNAL(triggered()), this, SLOT(trayActionPictureOfTheDay()));
-
-    liveWebsiteAction_ = new QAction(tr("Live Website"), this);
-    connect(liveWebsiteAction_, SIGNAL(triggered()), this, SLOT(trayActionLiveWebsite()));
-
-    preferencesAction_ = new QAction(tr("Preferences"), this);
-    connect(preferencesAction_, SIGNAL(triggered()), this, SLOT(trayActionPreferences()));
-
-    aboutAction_ = new QAction(tr("About"), this);
-    connect(aboutAction_, SIGNAL(triggered()), this, SLOT(trayActionAbout()));
-
-    quitAction_ = new QAction(tr("Exit"), this);
-    connect(quitAction_, SIGNAL(triggered()), this, SLOT(trayActionQuit()));
-
-    //a timer just to not allow constant scrolling on the tray
-    trayWheelTimer_ = new QTimer(this);
-    trayWheelTimer_->setSingleShot(true);
-
-    trayIconMenu_ = new QMenu();
-    createTray();
-
-    trayIcon_ = new QSystemTrayIcon(this);
-    trayIcon_->setContextMenu(trayIconMenu_);
-    connect(trayIcon_, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(trayActivatedActions(QSystemTrayIcon::ActivationReason)));
-    trayIcon_->installEventFilter(this);
-    trayIcon_->setIcon(QIcon(":/images/wallch.png"));
-    trayIcon_->setToolTip("Wallch\nWallpaper changer");
-    trayIcon_->show();
-}
-
-bool NonGuiManager::eventFilter(QObject *object, QEvent *event){
-    if(object == trayIcon_ && event->type() == QEvent::Wheel){
-        if(trayWheelTimer_->isActive()){
-            //timeout not yet passed
-            return false;
-        }
-        //allow another scroll event in 0.5 seconds (aka 2 changes per second limit)
-        trayWheelTimer_->start(500);
-
-        bool scrolledUp = static_cast<QWheelEvent*>(event)->angleDelta().y() > 0;
-
-        if(scrolledUp){
-            doAction("--previous");
-        }
-        else
-        {
-            doAction("--next");
-        }
-        return true;
-    }
-    return false;
-}
-
-void NonGuiManager::trayActivatedActions(QSystemTrayIcon::ActivationReason reason)
-{
-    if(reason == QSystemTrayIcon::DoubleClick)
-    {
-        if (mainWindowLaunched_) {
-            // mainwindow has launched, either focus to it or hide it
-            Q_EMIT signalHideOrShow();
-        } else {
-            // mainwindow has yet to launch, just focus to it
-            doAction("--focus");
-        }
-    }
-}
-
-void NonGuiManager::createTray()
-{
-    trayIconMenu_->clear();
-    trayIconMenu_->addAction(showWindowAction_);
-    currentImageMenu_ = new QMenu("Current Image");
-    currentImageMenu_->addAction(openCurrentImageAction_);
-    currentImageMenu_->addAction(openCurrentImageFolderAction_);
-    currentImageMenu_->addAction(copyCurrentImagePathAction_);
-    currentImageMenu_->addAction(copyCurrentImageAction_);
-    currentImageMenu_->addAction(deleteCurrentImageAction_);
-    currentImageMenu_->addAction(openCurrentImagePropertiesAction_);
-    trayIconMenu_->addMenu(currentImageMenu_);
-    trayIconMenu_->addSeparator();
-    trayIconMenu_->addAction(wallpapersAction_);
-    if(!featureController_->isWallpapersRunning())
-        trayIconMenu_->addAction(wallpapersOnceAction_);
-    if(featureController_->isWallpapersRunning())
-    {
-        wallpapersAction_->setCheckable(true);
-        wallpapersAction_->setChecked(true);
-        if(wallpapersFeature_->isPaused()){
-            wallpapersPauseAction_->setText("   "+tr("Start"));
-            trayIconMenu_->addAction(wallpapersPauseAction_);
-        }
-        else{
-            wallpapersPauseAction_->setText("   "+tr("Pause"));
-            trayIconMenu_->addAction(wallpapersPauseAction_);
-            trayIconMenu_->addAction(wallpapersNextAction_);
-            trayIconMenu_->addAction(wallpapersPreviousAction_);
-        }
-    }
-    else if(featureController_->isLiveEarthRunning())
-    {
-        liveEarthAction_->setCheckable(true);
-        liveEarthAction_->setChecked(true);
-    }
-    else if(featureController_->isPotdRunning())
-    {
-        pictureOfTheDayAction_->setCheckable(true);
-        pictureOfTheDayAction_->setChecked(true);
-    }
-    else if(featureController_->isWebsiteRunning())
-    {
-        liveWebsiteAction_->setCheckable(true);
-        liveWebsiteAction_->setChecked(true);
-    }
-    else
-    {
-        uncheckRunningFeatureOnTray();
-    }
-    trayIconMenu_->addAction(liveEarthAction_);
-    trayIconMenu_->addAction(pictureOfTheDayAction_);
-    trayIconMenu_->addAction(liveWebsiteAction_);
-    QActionGroup* myGroup = new QActionGroup(this);
-    myGroup->addAction(wallpapersAction_);
-    myGroup->addAction(liveEarthAction_);
-    myGroup->addAction(pictureOfTheDayAction_);
-    myGroup->addAction(liveWebsiteAction_);
-    trayIconMenu_->addSeparator();
-    trayIconMenu_->addAction(preferencesAction_);
-    trayIconMenu_->addAction(aboutAction_);
-    trayIconMenu_->addAction(quitAction_);
-}
-
-void NonGuiManager::trayActionShowWindow()
-{
-    doAction("--focus");
-}
-
-void NonGuiManager::trayActionWallpapers()
-{
-    if(!featureController_->isWallpapersRunning()){
-        doAction("--start");
-    }
-    else{
-        doAction("--stop");
-    }
-
-    createTray();
-}
-
-void NonGuiManager::trayActionWallpapersOnce()
-{
-    doAction("--change");
-}
-
-void NonGuiManager::trayActionWallpapersPause()
-{
-    doAction("--pause");
-}
-
-void NonGuiManager::trayActionWallpapersNext()
-{
-    doAction("--next");
-}
-
-void NonGuiManager::trayActionWallpapersPrevious()
-{
-    doAction("--previous");
-}
-
-void NonGuiManager::trayActionLiveEarth()
-{
-    doAction("--earth");
-    createTray();
-}
-
-void NonGuiManager::trayActionPictureOfTheDay()
-{
-    doAction("--potd");
-    createTray();
-}
-
-void NonGuiManager::trayActionLiveWebsite()
-{
-    doAction("--website");
-    createTray();
-}
-
-void NonGuiManager::trayActionPreferences()
-{
-    doAction("--preferences");
-}
-
-void NonGuiManager::trayActionAbout()
-{
-    doAction("--about");
-}
-
-void NonGuiManager::trayActionQuit()
-{
-    doAction("--quit");
-}
-
-void NonGuiManager::uncheckRunningFeatureOnTray()
-{
-    wallpapersAction_->setCheckable(false);
-    liveEarthAction_->setCheckable(false);
-    pictureOfTheDayAction_->setCheckable(false);
-    liveWebsiteAction_->setCheckable(false);
-}
-//End of System tray icon code
-
 void NonGuiManager::preferencesDestroyed(){
     gv.preferencesDialogShown=false;
 }
@@ -937,8 +682,8 @@ void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     connect(this, &NonGuiManager::signalAddFolderForMonitor, w, &MainWindow::addFolderForMonitor);
     connect(this, &NonGuiManager::signalFocus, w, &MainWindow::showNormal);
     connect(this, &NonGuiManager::signalHideOrShow, w, &MainWindow::hideOrShow);
-    connect(w, &MainWindow::signalUncheckRunningFeatureOnTray, this, &NonGuiManager::uncheckRunningFeatureOnTray);
-    connect(w, &MainWindow::signalRecreateTray, this, &NonGuiManager::createTray);
+    connect(w, &MainWindow::signalUncheckRunningFeatureOnTray, this, [this]() {emit trayUncheckRequested();});
+    connect(w, &MainWindow::signalRecreateTray, this, [this]() {emit trayNeedsUpdate();});
 }
 
 void NonGuiManager::liveWebsiteImageReady(QImage *image, short errorCode){
@@ -1011,7 +756,7 @@ void NonGuiManager::viralSettingsOperations(){
 void NonGuiManager::startProgramNormalGui(){
     connectToServer();
 
-    setupTray();
+    Q_EMIT trayNeedsUpdate();
     mainWindowLaunched_=true;
     MainWindow *mainWindow = new MainWindow(alreadyRunsMem_,
                                             globalParser_,
@@ -1056,7 +801,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
             changeRunningFeature(FeatureController::Feature::Wallpapers);
         }
         connectToServer();
-        setupTray();
+        Q_EMIT trayNeedsUpdate();
 
         if(gotPicLocation){
             timerManager_->start();
@@ -1079,7 +824,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
         Global::resetSleepProtection(timerManager_->secondsRemaining_);
 
         connectToServer();
-        setupTray();
+        Q_EMIT trayNeedsUpdate();
 
         continueWithLiveEarth();
 
@@ -1098,7 +843,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
         changeRunningFeature(FeatureController::Feature::PictureOfTheDay);
 
         connectToServer();
-        setupTray();
+        Q_EMIT trayNeedsUpdate();
 
         continueWithPotd();
 
@@ -1119,7 +864,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
         Global::resetSleepProtection(timerManager_->secondsRemaining_);
 
         connectToServer();
-        setupTray();
+        Q_EMIT trayNeedsUpdate();
 
         websiteSnapshot_ = new WebsiteSnapshot();
 
@@ -1160,7 +905,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
         startedWithNone_ = true;
 
         connectToServer();
-        setupTray();
+        Q_EMIT trayNeedsUpdate();
 
         return 0;
     }

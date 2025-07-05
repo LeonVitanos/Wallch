@@ -1481,15 +1481,15 @@ void MainWindow::startPauseWallpaperChangingProcess(){
             }
         }
 
-        updateWallpaperUiForState(WallpaperUiState::Running);
         featureController_->setPaused(false);
+        updateWallpaperUiForState(WallpaperUiState::Running);
 
         handlePageButtonClick(0);
     }
     else
     {
-        updateWallpaperUiForState(WallpaperUiState::Paused);
         featureController_->setPaused(true);
+        updateWallpaperUiForState(WallpaperUiState::Paused);
         timerManager_->saveSecondsLeftNow();
     }
 }
@@ -1498,8 +1498,9 @@ void MainWindow::handleStopButtonClick(){
     if (!ui->stopButton->isEnabled())
         return;
 
-    updateWallpaperUiForState(WallpaperUiState::Stopped);
     featureController_->setPaused(true);
+    changeRunningFeature(FeatureController::Feature::None);
+    updateWallpaperUiForState(WallpaperUiState::Stopped);
 
     //TODO: Rest of the code to be removed in the future:
     if(wallpaperManager_->wallpapersCount()!=0)
@@ -1508,7 +1509,6 @@ void MainWindow::handleStopButtonClick(){
     stoppedBecauseOnBattery_=false;
     firstRandomImageIsntRandom_=false;
     timerManager_->secondsRemaining_=0;
-    changeRunningFeature(FeatureController::Feature::None);
 
 #ifdef Q_OS_LINUX
     if(gv.pauseOnBattery){
@@ -1518,6 +1518,7 @@ void MainWindow::handleStopButtonClick(){
     }
 #endif
     timerManager_->saveSecondsLeftNow(false);
+    Q_EMIT signalUncheckRunningFeatureOnTray();
 }
 
 void MainWindow::handleNextButtonClick()

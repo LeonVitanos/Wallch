@@ -39,7 +39,6 @@ class LiveEarthFeature;
 #include <QLocalSocket>
 #include <QLocalServer>
 #include <QtGlobal>
-#include <QSystemTrayIcon>
 #include <QTranslator>
 
 #include "preferences.h"
@@ -72,9 +71,6 @@ public:
     int startProgram(int argc, char *argv[]);
     void doAction(const QString &message);
 
-protected:
-    bool eventFilter(QObject *object, QEvent *event);
-
 private:
     FeatureController* featureController_;
     TimerManager *timerManager_;
@@ -89,7 +85,6 @@ private:
     Preferences *preferences_;
     WebsiteSnapshot *websiteSnapshot_=NULL;
 
-    QTimer *trayWheelTimer_;
     QMimeData *myFile_;
     QSharedMemory *alreadyRunsMem_;
     QLocalServer *localServer_;
@@ -102,29 +97,6 @@ private:
     bool startedWithPotd_ = false;
     bool startedWithWebsite_ = false;
     bool justUpdatedPotd_ = false;
-    QSystemTrayIcon *trayIcon_;
-    QMenu *trayIconMenu_;
-    QMenu *currentImageMenu_;
-    QAction *showWindowAction_;
-    QAction *openCurrentImageAction_;
-    QAction *openCurrentImageFolderAction_;
-    QAction *copyCurrentImagePathAction_;
-    QAction *copyCurrentImageNameAction_;
-    QAction *copyCurrentImageAction_;
-    QAction *deleteCurrentImageAction_;
-    QAction *openCurrentImagePropertiesAction_;
-    QAction *wallpapersAction_;
-    QAction *wallpapersOnceAction_;
-    QAction *wallpapersPauseAction_;
-    QAction *wallpapersNextAction_;
-    QAction *wallpapersPreviousAction_;
-    QAction *liveEarthAction_;
-    QAction *pictureOfTheDayAction_;
-    QAction *liveWebsiteAction_;
-    QAction *preferencesAction_;
-    QAction *aboutAction_;
-    QAction *quitAction_;
-    void setupTray();
     void installTranslator();
     void viralSettingsOperations();
     bool alreadyRuns();
@@ -150,21 +122,6 @@ private:
 private Q_SLOTS:
     void newSocketConnection();
     void onlineBackgroundReady(QString image);
-    void trayActionShowWindow();
-    void trayActionWallpapers();
-    void trayActionWallpapersOnce();
-    void trayActionWallpapersPause();
-    void trayActionWallpapersNext();
-    void trayActionWallpapersPrevious();
-    void trayActionLiveEarth();
-    void trayActionPictureOfTheDay();
-    void trayActionLiveWebsite();
-    void trayActionPreferences();
-    void trayActionAbout();
-    void trayActionQuit();
-    void createTray();
-    void uncheckRunningFeatureOnTray();
-    void trayActivatedActions(QSystemTrayIcon::ActivationReason reason);
     void socketConnected();
     void socketError();
     void quitNow();
@@ -190,6 +147,8 @@ Q_SIGNALS:
     void signalDeleteCurrent();
     void signalAddFolderForMonitor(const QString &folder);
     void signalQuit();
+    void trayNeedsUpdate();
+    void trayUncheckRequested();
 };
 
 extern NonGuiManager *nongui;
