@@ -180,9 +180,11 @@ void NonGuiManager::checkPicOfDay(){
     }
 }
 
-void NonGuiManager::continueWithWallpapers(){
-    if(startedWithLiveEarth_ || startedWithWebsite_ || startedWithPotd_ || startedWithNone_){
-        startedWithNone_=startedWithLiveEarth_=startedWithWebsite_=startedWithPotd_=false;
+void NonGuiManager::continueWithWallpapers()
+{
+    if (featureController_->launchFeature() != FeatureController::Feature::Wallpapers &&
+        featureController_->launchFeature() != FeatureController::Feature::None)
+    {
         if (!wallpapersFeature_->getPicturesLocation(true)) {
             doAction("--stop");
             return;
@@ -618,25 +620,16 @@ void NonGuiManager::setIndependentInterval(const QString &independentInterval){
     if(parts.count()!=3){
         return;
     }
-    if(parts.at(0)=="e"){
-        //independence was referring to live earth!
-        if(!startedWithLiveEarth_){
-            return;
-        }
+
+    FeatureController::Feature launchFeature = featureController_->launchFeature();
+    if (parts.at(0) == "e") {
+        if (launchFeature != FeatureController::Feature::LiveEarth) return;
+    } else if (parts.at(0) == "w") {
+        if (launchFeature != FeatureController::Feature::Website) return;
+    } else {
+        if (launchFeature == FeatureController::Feature::Website || launchFeature == FeatureController::Feature::LiveEarth) return;
     }
-    else if(parts.at(0)=="w"){
-        //independence was referring to live website!
-        if(!startedWithWebsite_){
-            return;
-        }
-    }
-    else
-    {
-        //independence was referring to wallpapers
-        if(startedWithWebsite_ || startedWithLiveEarth_){
-            return;
-        }
-    }
+
     bool ok;
     int independence_change_seconds_left = parts.at(1).toInt(&ok);
     if(!ok){
@@ -818,7 +811,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
             messageServer("--earth", true);
             return 0;
         }
-        startedWithLiveEarth_=true;
+        featureController_->setLaunchFeature(FeatureController::Feature::LiveEarth);
         changeRunningFeature(FeatureController::Feature::LiveEarth);
         timerManager_->secondsRemaining_ = LIVEARTH_INTERVAL;
         Global::resetSleepProtection(timerManager_->secondsRemaining_);
@@ -839,7 +832,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
             messageServer("--potd", true);
             return 0;
         }
-        startedWithPotd_=true;
+        featureController_->setLaunchFeature(FeatureController::Feature::PictureOfTheDay);
         changeRunningFeature(FeatureController::Feature::PictureOfTheDay);
 
         connectToServer();
@@ -858,7 +851,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
             messageServer("--website", true);
             return 0;
         }
-        startedWithWebsite_=true;
+        featureController_->setLaunchFeature(FeatureController::Feature::Website);
         changeRunningFeature(FeatureController::Feature::Website);
         timerManager_->secondsRemaining_=0;
         Global::resetSleepProtection(timerManager_->secondsRemaining_);
@@ -902,7 +895,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
             Global::error("Wallch seems to already run! Exiting this instance!");
             return 0;
         }
-        startedWithNone_ = true;
+        featureController_->setLaunchFeature(FeatureController::Feature::None);
 
         connectToServer();
         Q_EMIT trayNeedsUpdate();
@@ -1007,9 +1000,13 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
 
         // Second-level parsing for long-running commands
 
-        if(startedWithLiveEarth_ || startedWithWebsite_ || !startedWithPotd_){
-            if(settings->value("independent_interval_enabled", true).toBool())
-                setIndependentInterval(settings->value("seconds_left_interval_independence", INTERVAL_INDEPENDENCE_DEFAULT_VALUE).toString());
+        FeatureController::Feature launchFeature = featureController_->launchFeature();
+        if ( (launchFeature == FeatureController::Feature::LiveEarth ||
+             launchFeature == FeatureController::Feature::Website ||
+             launchFeature != FeatureController::Feature::PictureOfTheDay) &&
+            (settings->value("independent_interval_enabled", true).toBool()) )
+        {
+            setIndependentInterval(settings->value("seconds_left_interval_independence", INTERVAL_INDEPENDENCE_DEFAULT_VALUE).toString());
         }
 
         // processArguments will parse the remaining arguments and start the correct feature.

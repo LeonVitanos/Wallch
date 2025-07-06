@@ -50,6 +50,9 @@ public:
 
     Feature currentFeature() const;
     void setCurrentFeature(Feature newFeature);
+    Feature launchFeature() const;
+    void setLaunchFeature(Feature feature);
+
     void setPaused(bool paused);
 
 public Q_SLOTS:
@@ -59,6 +62,7 @@ Q_SIGNALS:
     void pausedStateChanged(bool isPaused);
 
 private:
+    Feature m_launchFeature = Feature::None;
     Feature m_currentFeature = Feature::None;
 
     WallpapersFeature *m_wallpapersFeature;

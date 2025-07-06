@@ -92,10 +92,6 @@ private:
     QString messageToSendToServer_;
     bool quitAfterMessagingMainApplication_;
     bool mainWindowLaunched_ = false;
-    bool startedWithNone_ = false;
-    bool startedWithLiveEarth_ = false;
-    bool startedWithPotd_ = false;
-    bool startedWithWebsite_ = false;
     bool justUpdatedPotd_ = false;
     void installTranslator();
     void viralSettingsOperations();
