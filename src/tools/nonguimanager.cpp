@@ -180,20 +180,6 @@ void NonGuiManager::checkPicOfDay(){
     }
 }
 
-void NonGuiManager::continueWithWallpapers()
-{
-    if (featureController_->launchFeature() != FeatureController::Feature::Wallpapers &&
-        featureController_->launchFeature() != FeatureController::Feature::None)
-    {
-        if (!wallpapersFeature_->getPicturesLocation(true)) {
-            doAction("--stop");
-            return;
-        }
-    }
-
-    wallpapersFeature_->setPaused(false);
-}
-
 void NonGuiManager::continueWithLiveEarth(){
     this->connectToServer();
     timerManager_->totalSeconds_=LIVEARTH_INTERVAL;
@@ -1074,7 +1060,9 @@ void NonGuiManager::startFeature(int featureId) {
     }
 
     if (featureId == 0) { // --start
-        this->continueWithWallpapers();
+        if (!wallpapersFeature_->setPaused(false)) {
+            doAction("--stop");
+        }
     } else if (featureId == 1) { // --earth
         this->continueWithLiveEarth();
     } else if (featureId == 2) { // --potd

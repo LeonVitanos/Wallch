@@ -42,7 +42,7 @@ public:
     bool startedWithJustChange_ = false;
 
     bool isPaused() const;
-    void setPaused(bool paused);
+    bool setPaused(bool paused);
 
 Q_SIGNALS:
     void pausedStateChanged(bool isPaused);
@@ -53,6 +53,9 @@ private:
     FileManager *m_fileManager;
 
     bool m_isPaused = true;
+
+    bool initialize();
+    bool m_isInitialized = false;
 };
 
 #endif // WALLPAPERSFEATURE_H

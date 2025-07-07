@@ -16,6 +16,28 @@ WallpapersFeature::WallpapersFeature(WallpaperManager *wallpaperManager,
 {
 }
 
+bool WallpapersFeature::initialize()
+{
+    if (m_isInitialized) {
+        return true;
+    }
+
+    if (!getPicturesLocation(true)) {
+        return false;
+    }
+
+    if (gv.randomImagesEnabled) {
+        m_wallpaperManager->setRandomMode(true);
+    }
+
+    getDelay();
+    m_timerManager->secondsRemaining_ = 0;
+    Global::resetSleepProtection(m_timerManager->secondsRemaining_);
+
+    m_isInitialized = true;
+    return true;
+}
+
 void WallpapersFeature::getDelay()
 {
     m_timerManager->totalSeconds_=settings->value("delay", DEFAULT_SLIDER_DELAY).toInt();
@@ -68,15 +90,15 @@ bool WallpapersFeature::isPaused() const
     return m_isPaused;
 }
 
-void WallpapersFeature::setPaused(bool paused)
+bool WallpapersFeature::setPaused(bool paused)
 {
     m_isPaused = paused;
 
     if (!m_isPaused) {
-        if (!m_timerManager->isActive()) {
-            getDelay();
-            m_timerManager->secondsRemaining_ = 0;
-            Global::resetSleepProtection(m_timerManager->secondsRemaining_);
+        if (!m_isInitialized) {
+            if (!initialize()) {
+                return false;
+            }
         }
         m_timerManager->start();
     } else {
@@ -84,4 +106,5 @@ void WallpapersFeature::setPaused(bool paused)
     }
 
     Q_EMIT pausedStateChanged(m_isPaused);
+    return true;
 }
