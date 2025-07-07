@@ -21,6 +21,7 @@
 #include <QMenu>
 #include <QTimer>
 #include <QWheelEvent>
+#include <QActionGroup>
 
 #include "featurecontroller.h"
 #include "wallpapermanager.h"
@@ -108,7 +109,7 @@ void TrayManager::createActions()
     connect(m_aboutAction, &QAction::triggered, this, &TrayManager::onAboutAction);
 
     m_quitAction = new QAction(tr("Exit"), this);
-    connect(m_quitAction, &QAction::triggered, this, [this]() { emit featureActionRequested("--quit"); });
+    connect(m_quitAction, &QAction::triggered, this, [this]() { Q_EMIT featureActionRequested("--quit"); });
 }
 
 void TrayManager::createTrayIcon()
@@ -194,9 +195,9 @@ bool TrayManager::eventFilter(QObject *object, QEvent *event)
 
         bool scrolledUp = static_cast<QWheelEvent *>(event)->angleDelta().y() > 0;
         if (scrolledUp) {
-            emit featureActionRequested("--previous");
+            Q_EMIT featureActionRequested("--previous");
         } else {
-            emit featureActionRequested("--next");
+            Q_EMIT featureActionRequested("--next");
         }
         return true;
     }
@@ -206,7 +207,7 @@ bool TrayManager::eventFilter(QObject *object, QEvent *event)
 void TrayManager::onTrayActivated(QSystemTrayIcon::ActivationReason reason)
 {
     if (reason == QSystemTrayIcon::DoubleClick) {
-        emit hideOrShowMainWindowRequested();
+        Q_EMIT hideOrShowMainWindowRequested();
     }
 }
 
@@ -220,14 +221,14 @@ void TrayManager::uncheckAllActions()
 
 // --- Action Handlers ---
 
-void TrayManager::onShowWindowAction() { emit showMainWindowRequested(); }
-void TrayManager::onWallpapersAction() { emit featureActionRequested(m_featureController->isWallpapersRunning() ? "--stop" : "--start"); }
-void TrayManager::onWallpapersOnceAction() { emit featureActionRequested("--change"); }
-void TrayManager::onWallpapersPauseAction() { emit featureActionRequested("--pause"); }
-void TrayManager::onWallpapersNextAction() { emit featureActionRequested("--next"); }
-void TrayManager::onWallpapersPreviousAction() { emit featureActionRequested("--previous"); }
-void TrayManager::onLiveEarthAction() { emit featureActionRequested("--earth"); }
-void TrayManager::onPictureOfTheDayAction() { emit featureActionRequested("--potd"); }
-void TrayManager::onLiveWebsiteAction() { emit featureActionRequested("--website"); }
-void TrayManager::onPreferencesAction() { emit showPreferencesRequested(); }
-void TrayManager::onAboutAction() { emit showAboutRequested(); }
+void TrayManager::onShowWindowAction() { Q_EMIT showMainWindowRequested(); }
+void TrayManager::onWallpapersAction() { Q_EMIT featureActionRequested(m_featureController->isWallpapersRunning() ? "--stop" : "--start"); }
+void TrayManager::onWallpapersOnceAction() { Q_EMIT featureActionRequested("--change"); }
+void TrayManager::onWallpapersPauseAction() { Q_EMIT featureActionRequested("--pause"); }
+void TrayManager::onWallpapersNextAction() { Q_EMIT featureActionRequested("--next"); }
+void TrayManager::onWallpapersPreviousAction() { Q_EMIT featureActionRequested("--previous"); }
+void TrayManager::onLiveEarthAction() { Q_EMIT featureActionRequested("--earth"); }
+void TrayManager::onPictureOfTheDayAction() { Q_EMIT featureActionRequested("--potd"); }
+void TrayManager::onLiveWebsiteAction() { Q_EMIT featureActionRequested("--website"); }
+void TrayManager::onPreferencesAction() { Q_EMIT showPreferencesRequested(); }
+void TrayManager::onAboutAction() { Q_EMIT showAboutRequested(); }

@@ -661,8 +661,8 @@ void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     connect(this, &NonGuiManager::signalAddFolderForMonitor, w, &MainWindow::addFolderForMonitor);
     connect(this, &NonGuiManager::signalFocus, w, &MainWindow::showNormal);
     connect(this, &NonGuiManager::signalHideOrShow, w, &MainWindow::hideOrShow);
-    connect(w, &MainWindow::signalUncheckRunningFeatureOnTray, this, [this]() {emit trayUncheckRequested();});
-    connect(w, &MainWindow::signalRecreateTray, this, [this]() {emit trayNeedsUpdate();});
+    connect(w, &MainWindow::signalUncheckRunningFeatureOnTray, this, [this]() {Q_EMIT trayUncheckRequested();});
+    connect(w, &MainWindow::signalRecreateTray, this, [this]() {Q_EMIT trayNeedsUpdate();});
 }
 
 void NonGuiManager::liveWebsiteImageReady(QImage *image, short errorCode){
