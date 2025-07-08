@@ -102,7 +102,6 @@ private:
     bool loadWebsiteSnapshotPlugin();
     void connectToServer();
     void disconnectFromSlot();
-    void continueWithLiveEarth();
     void continueWithWebsite();
     void continueWithPotd();
     void changeWallpaperNow();

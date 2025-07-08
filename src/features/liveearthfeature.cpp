@@ -18,15 +18,35 @@
 
 #include "liveearthfeature.h"
 #include "imagefetcher.h"
+#include "timermanager.h"
+#include "glob.h"
 
-LiveEarthFeature::LiveEarthFeature(ImageFetcher *imageFetcher, QObject *parent)
+LiveEarthFeature::LiveEarthFeature(ImageFetcher *imageFetcher,
+                                   TimerManager *timerManager,
+                                   QObject *parent)
     : QObject(parent)
     , m_imageFetcher(imageFetcher)
+    , m_timerManager(timerManager)
 {
 }
 
 void LiveEarthFeature::start()
 {
-    m_imageFetcher->setFetchType(FetchType::LE);
-    m_imageFetcher->fetch();
+    m_timerManager->totalSeconds_ = LIVEARTH_INTERVAL;
+    if (!gv.firstTimeout) {
+        m_imageFetcher->setFetchType(FetchType::LE);
+        m_imageFetcher->fetch();
+    }
+    m_timerManager->saveSecondsLeftNow();
+    m_timerManager->start();
+}
+
+void LiveEarthFeature::stop()
+{
+    m_timerManager->secondsRemaining_ = 0;
+    m_imageFetcher->abort();
+    if (m_timerManager->isActive()) {
+        m_timerManager->stop();
+    }
+    m_timerManager->saveSecondsLeftNow(false);
 }

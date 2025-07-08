@@ -22,17 +22,22 @@
 #include <QObject>
 
 class ImageFetcher;
+class TimerManager;
 
 class LiveEarthFeature : public QObject
 {
     Q_OBJECT
 public:
-    explicit LiveEarthFeature(ImageFetcher *imageFetcher, QObject *parent = nullptr);
+    explicit LiveEarthFeature(ImageFetcher *imageFetcher,
+                              TimerManager *timerManager,
+                              QObject *parent = nullptr);
 
     void start();
+    void stop();
 
 private:
     ImageFetcher *m_imageFetcher;
+    TimerManager *m_timerManager;
 };
 
 #endif // LIVEARTHFEATURE_H

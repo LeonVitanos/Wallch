@@ -135,8 +135,7 @@ void NonGuiManager::waitForInternetConnection(){
         continueWithPotd();
     }
     else if(featureController_->isLiveEarthRunning()){
-        timerManager_->secondsRemaining_=LIVEARTH_INTERVAL;
-        continueWithLiveEarth();
+        liveEarthFeature_->start();
     }
     else if(featureController_->isWebsiteRunning()){
         continueWithWebsite();
@@ -178,17 +177,6 @@ void NonGuiManager::checkPicOfDay(){
         connect(generalTimer_, SIGNAL(timeout()), this, SLOT(checkPicOfDay()));
         */
     }
-}
-
-void NonGuiManager::continueWithLiveEarth(){
-    this->connectToServer();
-    timerManager_->totalSeconds_=LIVEARTH_INTERVAL;
-    if(!gv.firstTimeout){
-        imageFetcher_->setFetchType(FetchType::LE);
-        imageFetcher_->fetch();
-    }
-    timerManager_->saveSecondsLeftNow();
-    timerManager_->start();
 }
 
 void NonGuiManager::continueWithWebsite(){
@@ -805,7 +793,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
         connectToServer();
         Q_EMIT trayNeedsUpdate();
 
-        continueWithLiveEarth();
+        liveEarthFeature_->start();
 
         return 0;
     }
@@ -1064,7 +1052,7 @@ void NonGuiManager::startFeature(int featureId) {
             doAction("--stop");
         }
     } else if (featureId == 1) { // --earth
-        this->continueWithLiveEarth();
+        liveEarthFeature_->start();
     } else if (featureId == 2) { // --potd
         this->continueWithPotd();
     } else if (featureId == 3) { // --website
