@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "features/featurecontroller.h"
 #include "features/wallpapersfeature.h"
 #include "features/liveearthfeature.h"
+#include "features/websitefeature.h"
 #include "tools/timermanager.h"
 #include "tools/wallpapermanager.h"
 #include "tools/imagefetcher.h"
@@ -60,6 +61,7 @@ int main(int argc, char *argv[])
     // 3. Create the individual feature handlers, injecting their dependencies.
     auto wallpapersFeature = new WallpapersFeature(wallpaperManager, timerManager, fileManager, &app);
     auto liveEarthFeature = new LiveEarthFeature(imageFetcher, timerManager, &app);
+    auto websiteFeature = new WebsiteFeature(timerManager, &app);
 
     // 4. Create the core controllers that depend on the feature handlers.
     auto featureController = new FeatureController(wallpapersFeature, liveEarthFeature, &app);
@@ -78,7 +80,8 @@ int main(int argc, char *argv[])
                                 dialogHelper,
                                 globalParser,
                                 wallpapersFeature,
-                                liveEarthFeature);
+                                liveEarthFeature,
+                                websiteFeature);
 
     QObject::connect(trayManager, &TrayManager::featureActionRequested, &nonGuiManager, &NonGuiManager::doAction);
     QObject::connect(trayManager, &TrayManager::showMainWindowRequested, &nonGuiManager, [&nonGuiManager](){nonGuiManager.doAction("--focus");});

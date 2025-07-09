@@ -30,6 +30,7 @@ class FileManager;
 class Global;
 class WallpapersFeature;
 class LiveEarthFeature;
+class WebsiteFeature;
 
 #include <QTimer>
 #include <QSettings>
@@ -67,6 +68,7 @@ public:
                          Global *globalParser,
                          WallpapersFeature *wallpapersFeature,
                          LiveEarthFeature *liveEarthFeature,
+                         WebsiteFeature *websiteFeature,
                          QObject *parent = nullptr);
     int startProgram(int argc, char *argv[]);
     void doAction(const QString &message);
@@ -81,6 +83,7 @@ private:
     Global *globalParser_;
     WallpapersFeature* wallpapersFeature_;
     LiveEarthFeature* liveEarthFeature_;
+    WebsiteFeature *websiteFeature_;
 
     Preferences *preferences_;
     WebsiteSnapshot *websiteSnapshot_=NULL;
@@ -102,7 +105,6 @@ private:
     bool loadWebsiteSnapshotPlugin();
     void connectToServer();
     void disconnectFromSlot();
-    void continueWithWebsite();
     void continueWithPotd();
     void changeWallpaperNow();
     void getDelay();

@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "nonguimanager.h"
 #include "silenced_qtconcurrentrun.h" // IWYU pragma: keep
 #include "settingsmanager.h"
+#include "websitefeature.h"
 
 #include <QScreen>
 #include <QActionGroup>
@@ -52,6 +53,7 @@ NonGuiManager::NonGuiManager(FeatureController *featureController,
                              Global *globalParser,
                              WallpapersFeature *wallpapersFeature,
                              LiveEarthFeature *liveEarthFeature,
+                             WebsiteFeature *websiteFeature,
                              QObject *parent)
     : QObject(parent)
     , featureController_(featureController)
@@ -63,6 +65,7 @@ NonGuiManager::NonGuiManager(FeatureController *featureController,
     , globalParser_(globalParser)
     , wallpapersFeature_(wallpapersFeature)
     , liveEarthFeature_(liveEarthFeature)
+    , websiteFeature_(websiteFeature)
 {
     connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineBackgroundReady(QString)));
 }
@@ -138,7 +141,7 @@ void NonGuiManager::waitForInternetConnection(){
         liveEarthFeature_->start();
     }
     else if(featureController_->isWebsiteRunning()){
-        continueWithWebsite();
+        websiteFeature_->start();
     }
 }
 
@@ -177,81 +180,6 @@ void NonGuiManager::checkPicOfDay(){
         connect(generalTimer_, SIGNAL(timeout()), this, SLOT(checkPicOfDay()));
         */
     }
-}
-
-void NonGuiManager::continueWithWebsite(){
-    this->connectToServer();
-    //getting the required values from the settings...
-
-    /*
-    gv.websiteWebpageToLoad=settings->value("website", "http://google.com").toString();
-    gv.websiteInterval=settings->value("website_interval", 6).toInt();
-    gv.websiteCropEnabled=settings->value("website_crop", false).toBool();
-    gv.websiteCropArea=settings->value("website_crop_area", QRect(0, 0, gv.screenAvailableWidth, gv.screenAvailableHeight)).toRect();
-    gv.websiteLoginEnabled=settings->value("website_login", false).toBool();
-    gv.websiteLoginUsername=settings->value("website_username", "").toString();
-    gv.websiteLoginPasswd=settings->value("website_password", "").toString();
-    if(!gv.websiteLoginPasswd.isEmpty()){
-        gv.websiteLoginPasswd=Global::base64Decode(gv.websiteLoginPasswd);
-    }
-    gv.websiteRedirect=settings->value("website_redirect", false).toBool();
-    gv.websiteFinalPageToLoad=settings->value("website_final_webpage", "").toString();
-    gv.websiteSimpleAuthEnabled=settings->value("website_simple_auth", false).toBool();
-    gv.websiteWaitAfterFinishSeconds=settings->value("website_wait_after_finish", 3).toInt();
-    gv.websiteJavascriptEnabled=settings->value("website_js_enabled", true).toBool();
-    gv.websiteJavascriptCanReadClipboard=settings->value("website_js_can_read_clipboard", false).toBool();
-    gv.websiteJavaEnabled=settings->value("website_java_enabled", false).toBool();
-    gv.websiteLoadImages=settings->value("website_load_images", true).toBool();
-    gv.websiteExtraUsernames=settings->value("website_extra_usernames", QStringList()).toStringList();
-    gv.websiteExtraPasswords=settings->value("website_extra_passwords", QStringList()).toStringList();
-
-
-    disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageReady(QImage*,short)));
-    connect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageReady(QImage*,short)));
-
-    websiteSnapshot_->setParameters(QUrl(gv.websiteWebpageToLoad), gv.screenAvailableWidth, gv.screenAvailableHeight);
-    websiteSnapshot_->setWaitAfterFinish(gv.websiteWaitAfterFinishSeconds);
-    websiteSnapshot_->setJavascriptConfig(gv.websiteJavascriptEnabled, gv.websiteJavascriptCanReadClipboard);
-    websiteSnapshot_->setJavaEnabled(gv.websiteJavaEnabled);
-    websiteSnapshot_->setLoadImagesEnabled(gv.websiteLoadImages);
-    websiteSnapshot_->setCrop(gv.websiteCropEnabled, gv.websiteCropArea);
-
-    if(gv.websiteLoginEnabled){
-        if(!gv.websiteRedirect || gv.websiteFinalPageToLoad.isEmpty()){
-            gv.websiteFinalPageToLoad=gv.websiteWebpageToLoad;
-        }
-        if(gv.websiteSimpleAuthEnabled){
-            websiteSnapshot_->setSimpleAuthentication(gv.websiteLoginUsername, gv.websiteLoginPasswd, gv.websiteFinalPageToLoad);
-        }
-        else
-        {
-            if(gv.websiteExtraUsernames.count()>0 || gv.websiteExtraPasswords.count()>0)
-            {
-                websiteSnapshot_->setComplexAuthenticationWithPossibleFields(gv.websiteLoginUsername, gv.websiteLoginPasswd, gv.websiteFinalPageToLoad, gv.websiteExtraUsernames, gv.websiteExtraPasswords, true);
-            }
-            else
-            {
-                websiteSnapshot_->setComplexAuthentication(gv.websiteLoginUsername, gv.websiteLoginPasswd, gv.websiteFinalPageToLoad);
-            }
-        }
-    }
-    else
-    {
-        websiteSnapshot_->disableAuthentication();
-    }
-
-    websiteSnapshot_->setTimeout(WEBSITE_TIMEOUT);
-
-    timerManager_->totalSeconds_=Global::websiteSliderValueToSeconds(gv.websiteInterval);
-    if(!gv.firstTimeout){
-        websiteSnapshot_->start();
-    }
-    if(!timerManager_->secondsRemaining_){
-        timerManager_->secondsRemaining_=timerManager_->totalSeconds_;
-    }
-    Global::resetSleepProtection(timerManager_->secondsRemaining_);
-    timerManager_->saveSecondsLeftNow();
-    timerManager_->start();*/
 }
 
 void NonGuiManager::continueWithPotd(){
@@ -835,7 +763,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
 
         websiteSnapshot_ = new WebsiteSnapshot();
 
-        continueWithWebsite();
+        websiteFeature_->start();
         return 0;
     }
     else if(arguments.contains("--quit") || arguments.contains("--stop") || arguments.contains("--next") || arguments.contains("--previous") || arguments.contains("--pause")){
@@ -1056,7 +984,7 @@ void NonGuiManager::startFeature(int featureId) {
     } else if (featureId == 2) { // --potd
         this->continueWithPotd();
     } else if (featureId == 3) { // --website
-        this->continueWithWebsite();
+        websiteFeature_->start();
     }
 }
 
