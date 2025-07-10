@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "silenced_qtconcurrentrun.h" // IWYU pragma: keep
 #include "settingsmanager.h"
 #include "websitefeature.h"
+#include "potdfeature.h"
 
 #include <QScreen>
 #include <QActionGroup>
@@ -54,6 +55,7 @@ NonGuiManager::NonGuiManager(FeatureController *featureController,
                              WallpapersFeature *wallpapersFeature,
                              LiveEarthFeature *liveEarthFeature,
                              WebsiteFeature *websiteFeature,
+                             PotdFeature *potdFeature,
                              QObject *parent)
     : QObject(parent)
     , featureController_(featureController)
@@ -66,6 +68,7 @@ NonGuiManager::NonGuiManager(FeatureController *featureController,
     , wallpapersFeature_(wallpapersFeature)
     , liveEarthFeature_(liveEarthFeature)
     , websiteFeature_(websiteFeature)
+    , potdFeature_(potdFeature)
 {
     connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineBackgroundReady(QString)));
 }
@@ -84,20 +87,6 @@ bool NonGuiManager::alreadyRuns(){
 
 void NonGuiManager::onlineBackgroundReady(QString image){
     wallpaperManager_->setBackground(image, true, featureController_->isPotdRunning(), (featureController_->isPotdRunning() ? 3 : 2));
-}
-
-void NonGuiManager::potdSetSameImage(){
-    Global::debug("Picture Of The Day should already be in your hard drive.");
-    QString filename=Global::getFilename(gv.wallchHomePath+POTD_IMAGE+"*");
-    if(filename.isEmpty()){
-        Global::error("Wallch will now attemp to download again the Picture Of The Day.");
-        settings->setValue("last_day_potd_was_set", "");
-        settings->setValue("previous_img_url", "retry");
-        settings->sync();
-        imageFetcher_->setFetchType(FetchType::POTD);
-        imageFetcher_->fetch();
-    }
-    wallpaperManager_->setBackground(filename, true, true, 3);
 }
 
 void NonGuiManager::readPictures(const QString &folder){
@@ -135,7 +124,7 @@ void NonGuiManager::waitForInternetConnection(){
     Global::debug("Checking for internet connection...");
 
     if(featureController_->isPotdRunning()){
-        continueWithPotd();
+        potdFeature_->start();
     }
     else if(featureController_->isLiveEarthRunning()){
         liveEarthFeature_->start();
@@ -143,63 +132,6 @@ void NonGuiManager::waitForInternetConnection(){
     else if(featureController_->isWebsiteRunning()){
         websiteFeature_->start();
     }
-}
-
-void NonGuiManager::checkPicOfDay(){
-    if(Global::timeNowToString() == "00:00"){
-        if(justUpdatedPotd_)
-        {
-            return;
-        }
-        QString lastDaySet=settings->value("last_day_potd_was_set", "").toString();
-        QString dateTimeNow = QDateTime::currentDateTime().toString("dd.MM.yyyy");
-        if(settings->value("potd_preferences_have_changed", false).toBool() || dateTimeNow!=lastDaySet){
-            justUpdatedPotd_ = true;
-            imageFetcher_->setFetchType(FetchType::POTD);
-            imageFetcher_->fetch();
-        }
-        else
-        {
-            //the day is the same, setting the same image.
-            potdSetSameImage();
-        }
-    }
-    else
-    {
-        justUpdatedPotd_=false;
-        //time has yet to be reached!
-        /* TODO:MODULARIZATION-POTD
-        if(generalTimer_->isSingleShot()){
-            if(generalTimer_->isActive()){
-                timerManager_->stop();
-            }
-            //back to normal
-            timerManager_->start(true);
-        }
-
-        connect(generalTimer_, SIGNAL(timeout()), this, SLOT(checkPicOfDay()));
-        */
-    }
-}
-
-void NonGuiManager::continueWithPotd(){
-    this->connectToServer();
-
-    //yearmonthday contains the last time that picture of the day was changed...
-    QString lastDaySet=settings->value("last_day_potd_was_set", "").toString();
-    QString dateTimeNow = QDateTime::currentDateTime().toString("dd.MM.yyyy");
-    if(settings->value("potd_preferences_have_changed", false).toBool() || dateTimeNow!=lastDaySet){
-        //the previous time that potd changes was another day
-        imageFetcher_->setFetchType(FetchType::POTD);
-        imageFetcher_->fetch();
-    }
-    else
-    {
-        potdSetSameImage();
-    }
-    gv.doNotToggleRadiobuttonFallback=false;
-
-    timerManager_->start(true);
 }
 
 void NonGuiManager::connectToServer()
@@ -740,7 +672,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
         connectToServer();
         Q_EMIT trayNeedsUpdate();
 
-        continueWithPotd();
+        potdFeature_->start();
 
         return 0;
     }
@@ -982,7 +914,7 @@ void NonGuiManager::startFeature(int featureId) {
     } else if (featureId == 1) { // --earth
         liveEarthFeature_->start();
     } else if (featureId == 2) { // --potd
-        this->continueWithPotd();
+        potdFeature_->start();
     } else if (featureId == 3) { // --website
         websiteFeature_->start();
     }

@@ -31,6 +31,7 @@ class Global;
 class WallpapersFeature;
 class LiveEarthFeature;
 class WebsiteFeature;
+class PotdFeature;
 
 #include <QTimer>
 #include <QSettings>
@@ -69,6 +70,7 @@ public:
                          WallpapersFeature *wallpapersFeature,
                          LiveEarthFeature *liveEarthFeature,
                          WebsiteFeature *websiteFeature,
+                         PotdFeature *potdFeature,
                          QObject *parent = nullptr);
     int startProgram(int argc, char *argv[]);
     void doAction(const QString &message);
@@ -84,6 +86,7 @@ private:
     WallpapersFeature* wallpapersFeature_;
     LiveEarthFeature* liveEarthFeature_;
     WebsiteFeature *websiteFeature_;
+    PotdFeature *potdFeature_;
 
     Preferences *preferences_;
     WebsiteSnapshot *websiteSnapshot_=NULL;
@@ -95,7 +98,6 @@ private:
     QString messageToSendToServer_;
     bool quitAfterMessagingMainApplication_;
     bool mainWindowLaunched_ = false;
-    bool justUpdatedPotd_ = false;
     void installTranslator();
     void viralSettingsOperations();
     bool alreadyRuns();
@@ -105,11 +107,9 @@ private:
     bool loadWebsiteSnapshotPlugin();
     void connectToServer();
     void disconnectFromSlot();
-    void continueWithPotd();
     void changeWallpaperNow();
     void getDelay();
     void readPictures(const QString &folder);
-    void potdSetSameImage();
     int processArguments(const QStringList &arguments);
     void startProgramNormalGui();
     void startFeature(int featureId);
@@ -122,7 +122,6 @@ private Q_SLOTS:
     void socketError();
     void quitNow();
     void waitForInternetConnection();
-    void checkPicOfDay();
     void preferencesDestroyed();
     void liveWebsiteImageReady(QImage *image, short errorCode);
 
