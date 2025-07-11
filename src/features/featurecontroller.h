@@ -23,6 +23,8 @@
 
 class WallpapersFeature;
 class LiveEarthFeature;
+class WebsiteFeature;
+class PotdFeature;
 
 class FeatureController : public QObject
 {
@@ -39,6 +41,8 @@ public:
     Q_ENUM(Feature)
     explicit FeatureController(WallpapersFeature *wallpapersFeature,
                                LiveEarthFeature *liveEarthFeature,
+                               WebsiteFeature *websiteFeature,
+                               PotdFeature *potdFeature,
                                QObject *parent = nullptr);
 
     bool isWallpapersRunning() const;
@@ -52,6 +56,7 @@ public:
     void setCurrentFeature(Feature newFeature);
     Feature launchFeature() const;
     void setLaunchFeature(Feature feature);
+    void launchFeatureById(int featureId);
 
     void setPaused(bool paused);
 
@@ -60,6 +65,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void pausedStateChanged(bool isPaused);
+    void launchFailed();
 
 private:
     Feature m_launchFeature = Feature::None;
@@ -67,6 +73,8 @@ private:
 
     WallpapersFeature *m_wallpapersFeature;
     LiveEarthFeature *m_liveEarthFeature;
+    WebsiteFeature *m_websiteFeature;
+    PotdFeature *m_potdFeature;
 };
 
 #endif // FEATURECONTROLLER_H

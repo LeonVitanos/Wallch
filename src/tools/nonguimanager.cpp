@@ -71,6 +71,9 @@ NonGuiManager::NonGuiManager(FeatureController *featureController,
     , potdFeature_(potdFeature)
 {
     connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineBackgroundReady(QString)));
+    connect(featureController_, &FeatureController::launchFailed, this, [this]() {
+        doAction("--stop");
+    });
 }
 
 bool NonGuiManager::alreadyRuns(){
@@ -598,26 +601,6 @@ void NonGuiManager::startProgramNormalGui(){
     mainWindow->show();
 }
 
-void NonGuiManager::launchFeatureById(int featureId)
-{
-    switch (featureId) {
-    case 0: // --start (Wallpapers)
-        if (!wallpapersFeature_->setPaused(false)) {
-            doAction("--stop");
-        }
-        break;
-    case 1: // --earth
-        liveEarthFeature_->start();
-        break;
-    case 2: // --potd
-        potdFeature_->start();
-        break;
-    case 3: // --website
-        websiteFeature_->start();
-        break;
-    }
-}
-
 int NonGuiManager::processArguments(const QStringList &arguments)
 {
     int argc = arguments.count();
@@ -649,7 +632,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
             connectToServer();
             Q_EMIT trayNeedsUpdate();
 
-            launchFeatureById(featureId);
+            featureController_->launchFeatureById(featureId);
 
             return 0;
         }
@@ -864,7 +847,7 @@ void NonGuiManager::startFeature(int featureId) {
         case 3: changeRunningFeature(FeatureController::Feature::Website); break;
     }
 
-    launchFeatureById(featureId);
+    featureController_->launchFeatureById(featureId);
 }
 
 void NonGuiManager::changeRunningFeature(FeatureController::Feature feature){

@@ -66,7 +66,11 @@ int main(int argc, char *argv[])
     auto potdFeature = new PotdFeature(imageFetcher, wallpaperManager, timerManager, &app); // Add this
 
     // 4. Create the core controllers that depend on the feature handlers.
-    auto featureController = new FeatureController(wallpapersFeature, liveEarthFeature, &app);
+    auto featureController = new FeatureController(wallpapersFeature,
+                                                   liveEarthFeature,
+                                                   websiteFeature,
+                                                   potdFeature,
+                                                   &app);
     auto trayManager = new TrayManager(featureController, wallpaperManager, dialogHelper, &app);
 
     // 5. Wire up the core components. The timer should tell the FeatureController when to act.

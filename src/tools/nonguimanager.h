@@ -114,7 +114,6 @@ private:
     void startProgramNormalGui();
     void startFeature(int featureId);
     void changeRunningFeature(FeatureController::Feature feature);
-    void launchFeatureById(int featureId);
 
 private Q_SLOTS:
     void newSocketConnection();

@@ -19,16 +19,42 @@
 #include "featurecontroller.h"
 #include "wallpapersfeature.h"
 #include "liveearthfeature.h"
+#include "websitefeature.h"
+#include "potdfeature.h"
 #include "settingsmanager.h"
 
 FeatureController::FeatureController(WallpapersFeature *wallpapersFeature,
                                      LiveEarthFeature *liveEarthFeature,
+                                     WebsiteFeature *websiteFeature,
+                                     PotdFeature *potdFeature,
                                      QObject *parent)
     : QObject(parent)
     , m_wallpapersFeature(wallpapersFeature)
     , m_liveEarthFeature(liveEarthFeature)
+    , m_websiteFeature(websiteFeature)
+    , m_potdFeature(potdFeature)
 {
     connect(m_wallpapersFeature, &WallpapersFeature::pausedStateChanged, this, &FeatureController::pausedStateChanged);
+}
+
+void FeatureController::launchFeatureById(int featureId)
+{
+    switch (featureId) {
+    case 0: // --start (Wallpapers)
+        if (!m_wallpapersFeature->setPaused(false)) {
+            Q_EMIT launchFailed();
+        }
+        break;
+    case 1: // --earth
+        m_liveEarthFeature->start();
+        break;
+    case 2: // --potd
+        m_potdFeature->start();
+        break;
+    case 3: // --website
+        m_websiteFeature->start();
+        break;
+    }
 }
 
 void FeatureController::onTimeToChangeWallpaper()
@@ -41,7 +67,7 @@ void FeatureController::onTimeToChangeWallpaper()
         m_liveEarthFeature->start();
         break;
     case FeatureController::Feature::Website:
-        // m_websiteFeature->start();
+        m_websiteFeature->start();
         break;
     default:
         break;
