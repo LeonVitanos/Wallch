@@ -31,8 +31,8 @@ bool WallpapersFeature::initialize()
     }
 
     getDelay();
+    Global::debug("Your Desktop Background will change every " + QString::number(m_timerManager->totalSeconds_) + " seconds.");
     m_timerManager->secondsRemaining_ = 0;
-    Global::resetSleepProtection(m_timerManager->secondsRemaining_);
 
     m_isInitialized = true;
     return true;
@@ -100,6 +100,7 @@ bool WallpapersFeature::setPaused(bool paused)
                 return false;
             }
         }
+        Global::resetSleepProtection(m_timerManager->secondsRemaining_);
         m_timerManager->start();
     } else {
         m_timerManager->stop();

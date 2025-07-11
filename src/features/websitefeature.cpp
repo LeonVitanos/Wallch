@@ -31,6 +31,9 @@ void WebsiteFeature::start()
     //getting the required values from the settings...
 
     /*
+    timerManager_->secondsRemaining_=0;
+    websiteSnapshot_ = new WebsiteSnapshot();
+
     gv.websiteWebpageToLoad=settings->value("website", "http://google.com").toString();
     gv.websiteInterval=settings->value("website_interval", 6).toInt();
     gv.websiteCropEnabled=settings->value("website_crop", false).toBool();

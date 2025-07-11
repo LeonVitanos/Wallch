@@ -598,107 +598,64 @@ void NonGuiManager::startProgramNormalGui(){
     mainWindow->show();
 }
 
+void NonGuiManager::launchFeatureById(int featureId)
+{
+    switch (featureId) {
+    case 0: // --start (Wallpapers)
+        if (!wallpapersFeature_->setPaused(false)) {
+            doAction("--stop");
+        }
+        break;
+    case 1: // --earth
+        liveEarthFeature_->start();
+        break;
+    case 2: // --potd
+        potdFeature_->start();
+        break;
+    case 3: // --website
+        websiteFeature_->start();
+        break;
+    }
+}
+
 int NonGuiManager::processArguments(const QStringList &arguments)
 {
     int argc = arguments.count();
 
-    if(arguments.contains("--start")){
-        if(alreadyRuns()){
-            messageServer("--start", true);
-            return 0;
-        }
+    const QMap<QString, int> featureArgs = {
+        {"--start", 0}, {"--earth", 1}, {"--potd", 2}, {"--website", 3}
+    };
 
-        bool gotPicLocation = wallpapersFeature_->getPicturesLocation(true);
+    for (auto it = featureArgs.constBegin(); it != featureArgs.constEnd(); ++it) {
+        if (arguments.contains(it.key())) {
 
-        Global::resetSleepProtection(timerManager_->secondsRemaining_);
-        if(gotPicLocation){
-            wallpapersFeature_->getDelay();
-            Global::debug("Your Desktop Background will change every "+QString::number(timerManager_->totalSeconds_)+" seconds.");
-
-            if(wallpaperManager_->wallpapersCount()<LEAST_WALLPAPERS_FOR_START){
-                Global::error("Too few pictures for image changing. You need at least " + QString::number(LEAST_WALLPAPERS_FOR_START) + ".");
-                globalParser_->desktopNotify(tr("You cannot change wallpapers if they are less than 2!"), false, "info");
+            if (argc > 2) {
+                Global::error("Argument " + it.key() + " doesn't take any other options!");
+                showUsage(1);
                 return 1;
             }
 
-            if(gv.randomImagesEnabled){
-                wallpaperManager_->setRandomMode(true);
+            if (alreadyRuns()) {
+                messageServer(it.key(), true);
+                return 0;
             }
 
-            changeRunningFeature(FeatureController::Feature::Wallpapers);
-        }
-        connectToServer();
-        Q_EMIT trayNeedsUpdate();
+            int featureId = it.value();
+            FeatureController::Feature feature = static_cast<FeatureController::Feature>(featureId);
 
-        if(gotPicLocation){
-            timerManager_->start();
-        }
+            featureController_->setLaunchFeature(feature);
+            changeRunningFeature(feature);
 
-        return 0;
-    }
-    else if(arguments.contains("--earth")){
-        if(argc > 2){
-            Global::error("Argument --earth doesn't take any other options!");
-            showUsage(1);
-        }
-        if(alreadyRuns()){
-            messageServer("--earth", true);
+            connectToServer();
+            Q_EMIT trayNeedsUpdate();
+
+            launchFeatureById(featureId);
+
             return 0;
         }
-        featureController_->setLaunchFeature(FeatureController::Feature::LiveEarth);
-        changeRunningFeature(FeatureController::Feature::LiveEarth);
-        timerManager_->secondsRemaining_ = LIVEARTH_INTERVAL;
-        Global::resetSleepProtection(timerManager_->secondsRemaining_);
-
-        connectToServer();
-        Q_EMIT trayNeedsUpdate();
-
-        liveEarthFeature_->start();
-
-        return 0;
     }
-    else if(arguments.contains("--potd")){
-        if(argc > 2){
-            Global::error("Argument --potd doesn't take any other options!");
-            showUsage(1);
-        }
-        if(alreadyRuns()){
-            messageServer("--potd", true);
-            return 0;
-        }
-        featureController_->setLaunchFeature(FeatureController::Feature::PictureOfTheDay);
-        changeRunningFeature(FeatureController::Feature::PictureOfTheDay);
 
-        connectToServer();
-        Q_EMIT trayNeedsUpdate();
-
-        potdFeature_->start();
-
-        return 0;
-    }
-    else if(arguments.contains("--website")){
-        if(argc>2){
-            Global::error("Argument --website doesn't take any other options!");
-            showUsage(1);
-        }
-        if(alreadyRuns()){
-            messageServer("--website", true);
-            return 0;
-        }
-        featureController_->setLaunchFeature(FeatureController::Feature::Website);
-        changeRunningFeature(FeatureController::Feature::Website);
-        timerManager_->secondsRemaining_=0;
-        Global::resetSleepProtection(timerManager_->secondsRemaining_);
-
-        connectToServer();
-        Q_EMIT trayNeedsUpdate();
-
-        websiteSnapshot_ = new WebsiteSnapshot();
-
-        websiteFeature_->start();
-        return 0;
-    }
-    else if(arguments.contains("--quit") || arguments.contains("--stop") || arguments.contains("--next") || arguments.contains("--previous") || arguments.contains("--pause")){
+    if(arguments.contains("--quit") || arguments.contains("--stop") || arguments.contains("--next") || arguments.contains("--previous") || arguments.contains("--pause")){
         if(argc > 2){
             showUsage(1);
         }
@@ -907,17 +864,7 @@ void NonGuiManager::startFeature(int featureId) {
         case 3: changeRunningFeature(FeatureController::Feature::Website); break;
     }
 
-    if (featureId == 0) { // --start
-        if (!wallpapersFeature_->setPaused(false)) {
-            doAction("--stop");
-        }
-    } else if (featureId == 1) { // --earth
-        liveEarthFeature_->start();
-    } else if (featureId == 2) { // --potd
-        potdFeature_->start();
-    } else if (featureId == 3) { // --website
-        websiteFeature_->start();
-    }
+    launchFeatureById(featureId);
 }
 
 void NonGuiManager::changeRunningFeature(FeatureController::Feature feature){

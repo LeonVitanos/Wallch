@@ -32,7 +32,9 @@ LiveEarthFeature::LiveEarthFeature(ImageFetcher *imageFetcher,
 
 void LiveEarthFeature::start()
 {
+    m_timerManager->secondsRemaining_ = LIVEARTH_INTERVAL;
     m_timerManager->totalSeconds_ = LIVEARTH_INTERVAL;
+    Global::resetSleepProtection(m_timerManager->secondsRemaining_);
     if (!gv.firstTimeout) {
         m_imageFetcher->setFetchType(FetchType::LE);
         m_imageFetcher->fetch();
