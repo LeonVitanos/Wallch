@@ -217,3 +217,22 @@ void SettingsManager::setDefaultFolder(const QString &folder){
 
     settings->sync();
 }
+
+void SettingsManager::setIndependentIntervalValue(const QString &value)
+{
+    if (!gv.independentIntervalEnabled) {
+        return;
+    }
+
+    settings->setValue("seconds_left_interval_independence", value);
+    settings->sync();
+}
+
+QString SettingsManager::getIndependentIntervalValue()
+{
+    if (!gv.independentIntervalEnabled) {
+        return INTERVAL_INDEPENDENCE_DEFAULT_VALUE;
+    }
+
+    return settings->value("seconds_left_interval_independence", INTERVAL_INDEPENDENCE_DEFAULT_VALUE).toString();
+}

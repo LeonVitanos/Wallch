@@ -777,10 +777,9 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
         FeatureController::Feature launchFeature = featureController_->launchFeature();
         if ( (launchFeature == FeatureController::Feature::LiveEarth ||
              launchFeature == FeatureController::Feature::Website ||
-             launchFeature != FeatureController::Feature::PictureOfTheDay) &&
-            (settings->value("independent_interval_enabled", true).toBool()) )
+             launchFeature != FeatureController::Feature::PictureOfTheDay) )
         {
-            setIndependentInterval(settings->value("seconds_left_interval_independence", INTERVAL_INDEPENDENCE_DEFAULT_VALUE).toString());
+            setIndependentInterval(SettingsManager::getIndependentIntervalValue());
         }
 
         // processArguments will parse the remaining arguments and start the correct feature.

@@ -14,6 +14,9 @@ public:
     static void updateStartup(FeatureController::Feature currentFeature);
     static void setDefaultFolder(const QString &folder);
 
+    static void setIndependentIntervalValue(const QString &value);
+    static QString getIndependentIntervalValue();
+
 private:
     static void loadSettings();
     static void checkFirstRun();

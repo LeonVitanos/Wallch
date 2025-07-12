@@ -205,7 +205,7 @@ void TimerManager::saveSecondsLeftNow(bool keepIndependentInterval){
     }
 
     if(!keepIndependentInterval){
-        settings->setValue("seconds_left_interval_independence", INTERVAL_INDEPENDENCE_DEFAULT_VALUE);
+        SettingsManager::setIndependentIntervalValue(INTERVAL_INDEPENDENCE_DEFAULT_VALUE);
     }
     else
     {
@@ -223,19 +223,16 @@ void TimerManager::saveSecondsLeftNow(bool keepIndependentInterval){
                 break;
         }
         QDateTime currentTime = QDateTime::currentDateTime();
-        settings->setValue("seconds_left_interval_independence",
-                           QString(front)+"."+
-                               QString::number(secondsRemaining_)+"."+
-                               currentTime.date().toString("yyyy")+":"+
-                               currentTime.date().toString("MM")+":"+
-                               currentTime.date().toString("dd")+":"+
-                               currentTime.time().toString("HH")+":"+
-                               currentTime.time().toString("mm")+":"+
-                               currentTime.time().toString("ss")
-                           );
+        QString valueToSave = QString(front)+"."+
+                              QString::number(secondsRemaining_)+"."+
+                              currentTime.date().toString("yyyy")+":"+
+                              currentTime.date().toString("MM")+":"+
+                              currentTime.date().toString("dd")+":"+
+                              currentTime.time().toString("HH")+":"+
+                              currentTime.time().toString("mm")+":"+
+                              currentTime.time().toString("ss");
+        SettingsManager::setIndependentIntervalValue(valueToSave);
     }
-
-    settings->sync();
 }
 
 void TimerManager::setCurrentFeature(FeatureController::Feature feature){
