@@ -135,4 +135,19 @@ void FeatureController::setPaused(bool paused)
     }
 }
 
-
+void FeatureController::onPersistencePrefixNeeded(QChar &prefix) const
+{
+    switch (m_currentFeature) {
+    case Feature::Wallpapers:
+        prefix = 'p';
+        break;
+    case Feature::LiveEarth:
+        prefix = 'e';
+        break;
+    case Feature::Website:
+        prefix = 'w';
+        break;
+    default:
+        break;
+    }
+}

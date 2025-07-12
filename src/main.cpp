@@ -76,6 +76,8 @@ int main(int argc, char *argv[])
     // 5. Wire up the core components. The timer should tell the FeatureController when to act.
     QObject::connect(timerManager, &TimerManager::timeToChangeWallpaper,
                      featureController, &FeatureController::onTimeToChangeWallpaper);
+    QObject::connect(timerManager, &TimerManager::persistencePrefixNeeded,
+                     featureController, &FeatureController::onPersistencePrefixNeeded);
 
     // 6. Create the main application manager and INJECT the dependencies.
     NonGuiManager nonGuiManager(featureController,

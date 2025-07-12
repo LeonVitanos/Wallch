@@ -4,7 +4,6 @@
 
 #include <QObject>
 #include <QTimer>
-#include "featurecontroller.h"
 
 class TimerManager : public QObject
 {
@@ -25,7 +24,6 @@ public:
     void stop();
     void resetTimer();
     void saveSecondsLeftNow(bool keepIndependentInterval=true);
-    void setCurrentFeature(FeatureController::Feature feature);
 
     bool isActive() const;
 
@@ -33,10 +31,10 @@ private:
     QTimer *m_internalTimer;
     void resetSecondsRemaining();
     void handleTimerExpiry();
-    FeatureController::Feature m_currentFeature = FeatureController::Feature::None;
 
 Q_SIGNALS:
     void timeToChangeWallpaper();
+    void persistencePrefixNeeded(QChar &prefix);
 
 private Q_SLOTS:
     void updateSeconds();

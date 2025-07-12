@@ -1441,7 +1441,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
         const bool wasPaused = featureController_->isFeaturePaused();
 
         if (!wasPaused) {
-            changeRunningFeature(FeatureController::Feature::Wallpapers);
+            featureController_->setCurrentFeature(FeatureController::Feature::Wallpapers);
 
             shuffleWasChecked_ = ui->shuffle_images_checkbox->isChecked();
             if (shuffleWasChecked_) {
@@ -1499,7 +1499,7 @@ void MainWindow::handleStopButtonClick(){
         return;
 
     featureController_->setPaused(true);
-    changeRunningFeature(FeatureController::Feature::None);
+    featureController_->setCurrentFeature(FeatureController::Feature::None);
     updateWallpaperUiForState(WallpaperUiState::Stopped);
 
     //TODO: Rest of the code to be removed in the future:
@@ -2066,7 +2066,7 @@ void MainWindow::handleActivateLiveEarthClick()
     handlePageButtonClick(1);
     ui->activate_livearth->setEnabled(false);
     ui->deactivate_livearth->setEnabled(true);
-    changeRunningFeature(FeatureController::Feature::LiveEarth);
+    featureController_->setCurrentFeature(FeatureController::Feature::LiveEarth);
     Q_EMIT signalRecreateTray();
     setProgressbarsValue(100);
     startUpdateSeconds();
@@ -2081,7 +2081,7 @@ void MainWindow::handleDeactivateLiveEarthClick()
 
     timerManager_->secondsRemaining_=0;
     imageFetcher_->abort();
-    changeRunningFeature(FeatureController::Feature::None);
+    featureController_->setCurrentFeature(FeatureController::Feature::None);
     processRequestStop();
 
     if(updateSecondsTimer_->isActive()){
@@ -2145,7 +2145,7 @@ void MainWindow::handleActivatePotdClick()
 void MainWindow::startPotd(bool launchNow){
     ui->deactivate_potd->setEnabled(true);
     ui->activate_potd->setEnabled(false);
-    changeRunningFeature(FeatureController::Feature::PictureOfTheDay);
+    featureController_->setCurrentFeature(FeatureController::Feature::PictureOfTheDay);
     justUpdatedPotd_=false;
     if(launchNow){
         actionsOnWallpaperChange();
@@ -2166,7 +2166,7 @@ void MainWindow::handleDeactivatePotdClick()
     timerManager_->secondsRemaining_=0;
     processRequestStop();
     imageFetcher_->abort();
-    changeRunningFeature(FeatureController::Feature::None);
+    featureController_->setCurrentFeature(FeatureController::Feature::None);
 
     if(updateSecondsTimer_->isActive()){
         updateSecondsTimer_->stop();
@@ -2236,7 +2236,7 @@ void MainWindow::handleActivateWebsiteClick()
 
     QApplication::processEvents(QEventLoop::AllEvents);
 
-    changeRunningFeature(FeatureController::Feature::Website);
+    featureController_->setCurrentFeature(FeatureController::Feature::Website);
 
     Q_EMIT signalRecreateTray();
     setProgressbarsValue(100);
@@ -2256,7 +2256,7 @@ void MainWindow::handleDeactivateWebsiteClick()
     }
 
     stoppedBecauseOnBattery_=false;
-    changeRunningFeature(FeatureController::Feature::None);
+    featureController_->setCurrentFeature(FeatureController::Feature::None);
     timerManager_->secondsRemaining_=0;
     if(updateSecondsTimer_->isActive()){
         updateSecondsTimer_->stop();
@@ -3502,11 +3502,6 @@ void MainWindow::showProperties(){
 void MainWindow::handleSearchShortcut() {
     if (ui->stackedWidget->currentIndex() == 0)
         searchImages_->showHideSearchBox();
-}
-
-void MainWindow::changeRunningFeature(FeatureController::Feature feature){
-    featureController_->setCurrentFeature(feature);
-    timerManager_->setCurrentFeature(feature);
 }
 
 void MainWindow::onPausedStateChanged(bool isPaused)

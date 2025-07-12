@@ -350,7 +350,7 @@ void NonGuiManager::doAction(const QString &message){
             imageFetcher_->abort();
         }
 
-        changeRunningFeature(FeatureController::Feature::None);
+        featureController_->setCurrentFeature(FeatureController::Feature::None);
     }
     else if(message == "--next"){
         if (featureController_->isWallpapersRunning()) {
@@ -627,7 +627,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
             FeatureController::Feature feature = static_cast<FeatureController::Feature>(featureId);
 
             featureController_->setLaunchFeature(feature);
-            changeRunningFeature(feature);
+            featureController_->setCurrentFeature(feature);
 
             connectToServer();
             Q_EMIT trayNeedsUpdate();
@@ -839,17 +839,7 @@ void NonGuiManager::startFeature(int featureId) {
     }
 
     // --- Step 3: Start the new feature
-    switch (featureId) {
-        case 0: changeRunningFeature(FeatureController::Feature::Wallpapers); break;
-        case 1: changeRunningFeature(FeatureController::Feature::LiveEarth); break;
-        case 2: changeRunningFeature(FeatureController::Feature::PictureOfTheDay); break;
-        case 3: changeRunningFeature(FeatureController::Feature::Website); break;
-    }
-
-    featureController_->launchFeatureById(featureId);
-}
-
-void NonGuiManager::changeRunningFeature(FeatureController::Feature feature){
+    FeatureController::Feature feature = static_cast<FeatureController::Feature>(featureId + 1);
     featureController_->setCurrentFeature(feature);
-    timerManager_->setCurrentFeature(feature);
+    featureController_->launchFeatureById(featureId);
 }

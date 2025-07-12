@@ -62,6 +62,7 @@ public:
 
 public Q_SLOTS:
     void onTimeToChangeWallpaper();
+    void onPersistencePrefixNeeded(QChar &prefix) const;
 
 Q_SIGNALS:
     void pausedStateChanged(bool isPaused);

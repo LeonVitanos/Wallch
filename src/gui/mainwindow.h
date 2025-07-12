@@ -265,7 +265,6 @@ private:
     QImage scaleWallpapersPreview(QString filename);
     void iconsPathsChanged();
     bool addingImageStylesNow = false;
-    void changeRunningFeature(FeatureController::Feature feature);
 
     enum class WallpaperUiState {
         Running,

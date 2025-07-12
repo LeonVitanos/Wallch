@@ -209,32 +209,17 @@ void TimerManager::saveSecondsLeftNow(bool keepIndependentInterval){
     }
     else
     {
-        QChar front;
-        switch(m_currentFeature){
-            default:
-            case FeatureController::Feature::Wallpapers:
-                front='p';
-                break;
-            case FeatureController::Feature::LiveEarth:
-                front='e';
-                break;
-            case FeatureController::Feature::PictureOfTheDay:
-                front='w';
-                break;
+        QChar prefix;
+        Q_EMIT persistencePrefixNeeded(prefix);
+        if (prefix.isNull()) {
+            return;
         }
+
         QDateTime currentTime = QDateTime::currentDateTime();
-        QString valueToSave = QString(front)+"."+
-                              QString::number(secondsRemaining_)+"."+
-                              currentTime.date().toString("yyyy")+":"+
-                              currentTime.date().toString("MM")+":"+
-                              currentTime.date().toString("dd")+":"+
-                              currentTime.time().toString("HH")+":"+
-                              currentTime.time().toString("mm")+":"+
-                              currentTime.time().toString("ss");
+        QString valueToSave = QString("%1.%2.%3")
+                                  .arg(prefix)
+                                  .arg(secondsRemaining_)
+                                  .arg(currentTime.toString("yyyy:MM:dd:HH:mm:ss"));
         SettingsManager::setIndependentIntervalValue(valueToSave);
     }
-}
-
-void TimerManager::setCurrentFeature(FeatureController::Feature feature){
-    m_currentFeature = feature;
 }
