@@ -112,7 +112,7 @@ private:
     void readPictures(const QString &folder);
     int processArguments(const QStringList &arguments);
     void startProgramNormalGui();
-    void startFeature(int featureId);
+    void startFeature(FeatureController::Feature feature);
 
 private Q_SLOTS:
     void newSocketConnection();

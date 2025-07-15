@@ -54,9 +54,9 @@ public:
 
     Feature currentFeature() const;
     void setCurrentFeature(Feature newFeature);
-    Feature launchFeature() const;
+    Feature getLaunchFeature() const;
     void setLaunchFeature(Feature feature);
-    void launchFeatureById(int featureId);
+    void launchFeature(Feature feature);
 
     void setPaused(bool paused);
 

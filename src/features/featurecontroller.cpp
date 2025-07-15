@@ -37,23 +37,26 @@ FeatureController::FeatureController(WallpapersFeature *wallpapersFeature,
     connect(m_wallpapersFeature, &WallpapersFeature::pausedStateChanged, this, &FeatureController::pausedStateChanged);
 }
 
-void FeatureController::launchFeatureById(int featureId)
+void FeatureController::launchFeature(FeatureController::Feature feature)
 {
-    switch (featureId) {
-    case 0: // --start (Wallpapers)
+    switch (feature) {
+    case Feature::Wallpapers:
+        // setPaused(false) will initialize and start the timer if needed.
         if (!m_wallpapersFeature->setPaused(false)) {
             Q_EMIT launchFailed();
         }
         break;
-    case 1: // --earth
+    case Feature::LiveEarth:
         m_liveEarthFeature->start();
         break;
-    case 2: // --potd
+    case Feature::PictureOfTheDay:
         m_potdFeature->start();
         break;
-    case 3: // --website
+    case Feature::Website:
         m_websiteFeature->start();
         break;
+    case Feature::None:
+        break; // Do nothing
     }
 }
 
@@ -115,7 +118,7 @@ void FeatureController::setLaunchFeature(FeatureController::Feature feature)
     m_launchFeature = feature;
 }
 
-FeatureController::Feature FeatureController::launchFeature() const
+FeatureController::Feature FeatureController::getLaunchFeature() const
 {
     return m_launchFeature;
 }

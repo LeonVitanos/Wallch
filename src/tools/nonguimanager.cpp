@@ -266,16 +266,16 @@ void NonGuiManager::doAction(const QString &message){
         w->show();
     }
     else if(message == "--earth"){
-        startFeature(1);
+        startFeature(FeatureController::Feature::LiveEarth);
     }
     else if(message == "--potd"){
-        startFeature(2);
+        startFeature(FeatureController::Feature::PictureOfTheDay);
     }
     else if(message == "--website"){
-        startFeature(3);
+        startFeature(FeatureController::Feature::Website);
     }
     else if(message == "--start"){
-        startFeature(0);
+        startFeature(FeatureController::Feature::Wallpapers);
     }
     else if(message == "--change"){
         if(mainWindowLaunched_){
@@ -458,7 +458,7 @@ void NonGuiManager::setIndependentInterval(const QString &independentInterval){
         return;
     }
 
-    FeatureController::Feature launchFeature = featureController_->launchFeature();
+    FeatureController::Feature launchFeature = featureController_->getLaunchFeature();
     if (parts.at(0) == "e") {
         if (launchFeature != FeatureController::Feature::LiveEarth) return;
     } else if (parts.at(0) == "w") {
@@ -605,8 +605,11 @@ int NonGuiManager::processArguments(const QStringList &arguments)
 {
     int argc = arguments.count();
 
-    const QMap<QString, int> featureArgs = {
-        {"--start", 0}, {"--earth", 1}, {"--potd", 2}, {"--website", 3}
+    const QMap<QString, FeatureController::Feature> featureArgs = {
+        {"--start",   FeatureController::Feature::Wallpapers},
+        {"--earth",   FeatureController::Feature::LiveEarth},
+        {"--potd",    FeatureController::Feature::PictureOfTheDay},
+        {"--website", FeatureController::Feature::Website}
     };
 
     for (auto it = featureArgs.constBegin(); it != featureArgs.constEnd(); ++it) {
@@ -623,8 +626,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
                 return 0;
             }
 
-            int featureId = it.value();
-            FeatureController::Feature feature = static_cast<FeatureController::Feature>(featureId);
+            FeatureController::Feature feature = it.value();
 
             featureController_->setLaunchFeature(feature);
             featureController_->setCurrentFeature(feature);
@@ -632,7 +634,7 @@ int NonGuiManager::processArguments(const QStringList &arguments)
             connectToServer();
             Q_EMIT trayNeedsUpdate();
 
-            featureController_->launchFeatureById(featureId);
+            featureController_->launchFeature(feature);
 
             return 0;
         }
@@ -774,7 +776,7 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
 
         // Second-level parsing for long-running commands
 
-        FeatureController::Feature launchFeature = featureController_->launchFeature();
+        FeatureController::Feature launchFeature = featureController_->getLaunchFeature();
         if ( (launchFeature == FeatureController::Feature::LiveEarth ||
              launchFeature == FeatureController::Feature::Website ||
              launchFeature != FeatureController::Feature::PictureOfTheDay) )
@@ -800,35 +802,32 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
     }
 }
 
-void NonGuiManager::startFeature(int featureId) {
-    // Step 1: Handle the GUI-mode toggle
+void NonGuiManager::startFeature(FeatureController::Feature feature) {
+    // Handle the GUI-mode toggle
     if (mainWindowLaunched_) {
-        bool isRunning = (featureId == 0 && featureController_->isWallpapersRunning() && !wallpapersFeature_->isPaused()) ||
-                         (featureId == 1 && featureController_->isLiveEarthRunning()) ||
-                         (featureId == 2 && featureController_->isPotdRunning()) ||
-                         (featureId == 3 && featureController_->isWebsiteRunning());
+        bool isRunning = (featureController_->currentFeature() == feature) && !featureController_->isFeaturePaused();
 
         if (isRunning) {
             Q_EMIT closeWhatsRunning();
         } else {
-            if (featureId == 0) Q_EMIT signalStart();
-            else if (featureId == 1) Q_EMIT signalActivateLivearth();
-            else if (featureId == 2) Q_EMIT signalActivatePotd();
-            else if (featureId == 3) Q_EMIT signalActivateLiveWebsite();
+            switch (feature) {
+            case FeatureController::Feature::Wallpapers:      Q_EMIT signalStart(); break;
+            case FeatureController::Feature::LiveEarth:       Q_EMIT signalActivateLivearth(); break;
+            case FeatureController::Feature::PictureOfTheDay: Q_EMIT signalActivatePotd(); break;
+            case FeatureController::Feature::Website:         Q_EMIT signalActivateLiveWebsite(); break;
+            case FeatureController::Feature::None:            break;
+            }
         }
         return;
     }
 
-    if (featureId == 0 && featureController_->isWallpapersRunning() && wallpapersFeature_->isPaused()) {
+    if (feature == FeatureController::Feature::Wallpapers && featureController_->isWallpapersRunning() && wallpapersFeature_->isPaused()) {
         doAction("--pause"); // This will un-pause it
         return;
     }
 
-    // Step 2: Handle the command-line toggle
-    bool wasRunning = (featureId == 0 && featureController_->isWallpapersRunning()) ||
-                      (featureId == 1 && featureController_->isLiveEarthRunning()) ||
-                      (featureId == 2 && featureController_->isPotdRunning()) ||
-                      (featureId == 3 && featureController_->isWebsiteRunning());
+    // Command-line toggle logic
+    const bool wasRunning = (featureController_->currentFeature() == feature);
 
     doAction("--stop");
 
@@ -838,8 +837,7 @@ void NonGuiManager::startFeature(int featureId) {
         return;
     }
 
-    // --- Step 3: Start the new feature
-    FeatureController::Feature feature = static_cast<FeatureController::Feature>(featureId + 1);
+    // If it wasn't running, start the new requested feature
     featureController_->setCurrentFeature(feature);
-    featureController_->launchFeatureById(featureId);
+    featureController_->launchFeature(feature);
 }
