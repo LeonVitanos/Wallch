@@ -3,6 +3,10 @@
 #include "filemanager.h"
 #include <QObject>
 
+#ifdef Q_OS_LINUX
+    #include "desktopenvironment.h"
+#endif
+
 QSettings *settings = new QSettings("wallch", "Settings");
 
 SettingsManager::SettingsManager()
@@ -14,6 +18,10 @@ void SettingsManager::initializeSettings(){
     checkFirstRun();
     loadPaths();
     loadSettings();
+
+#ifdef Q_OS_LINUX
+    DesktopEnvironment::setCurrentDE();
+#endif
 }
 
 void SettingsManager::checkFirstRun(){

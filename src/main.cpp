@@ -35,7 +35,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "tools/dialoghelper.h"
 #include "tools/traymanager.h"
 #include <QApplication>
+#include <QDir>
+#include <QLocale>
 #include <QLoggingCategory>
+#include <QTranslator>
 
 struct GlobalVar gv;
 
@@ -50,6 +53,24 @@ int main(int argc, char *argv[])
 
     // 1. Initialize core utilities that have no dependencies.
     SettingsManager::initializeSettings();
+
+    // Install the translator for the application.
+    QTranslator translator;
+    QString translationsFolder;
+
+#ifdef Q_OS_LINUX
+        translationsFolder = QString::fromStdString(PREFIX) + "/share/wallch/translations/";
+#else
+        translationsFolder = QDir::currentPath() + "/translations/";
+#endif
+    QString currentLanguage = settings->value("language_file", "system_default").toString();
+
+    if (currentLanguage == "system_default")
+        (void)translator.load(QLocale::system(), "wallch", "_", translationsFolder, ".qm");
+    else
+        (void)translator.load(translationsFolder + "wallch_" + currentLanguage + ".qm");
+
+    app.installTranslator(&translator);
 
     // 2. Create the low-level, shared tools and managers.
     auto globalParser = new Global();

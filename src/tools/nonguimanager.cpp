@@ -552,37 +552,6 @@ void NonGuiManager::liveWebsiteImageReady(QImage *image, short errorCode){
     }
 }
 
-void NonGuiManager::installTranslator(){
-    if(QApplication::instance()){
-        QTranslator *translator = new QTranslator(this);
-        QString translationsFolder;
-
-#ifdef Q_OS_LINUX
-        translationsFolder = QString::fromStdString(PREFIX)+"/share/wallch/translations/";
-#else
-        translationsFolder = QDir::currentPath()+"/translations/";
-#endif
-        QString currentLanguage = settings->value("language_file", "system_default").toString();
-
-        if(currentLanguage == "system_default")
-            (void)translator->load(QLocale::system(), "wallch", "_", translationsFolder, ".qm");
-        else
-            (void)translator->load(translationsFolder+"wallch_"+currentLanguage+".qm");
-
-        QApplication::installTranslator(translator);
-    }
-}
-
-void NonGuiManager::viralSettingsOperations(){
-    installTranslator();
-
-    SettingsManager::initializeSettings();
-
-#ifdef Q_OS_LINUX
-    DesktopEnvironment::setCurrentDE();
-#endif
-}
-
 void NonGuiManager::startProgramNormalGui(){
     connectToServer();
 

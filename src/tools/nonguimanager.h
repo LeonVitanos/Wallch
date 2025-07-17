@@ -98,8 +98,6 @@ private:
     QString messageToSendToServer_;
     bool quitAfterMessagingMainApplication_;
     bool mainWindowLaunched_ = false;
-    void installTranslator();
-    void viralSettingsOperations();
     bool alreadyRuns();
     void messageServer(const QString &message, bool quitAfterwards);
     void setIndependentInterval(const QString &independentInterval);
