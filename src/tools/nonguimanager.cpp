@@ -33,10 +33,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifdef Q_OS_WIN
     #include <cmath>
     #include <Windows.h>
-#else
-# ifdef Q_OS_LINUX
-    #include "desktopenvironment.h"
-# endif
 #endif
 
 #define ARG_NOT_REQ 0
@@ -448,53 +444,6 @@ void NonGuiManager::doAction(const QString &message){
     }
 }
 
-void NonGuiManager::setIndependentInterval(const QString &independentInterval){
-    if(!independentInterval.contains(".")){
-        return;
-    }
-
-    QStringList parts=independentInterval.split(".");
-    if(parts.count()!=3){
-        return;
-    }
-
-    FeatureController::Feature launchFeature = featureController_->getLaunchFeature();
-    if (parts.at(0) == "e") {
-        if (launchFeature != FeatureController::Feature::LiveEarth) return;
-    } else if (parts.at(0) == "w") {
-        if (launchFeature != FeatureController::Feature::Website) return;
-    } else {
-        if (launchFeature == FeatureController::Feature::Website || launchFeature == FeatureController::Feature::LiveEarth) return;
-    }
-
-    bool ok;
-    int independence_change_seconds_left = parts.at(1).toInt(&ok);
-    if(!ok){
-        return;
-    }
-    if(independence_change_seconds_left==-1){
-        return;
-    }
-
-    QDateTime time_then = QDateTime::fromString(parts.at(2), "yyyy:MM:dd:HH:mm:ss");
-    if(time_then.isNull() || !time_then.isValid()){
-        return;
-    }
-
-    (void)time_then.addSecs(independence_change_seconds_left);
-
-    int secs_diff = time_then.secsTo(QDateTime::currentDateTime());
-    independence_change_seconds_left-=secs_diff;
-
-    if(independence_change_seconds_left<0){
-        independence_change_seconds_left=0;
-    }
-    if(independence_change_seconds_left>0){
-        Global::debug("Interval independence is enabled ("+QString::number(independence_change_seconds_left)+" seconds)");
-        timerManager_->secondsRemaining_=independence_change_seconds_left;
-    }
-}
-
 void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     connect(this, &NonGuiManager::signalOnce, w, &MainWindow::justChangeWallpaper);
     connect(this, &NonGuiManager::signalPause, w, &MainWindow::handleStartButtonClick);
@@ -750,7 +699,7 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
              launchFeature == FeatureController::Feature::Website ||
              launchFeature != FeatureController::Feature::PictureOfTheDay) )
         {
-            setIndependentInterval(SettingsManager::getIndependentIntervalValue());
+            timerManager_->tryRestoreState(launchFeature);
         }
 
         // processArguments will parse the remaining arguments and start the correct feature.

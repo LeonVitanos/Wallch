@@ -5,6 +5,8 @@
 #include <QObject>
 #include <QTimer>
 
+#include "featurecontroller.h"
+
 class TimerManager : public QObject
 {
     Q_OBJECT
@@ -24,6 +26,7 @@ public:
     void stop();
     void resetTimer();
     void saveSecondsLeftNow(bool keepIndependentInterval=true);
+    void tryRestoreState(FeatureController::Feature launchFeature);
 
     bool isActive() const;
 

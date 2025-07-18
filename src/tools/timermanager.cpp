@@ -223,3 +223,48 @@ void TimerManager::saveSecondsLeftNow(bool keepIndependentInterval){
         SettingsManager::setIndependentIntervalValue(valueToSave);
     }
 }
+
+void TimerManager::tryRestoreState(FeatureController::Feature launchFeature)
+{
+    QString independentInterval = SettingsManager::getIndependentIntervalValue();
+
+    if (!independentInterval.contains(".")) {
+        return;
+    }
+
+    QStringList parts = independentInterval.split(".");
+    if (parts.count() != 3) {
+        return;
+    }
+
+    // Check if the saved state applies to the feature we are about to launch.
+    if (parts.at(0) == "e") {
+        if (launchFeature != FeatureController::Feature::LiveEarth) return;
+    } else if (parts.at(0) == "w") {
+        if (launchFeature != FeatureController::Feature::Website) return;
+    } else { // 'p' for wallpapers
+        if (launchFeature == FeatureController::Feature::Website || launchFeature == FeatureController::Feature::LiveEarth) return;
+    }
+
+    // Parse the remaining time and apply it.
+    bool ok;
+    int independence_change_seconds_left = parts.at(1).toInt(&ok);
+    if (!ok || independence_change_seconds_left == -1) {
+        return;
+    }
+
+    QDateTime time_then = QDateTime::fromString(parts.at(2), "yyyy:MM:dd:HH:mm:ss");
+    if (time_then.isNull() || !time_then.isValid()) {
+        return;
+    }
+
+    int secs_diff = time_then.secsTo(QDateTime::currentDateTime());
+    independence_change_seconds_left -= secs_diff;
+
+    if (independence_change_seconds_left > 0) {
+        Global::debug("Interval independence is enabled (" + QString::number(independence_change_seconds_left) + " seconds)");
+        secondsRemaining_ = independence_change_seconds_left;
+    } else {
+        secondsRemaining_ = 0;
+    }
+}

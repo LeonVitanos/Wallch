@@ -100,7 +100,6 @@ private:
     bool mainWindowLaunched_ = false;
     bool alreadyRuns();
     void messageServer(const QString &message, bool quitAfterwards);
-    void setIndependentInterval(const QString &independentInterval);
     void connectMainwindowWithExternalActions(MainWindow *w);
     bool loadWebsiteSnapshotPlugin();
     void connectToServer();
