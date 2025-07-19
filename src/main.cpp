@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     // 3. Create the individual feature handlers, injecting their dependencies.
     auto wallpapersFeature = new WallpapersFeature(wallpaperManager, timerManager, fileManager, &app);
     auto liveEarthFeature = new LiveEarthFeature(imageFetcher, timerManager, &app);
-    auto websiteFeature = new WebsiteFeature(timerManager, &app);
+    auto websiteFeature = new WebsiteFeature(timerManager, wallpaperManager, &app);
     auto potdFeature = new PotdFeature(imageFetcher, wallpaperManager, timerManager, &app); // Add this
 
     // 4. Create the core controllers that depend on the feature handlers.

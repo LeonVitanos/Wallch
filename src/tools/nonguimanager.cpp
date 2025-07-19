@@ -243,10 +243,6 @@ void NonGuiManager::doAction(const QString &message){
 
         Global::debug("Focus was requested! Continuing the process to the Graphical Interface");
 
-        //if(websiteSnapshot_)
-            //disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageReady(QImage*,short)));
-
-
         mainWindowLaunched_=true;
 
         MainWindow *w = new MainWindow(alreadyRunsMem_,
@@ -463,42 +459,6 @@ void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     connect(this, &NonGuiManager::signalHideOrShow, w, &MainWindow::hideOrShow);
     connect(w, &MainWindow::signalUncheckRunningFeatureOnTray, this, [this]() {Q_EMIT trayUncheckRequested();});
     connect(w, &MainWindow::signalRecreateTray, this, [this]() {Q_EMIT trayNeedsUpdate();});
-}
-
-void NonGuiManager::liveWebsiteImageReady(QImage *image, short errorCode){
-    if(errorCode==0){
-        //no error!
-
-        Global::remove(gv.wallchHomePath+LW_IMAGE+"*");
-        QString filename=gv.wallchHomePath+LW_IMAGE+QString::number(QDateTime::currentMSecsSinceEpoch())+".png";
-
-        image->save(filename);
-        delete image;
-
-        wallpaperManager_->setBackground(filename, true, true, 5);
-        QFile::remove(gv.wallchHomePath+LW_PREVIEW_IMAGE);
-        QFile(filename).link(gv.wallchHomePath+LW_PREVIEW_IMAGE);
-    }
-    else
-    {
-        switch(errorCode){
-        case 1:
-            Global::error("Some of the requested pages failed to load successfully.");
-            break;
-        case 2:
-            Global::error("Simple authentication failed. Please check your username and/or password.");
-            break;
-        case 3:
-            Global::error("Username and/or password fields are not found. Please check that you are pointing at the login page.");
-            break;
-        case 4:
-            Global::error("The timeout has been reached and the image has yet to be created!");
-            break;
-        default:
-            Global::error("Unknown error! Please try with a different web page.");
-            break;
-        }
-    }
 }
 
 void NonGuiManager::startProgramNormalGui(){

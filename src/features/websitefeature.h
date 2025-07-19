@@ -23,19 +23,26 @@
 
 class TimerManager;
 class WebsiteSnapshot;
+class WallpaperManager;
+class QImage;
 
 class WebsiteFeature : public QObject
 {
     Q_OBJECT
 public:
     explicit WebsiteFeature(TimerManager *timerManager,
+                            WallpaperManager *wallpaperManager,
                             QObject *parent = nullptr);
 
     void start();
     void stop();
 
+public Q_SLOTS:
+    void onImageReady(QImage *image, short errorCode);
+
 private:
     TimerManager *m_timerManager;
+    WallpaperManager *m_wallpaperManager;
 };
 
 #endif // WEBSITEFEATURE_H

@@ -119,7 +119,6 @@ private Q_SLOTS:
     void quitNow();
     void waitForInternetConnection();
     void preferencesDestroyed();
-    void liveWebsiteImageReady(QImage *image, short errorCode);
 
 Q_SIGNALS:
     void signalOnce();

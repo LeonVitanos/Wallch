@@ -18,11 +18,17 @@
 
 #include "websitefeature.h"
 #include "timermanager.h"
+#include "wallpapermanager.h"
+#include "glob.h"
+#include <QImage>
+#include <QDateTime>
 
 WebsiteFeature::WebsiteFeature(TimerManager *timerManager,
+                               WallpaperManager *wallpaperManager,
                                QObject *parent)
     : QObject(parent)
     , m_timerManager(timerManager)
+    , m_wallpaperManager(wallpaperManager)
 {
 }
 
@@ -114,4 +120,38 @@ void WebsiteFeature::stop()
     m_timerManager->saveSecondsLeftNow(false);
     m_websiteSnapshot->stop();
     */
+}
+
+void WebsiteFeature::onImageReady(QImage *image, short errorCode)
+{
+    if (errorCode == 0) {
+        // no error!
+        Global::remove(gv.wallchHomePath + LW_IMAGE + "*");
+        QString filename = gv.wallchHomePath + LW_IMAGE + QString::number(QDateTime::currentMSecsSinceEpoch()) + ".png";
+
+        image->save(filename);
+        delete image;
+
+        m_wallpaperManager->setBackground(filename, true, true, 5);
+        QFile::remove(gv.wallchHomePath + LW_PREVIEW_IMAGE);
+        QFile(filename).link(gv.wallchHomePath + LW_PREVIEW_IMAGE);
+    } else {
+        switch (errorCode) {
+        case 1:
+            Global::error("Some of the requested pages failed to load successfully.");
+            break;
+        case 2:
+            Global::error("Simple authentication failed. Please check your username and/or password.");
+            break;
+        case 3:
+            Global::error("Username and/or password fields are not found. Please check that you are pointing at the login page.");
+            break;
+        case 4:
+            Global::error("The timeout has been reached and the image has yet to be created!");
+            break;
+        default:
+            Global::error("Unknown error! Please try with a different web page.");
+            break;
+        }
+    }
 }
