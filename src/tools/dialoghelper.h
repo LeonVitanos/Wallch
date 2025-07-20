@@ -20,28 +20,38 @@
 #define DIALOGHELPER_H
 
 #include <QObject>
+#include "featurecontroller.h"
 
 class WallpaperManager;
 class Properties;
+class Preferences;
 
 class DialogHelper : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit DialogHelper(WallpaperManager *wallpaperManager, QObject *parent = nullptr);
+    explicit DialogHelper(WallpaperManager *wallpaperManager,
+                          FeatureController *featureController,
+                          QObject *parent = nullptr);
 
 public Q_SLOTS:
     void showPropertiesDialog(int currentIndex = -1, const QString &filePath = QString());
+    void showPreferencesDialog();
+    void preferencesDestroyed();
 
 private Q_SLOTS:
     void propertiesDestroyed();
 
 private:
     WallpaperManager *m_wallpaperManager;
+    FeatureController *m_featureController;
 
     Properties *m_properties = nullptr;
-    bool m_propertiesShown = false;
+    Preferences *m_preferences = nullptr;
+
+Q_SIGNALS:
+    void preferencesDialogCreated(Preferences* dialog);
 };
 
 #endif // DIALOGHELPER_H

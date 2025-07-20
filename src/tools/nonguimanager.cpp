@@ -218,10 +218,6 @@ void NonGuiManager::quitNow(){
     qApp->exit(0);
 }
 
-void NonGuiManager::preferencesDestroyed(){
-    gv.preferencesDialogShown=false;
-}
-
 void NonGuiManager::doAction(const QString &message){
     /*
      * This function controls messages coming from external sources,
@@ -377,15 +373,7 @@ void NonGuiManager::doAction(const QString &message){
             Q_EMIT signalShowPreferences();
             return;
         }
-        if(gv.preferencesDialogShown){
-            return;
-        }
-        gv.preferencesDialogShown=true;
-        preferences_ = new Preferences(featureController_);
-        preferences_->setModal(true);
-        preferences_->setAttribute(Qt::WA_DeleteOnClose);
-        connect(preferences_, SIGNAL(destroyed()), this, SLOT(preferencesDestroyed()));
-        preferences_->show();
+        dialogHelper_->showPreferencesDialog();
     }
     else if(message == "--properties")
         dialogHelper_->showPropertiesDialog();

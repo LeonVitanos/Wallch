@@ -78,7 +78,6 @@ int main(int argc, char *argv[])
     auto wallpaperManager = new WallpaperManager(&app);
     auto imageFetcher = new ImageFetcher(&app);
     auto fileManager = new FileManager(wallpaperManager);
-    auto dialogHelper = new DialogHelper(wallpaperManager, &app);
 
     // 3. Create the individual feature handlers, injecting their dependencies.
     auto wallpapersFeature = new WallpapersFeature(wallpaperManager, timerManager, fileManager, &app);
@@ -92,6 +91,7 @@ int main(int argc, char *argv[])
                                                    websiteFeature,
                                                    potdFeature,
                                                    &app);
+    auto dialogHelper = new DialogHelper(wallpaperManager, featureController, &app);
     auto trayManager = new TrayManager(featureController, wallpaperManager, dialogHelper, &app);
 
     // 5. Wire up the core components. The timer should tell the FeatureController when to act.

@@ -118,7 +118,6 @@ private Q_SLOTS:
     void socketError();
     void quitNow();
     void waitForInternetConnection();
-    void preferencesDestroyed();
 
 Q_SIGNALS:
     void signalOnce();

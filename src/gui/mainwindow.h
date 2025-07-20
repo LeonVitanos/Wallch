@@ -323,7 +323,6 @@ private Q_SLOTS:
     void setAverageColor(const QString &image);
     void updateScreenLabel();
     void picturesLocationsChanged();
-    void preferencesDestroyed();
     void lePointDestroyed();
     void historyDestroyed();
     void aboutDestroyed();
@@ -414,6 +413,7 @@ private Q_SLOTS:
     void showProperties();
 
     void onPausedStateChanged(bool isPaused);
+    void onPreferencesDialogCreated(Preferences* dialog);
 
 Q_SIGNALS:
      void fixLivewebsiteButtons();

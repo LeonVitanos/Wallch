@@ -129,7 +129,6 @@ struct GlobalVar {
     QString wallchHomePath;
     QString currentDeDefaultWallpapersPath;
     QString currentOSName;
-    bool preferencesDialogShown = false;
     bool independentIntervalEnabled = true;
     int typeOfInterval = 0;
     bool randomImagesEnabled = false;

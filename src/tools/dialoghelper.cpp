@@ -19,19 +19,25 @@
 #include "dialoghelper.h"
 #include "wallpapermanager.h"
 #include "properties.h"
+#include "preferences.h"
 #include <QMessageBox>
 
-// Save the wallpaperManager in the constructor
-DialogHelper::DialogHelper(WallpaperManager *wallpaperManager, QObject *parent):
+DialogHelper::DialogHelper(WallpaperManager *wallpaperManager,
+                           FeatureController *featureController,
+                           QObject *parent):
     QObject(parent),
-    m_wallpaperManager(wallpaperManager)
+    m_wallpaperManager(wallpaperManager),
+    m_featureController(featureController)
 {}
 
 // The function is now much cleaner
 void DialogHelper::showPropertiesDialog(int currentIndex, const QString &filePath)
 {
-    if(m_propertiesShown)
+    if(m_properties) {
+        m_properties->raise();
+        m_properties->activateWindow();
         return;
+    }
 
     // It uses its OWN member variable now, not a passed-in one
     QString imagePath = !filePath.isEmpty() ? filePath :
@@ -42,7 +48,6 @@ void DialogHelper::showPropertiesDialog(int currentIndex, const QString &filePat
     else if(WallpaperManager::imageIsNull(imagePath))
         QMessageBox::warning(0, tr("Properties"), "\"" + imagePath + "\" " + tr("maybe doesn't exist or it's not an image. Please perform a check for the file and try again."));
     else {
-        m_propertiesShown=true;
         // Pass its own member variable to the Properties window
         m_properties = new Properties(currentIndex, m_wallpaperManager, filePath);
         m_properties->setModal(true);
@@ -53,5 +58,26 @@ void DialogHelper::showPropertiesDialog(int currentIndex, const QString &filePat
 }
 
 void DialogHelper::propertiesDestroyed(){
-    m_propertiesShown=false;
+    m_properties = nullptr;
+}
+
+void DialogHelper::showPreferencesDialog()
+{
+    if (m_preferences) {
+        m_preferences->raise();
+        m_preferences->activateWindow();
+        return;
+    }
+
+    m_preferences = new Preferences(m_featureController);
+    m_preferences->setModal(true);
+    m_preferences->setAttribute(Qt::WA_DeleteOnClose);
+    connect(m_preferences, &Preferences::destroyed, this, &DialogHelper::preferencesDestroyed);
+    Q_EMIT preferencesDialogCreated(m_preferences);
+    m_preferences->show();
+}
+
+void DialogHelper::preferencesDestroyed()
+{
+    m_preferences = nullptr;
 }

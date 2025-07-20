@@ -273,6 +273,7 @@ void MainWindow::connectSignalSlots(){
     connect(QGuiApplication::primaryScreen(), SIGNAL(availableGeometryChanged(QRect)), this, SLOT(getScreenAvailableResolution(QRect)));
 
     connect(featureController_, &FeatureController::pausedStateChanged, this, &MainWindow::onPausedStateChanged);
+    connect(dialogHelper_, &DialogHelper::preferencesDialogCreated, this, &MainWindow::onPreferencesDialogCreated);
 
 #ifdef Q_OS_LINUX
     dconf = new QProcess(this);
@@ -2870,30 +2871,19 @@ void MainWindow::locationsDestroyed(){
 
 void MainWindow::handlePreferencesAction()
 {
-    if(gv.preferencesDialogShown){
-        return;
-    }
-    gv.preferencesDialogShown=true;
-    preferences_ = new Preferences(featureController_, this);
-    preferences_->setModal(true);
-    preferences_->setAttribute(Qt::WA_DeleteOnClose);
-    connect(preferences_, SIGNAL(destroyed()), this, SLOT(preferencesDestroyed()));
-    connect(preferences_, SIGNAL(changePathsToIcons()), this, SLOT(changePathsToIcons()));
-    connect(preferences_, SIGNAL(changeIconsToPaths()), this, SLOT(changeIconsToPaths()));
-    connect(preferences_, SIGNAL(researchFolders()), fileManager_, SLOT(researchFolders()));
-    connect(preferences_, SIGNAL(previewChanged()), this, SLOT(wait_preview_changed()));
-    connect(preferences_, SIGNAL(intervalTypeChanged()), this, SLOT(intervalTypeChanged()));
-    connect(preferences_, SIGNAL(changeTheme()), this, SLOT(changeCurrentTheme()));
-    connect(preferences_, SIGNAL(maxCacheChanged(qint64)), cacheManager_, SLOT(setMaxCache(qint64)));
-    connect(preferences_, SIGNAL(deManuallyChanged()), this, SLOT(deChanged()));
-
-    preferences_->setWindowFlags(Qt::Dialog | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint);
-    preferences_->show();
-    preferences_->activateWindow();
+    dialogHelper_->showPreferencesDialog();
 }
 
-void MainWindow::preferencesDestroyed(){
-    gv.preferencesDialogShown = false;
+void MainWindow::onPreferencesDialogCreated(Preferences* dialog)
+{
+    connect(dialog, &Preferences::changePathsToIcons, this, &MainWindow::changePathsToIcons);
+    connect(dialog, &Preferences::changeIconsToPaths, this, &MainWindow::changeIconsToPaths);
+    connect(dialog, &Preferences::researchFolders, fileManager_, &FileManager::researchFolders);
+    connect(dialog, &Preferences::previewChanged, this, &MainWindow::wait_preview_changed);
+    connect(dialog, &Preferences::intervalTypeChanged, this, &MainWindow::intervalTypeChanged);
+    connect(dialog, &Preferences::changeTheme, this, &MainWindow::changeCurrentTheme);
+    connect(dialog, &Preferences::maxCacheChanged, cacheManager_, &CacheManager::setMaxCache);
+    connect(dialog, &Preferences::deManuallyChanged, this, &MainWindow::deChanged);
 }
 
 void MainWindow::handleSetDesktopColorClick()
