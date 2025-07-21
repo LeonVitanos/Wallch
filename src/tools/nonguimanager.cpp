@@ -368,22 +368,6 @@ void NonGuiManager::doAction(const QString &message){
             Global::error("Υou can use 'previous' only in Wallpapers mode.");
         }
     }
-    else if(message == "--properties")
-        dialogHelper_->showPropertiesDialog();
-    else if(message == "--delete-current"){
-        if(!WallpaperManager::currentBackgroundExists())
-            return;
-        if(mainWindowLaunched_){
-            Q_EMIT signalDeleteCurrent();
-            return;
-        }
-        if(QMessageBox::question(0, QObject::tr("Confirm deletion"), QObject::tr("Are you sure you want to permanently delete the current image?"))==QMessageBox::Yes)
-        {
-            if(!QFile::remove(WallpaperManager::currentBackgroundWallpaper())){
-                QMessageBox::warning(0, QObject::tr("Error"), QObject::tr("There was a problem deleting the current image. Please make sure you have the permission to delete the image or that the image exists."));
-            }
-        }
-    }
     else if(message == "--quit"){
         if(mainWindowLaunched_){
             Q_EMIT signalQuit();
@@ -423,7 +407,6 @@ void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     connect(this, &NonGuiManager::signalActivateLiveWebsite, w, &MainWindow::handleActivateWebsiteClick);
     connect(this, &NonGuiManager::closeWhatsRunning, w, &MainWindow::closeWhatsRunning);
     connect(this, &NonGuiManager::signalQuit, w, &MainWindow::doQuit);
-    connect(this, &NonGuiManager::signalDeleteCurrent, wallpaperManager_, &WallpaperManager::deleteCurrentBackgroundImage);
     connect(this, &NonGuiManager::signalAddFolderForMonitor, w, &MainWindow::addFolderForMonitor);
     connect(this, &NonGuiManager::signalFocus, w, &MainWindow::showNormal);
     connect(this, &NonGuiManager::signalHideOrShow, w, &MainWindow::hideOrShow);

@@ -129,7 +129,6 @@ Q_SIGNALS:
     void signalActivatePotd();
     void signalActivateLiveWebsite();
     void closeWhatsRunning();
-    void signalDeleteCurrent();
     void signalAddFolderForMonitor(const QString &folder);
     void signalQuit();
     void trayNeedsUpdate();
