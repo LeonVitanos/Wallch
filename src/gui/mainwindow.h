@@ -150,7 +150,6 @@ private:
     QMenu *settingsMenu_;
     QMenu *helpMenu_;
     QMenu *currentBgMenu_;
-    QAction *preferencesAction_;
     QAction *QuitAction_;
 
     QFutureWatcher<QImage> *scaleWatcher_;
@@ -159,7 +158,6 @@ private:
 
     LEPoint *lepoint_;
     About *about_;
-    Preferences *preferences_;
     ColorsGradients *colorsGradients_;
     PotdViewer *potdViewer_;
     History *history_;
@@ -283,7 +281,6 @@ public Q_SLOTS:
     void handleActivatePotdClick();
     void handleActivateWebsiteClick();
     void closeWhatsRunning();
-    void handlePreferencesAction();
     void handleAboutAction();
     void doQuit();
     void showNormal();

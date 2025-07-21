@@ -230,5 +230,5 @@ void TrayManager::onWallpapersPreviousAction() { Q_EMIT featureActionRequested("
 void TrayManager::onLiveEarthAction() { Q_EMIT featureActionRequested("--earth"); }
 void TrayManager::onPictureOfTheDayAction() { Q_EMIT featureActionRequested("--potd"); }
 void TrayManager::onLiveWebsiteAction() { Q_EMIT featureActionRequested("--website"); }
-void TrayManager::onPreferencesAction() { Q_EMIT showPreferencesRequested(); }
+void TrayManager::onPreferencesAction() { m_dialogHelper->showPreferencesDialog(); }
 void TrayManager::onAboutAction() { Q_EMIT showAboutRequested(); }

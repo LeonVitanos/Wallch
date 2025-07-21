@@ -368,13 +368,6 @@ void NonGuiManager::doAction(const QString &message){
             Global::error("Υou can use 'previous' only in Wallpapers mode.");
         }
     }
-    else if(message == "--preferences"){
-        if(mainWindowLaunched_){
-            Q_EMIT signalShowPreferences();
-            return;
-        }
-        dialogHelper_->showPreferencesDialog();
-    }
     else if(message == "--properties")
         dialogHelper_->showPropertiesDialog();
     else if(message == "--about"){
@@ -438,7 +431,6 @@ void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     connect(this, &NonGuiManager::signalActivatePotd, w, &MainWindow::handleActivatePotdClick);
     connect(this, &NonGuiManager::signalActivateLiveWebsite, w, &MainWindow::handleActivateWebsiteClick);
     connect(this, &NonGuiManager::closeWhatsRunning, w, &MainWindow::closeWhatsRunning);
-    connect(this, &NonGuiManager::signalShowPreferences, w, &MainWindow::handlePreferencesAction);
     connect(this, &NonGuiManager::signalShowAbout, w, &MainWindow::handleAboutAction);
     connect(this, &NonGuiManager::signalQuit, w, &MainWindow::doQuit);
     connect(this, &NonGuiManager::signalDeleteCurrent, wallpaperManager_, &WallpaperManager::deleteCurrentBackgroundImage);

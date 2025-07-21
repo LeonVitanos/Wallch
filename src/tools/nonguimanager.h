@@ -43,7 +43,6 @@ class PotdFeature;
 #include <QtGlobal>
 #include <QTranslator>
 
-#include "preferences.h"
 #include "mainwindow.h"
 #include "glob.h"
 #include "websitesnapshot.h"
@@ -88,7 +87,6 @@ private:
     WebsiteFeature *websiteFeature_;
     PotdFeature *potdFeature_;
 
-    Preferences *preferences_;
     WebsiteSnapshot *websiteSnapshot_=NULL;
 
     QMimeData *myFile_;
@@ -131,7 +129,6 @@ Q_SIGNALS:
     void signalActivatePotd();
     void signalActivateLiveWebsite();
     void closeWhatsRunning();
-    void signalShowPreferences();
     void signalShowAbout();
     void signalDeleteCurrent();
     void signalAddFolderForMonitor(const QString &folder);

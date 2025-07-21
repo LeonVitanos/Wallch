@@ -389,7 +389,9 @@ void MainWindow::setupMenu()
     QAction *preferencesAction = new QAction(tr("Preferences"), this);
     preferencesAction->setShortcut(QKeySequence(tr("Ctrl+P")));
     settingsMenu_->addAction(preferencesAction);
-    connect(preferencesAction, &QAction::triggered, this, &MainWindow::handlePreferencesAction);
+    connect(preferencesAction, &QAction::triggered, this, [this]() {
+        dialogHelper_->showPreferencesDialog();
+    });
 
     settingsMenu_->addSeparator();
     currentBgMenu_->setTitle(tr("Current Background"));
@@ -2867,11 +2869,6 @@ void MainWindow::handleEditLocationsClick()
 
 void MainWindow::locationsDestroyed(){
     locationsShown_=false;
-}
-
-void MainWindow::handlePreferencesAction()
-{
-    dialogHelper_->showPreferencesDialog();
 }
 
 void MainWindow::onPreferencesDialogCreated(Preferences* dialog)
