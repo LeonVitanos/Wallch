@@ -57,8 +57,6 @@ private Q_SLOTS:
     void onLiveEarthAction();
     void onPictureOfTheDayAction();
     void onLiveWebsiteAction();
-    void onPreferencesAction();
-    void onAboutAction();
 
 public Q_SLOTS:
     void updateMenu();
@@ -68,8 +66,6 @@ Q_SIGNALS:
     void showMainWindowRequested();
     void hideOrShowMainWindowRequested();
     void featureActionRequested(const QString &action);
-    void showPreferencesRequested();
-    void showAboutRequested();
 
 private:
     void createActions();

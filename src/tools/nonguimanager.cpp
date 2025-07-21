@@ -370,15 +370,6 @@ void NonGuiManager::doAction(const QString &message){
     }
     else if(message == "--properties")
         dialogHelper_->showPropertiesDialog();
-    else if(message == "--about"){
-        if(mainWindowLaunched_){
-            Q_EMIT signalShowAbout();
-            return;
-        }
-
-        About ab(0);
-        ab.exec();
-    }
     else if(message == "--delete-current"){
         if(!WallpaperManager::currentBackgroundExists())
             return;
@@ -431,7 +422,6 @@ void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     connect(this, &NonGuiManager::signalActivatePotd, w, &MainWindow::handleActivatePotdClick);
     connect(this, &NonGuiManager::signalActivateLiveWebsite, w, &MainWindow::handleActivateWebsiteClick);
     connect(this, &NonGuiManager::closeWhatsRunning, w, &MainWindow::closeWhatsRunning);
-    connect(this, &NonGuiManager::signalShowAbout, w, &MainWindow::handleAboutAction);
     connect(this, &NonGuiManager::signalQuit, w, &MainWindow::doQuit);
     connect(this, &NonGuiManager::signalDeleteCurrent, wallpaperManager_, &WallpaperManager::deleteCurrentBackgroundImage);
     connect(this, &NonGuiManager::signalAddFolderForMonitor, w, &MainWindow::addFolderForMonitor);

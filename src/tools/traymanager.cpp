@@ -103,10 +103,10 @@ void TrayManager::createActions()
     connect(m_liveWebsiteAction, &QAction::triggered, this, &TrayManager::onLiveWebsiteAction);
 
     m_preferencesAction = new QAction(tr("Preferences"), this);
-    connect(m_preferencesAction, &QAction::triggered, this, &TrayManager::onPreferencesAction);
+    connect(m_preferencesAction, &QAction::triggered, m_dialogHelper, &DialogHelper::showPreferencesDialog);
 
     m_aboutAction = new QAction(tr("About"), this);
-    connect(m_aboutAction, &QAction::triggered, this, &TrayManager::onAboutAction);
+    connect(m_aboutAction, &QAction::triggered, m_dialogHelper, &DialogHelper::showAboutDialog);
 
     m_quitAction = new QAction(tr("Exit"), this);
     connect(m_quitAction, &QAction::triggered, this, [this]() { Q_EMIT featureActionRequested("--quit"); });
@@ -230,5 +230,3 @@ void TrayManager::onWallpapersPreviousAction() { Q_EMIT featureActionRequested("
 void TrayManager::onLiveEarthAction() { Q_EMIT featureActionRequested("--earth"); }
 void TrayManager::onPictureOfTheDayAction() { Q_EMIT featureActionRequested("--potd"); }
 void TrayManager::onLiveWebsiteAction() { Q_EMIT featureActionRequested("--website"); }
-void TrayManager::onPreferencesAction() { m_dialogHelper->showPreferencesDialog(); }
-void TrayManager::onAboutAction() { Q_EMIT showAboutRequested(); }

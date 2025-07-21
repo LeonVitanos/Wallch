@@ -20,6 +20,7 @@
 #include "wallpapermanager.h"
 #include "properties.h"
 #include "preferences.h"
+#include "about.h"
 #include <QMessageBox>
 
 DialogHelper::DialogHelper(WallpaperManager *wallpaperManager,
@@ -80,4 +81,25 @@ void DialogHelper::showPreferencesDialog()
 void DialogHelper::preferencesDestroyed()
 {
     m_preferences = nullptr;
+}
+
+void DialogHelper::showAboutDialog()
+{
+    if (m_about) {
+        m_about->raise();
+        m_about->activateWindow();
+        return;
+    }
+
+    m_about = new About();
+    m_about->setModal(true);
+    m_about->setAttribute(Qt::WA_DeleteOnClose);
+    connect(m_about, &About::destroyed, this, &DialogHelper::aboutDestroyed);
+    m_about->setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowCloseButtonHint);
+    m_about->show();
+}
+
+void DialogHelper::aboutDestroyed()
+{
+    m_about = nullptr;
 }

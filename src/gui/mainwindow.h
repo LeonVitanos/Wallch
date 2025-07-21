@@ -33,7 +33,6 @@
 #define WALLPAPERS_LIST_ICON_SIZE QSize(60, 60)
 #define WALLPAPERS_LIST_ITEMS_OFFSET QSize(4, 3)
 
-#include "about.h"
 #include "ui_mainwindow.h"
 #include "website_preview.h"
 
@@ -157,7 +156,6 @@ private:
     QRect availableGeometry_;
 
     LEPoint *lepoint_;
-    About *about_;
     ColorsGradients *colorsGradients_;
     PotdViewer *potdViewer_;
     History *history_;
@@ -192,7 +190,6 @@ private:
     //dialogs
     bool addDialogShown_ = false;
     bool historyShown_ = false;
-    bool aboutShown_ = false;
     bool lePointShown_ = false;
     bool websitePreviewShown_ = false;
     bool colorsGradientsShown_ = false;
@@ -281,7 +278,6 @@ public Q_SLOTS:
     void handleActivatePotdClick();
     void handleActivateWebsiteClick();
     void closeWhatsRunning();
-    void handleAboutAction();
     void doQuit();
     void showNormal();
     void hideOrShow();
@@ -322,7 +318,6 @@ private Q_SLOTS:
     void picturesLocationsChanged();
     void lePointDestroyed();
     void historyDestroyed();
-    void aboutDestroyed();
     void locationsDestroyed();
     void websitePreviewDestroyed();
     void colorsGradientsDestroyed();

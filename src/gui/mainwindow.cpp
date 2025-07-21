@@ -411,7 +411,8 @@ void MainWindow::setupMenu()
     settingsMenu_->addAction(tr("What is my screen resolution?"), this, SLOT(handleScreenResolutionAction()));
 
     settingsMenu_->addSeparator();
-    settingsMenu_->addAction(tr("About Wallch"), this, SLOT(handleAboutAction()));
+    QAction *aboutAction = settingsMenu_->addAction(tr("About Wallch"));
+    connect(aboutAction, &QAction::triggered, dialogHelper_, &DialogHelper::showAboutDialog);
 
     helpMenu_ = new QMenu(this);
     helpMenu_->setTitle(tr("Help"));
@@ -2830,25 +2831,6 @@ void MainWindow::handleHistoryAction()
 void MainWindow::historyDestroyed()
 {
     historyShown_=false;
-}
-
-void MainWindow::handleAboutAction()
-{
-    if(aboutShown_){
-        return;
-    }
-    aboutShown_=true;
-    about_ = new About(this);
-    about_->setModal(true);
-    about_->setAttribute(Qt::WA_DeleteOnClose);
-    connect(about_, SIGNAL(destroyed()), this, SLOT(aboutDestroyed()));
-    about_->setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowCloseButtonHint);
-    about_->show();
-    about_->activateWindow();
-}
-
-void MainWindow::aboutDestroyed(){
-    aboutShown_=false;
 }
 
 void MainWindow::handleEditLocationsClick()

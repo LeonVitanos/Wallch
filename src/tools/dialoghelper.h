@@ -25,6 +25,7 @@
 class WallpaperManager;
 class Properties;
 class Preferences;
+class About;
 
 class DialogHelper : public QObject
 {
@@ -38,10 +39,12 @@ public:
 public Q_SLOTS:
     void showPropertiesDialog(int currentIndex = -1, const QString &filePath = QString());
     void showPreferencesDialog();
-    void preferencesDestroyed();
+    void showAboutDialog();
 
 private Q_SLOTS:
     void propertiesDestroyed();
+    void preferencesDestroyed();
+    void aboutDestroyed();
 
 private:
     WallpaperManager *m_wallpaperManager;
@@ -49,6 +52,7 @@ private:
 
     Properties *m_properties = nullptr;
     Preferences *m_preferences = nullptr;
+    About *m_about = nullptr;
 
 Q_SIGNALS:
     void preferencesDialogCreated(Preferences* dialog);
