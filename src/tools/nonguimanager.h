@@ -107,7 +107,6 @@ private:
     void readPictures(const QString &folder);
     int processArguments(const QStringList &arguments);
     void startProgramNormalGui();
-    void startFeature(FeatureController::Feature feature);
 
 private Q_SLOTS:
     void newSocketConnection();
@@ -124,11 +123,6 @@ Q_SIGNALS:
     void signalPrevious();
     void signalFocus();
     void signalHideOrShow();
-    void signalStart();
-    void signalActivateLivearth();
-    void signalActivatePotd();
-    void signalActivateLiveWebsite();
-    void closeWhatsRunning();
     void signalAddFolderForMonitor(const QString &folder);
     void signalQuit();
     void trayNeedsUpdate();

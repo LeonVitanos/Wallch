@@ -63,10 +63,12 @@ public:
 public Q_SLOTS:
     void onTimeToChangeWallpaper();
     void onPersistencePrefixNeeded(QChar &prefix) const;
+    void toggleFeature(Feature feature);
 
 Q_SIGNALS:
     void pausedStateChanged(bool isPaused);
-    void launchFailed();
+    void featureToggled(FeatureController::Feature feature);
+    void featureStopped(FeatureController::Feature stoppedFeature);
 
 private:
     Feature m_launchFeature = Feature::None;

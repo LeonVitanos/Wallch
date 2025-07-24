@@ -67,9 +67,6 @@ NonGuiManager::NonGuiManager(FeatureController *featureController,
     , potdFeature_(potdFeature)
 {
     connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineBackgroundReady(QString)));
-    connect(featureController_, &FeatureController::launchFailed, this, [this]() {
-        doAction("--stop");
-    });
 }
 
 bool NonGuiManager::alreadyRuns(){
@@ -252,18 +249,16 @@ void NonGuiManager::doAction(const QString &message){
 
         connectMainwindowWithExternalActions(w);
         w->show();
-    }
-    else if(message == "--earth"){
-        startFeature(FeatureController::Feature::LiveEarth);
-    }
-    else if(message == "--potd"){
-        startFeature(FeatureController::Feature::PictureOfTheDay);
-    }
-    else if(message == "--website"){
-        startFeature(FeatureController::Feature::Website);
-    }
-    else if(message == "--start"){
-        startFeature(FeatureController::Feature::Wallpapers);
+    } else if (message == "--earth") {
+        featureController_->toggleFeature(FeatureController::Feature::LiveEarth);
+    } else if (message == "--potd") {
+        featureController_->toggleFeature(FeatureController::Feature::PictureOfTheDay);
+    } else if (message == "--website") {
+        featureController_->toggleFeature(FeatureController::Feature::Website);
+    } else if (message == "--wallpapers" || message == "--start") {
+        featureController_->toggleFeature(FeatureController::Feature::Wallpapers);
+    } else if (message == "--wallpapers" || message == "--start" || message == "--stop") {
+        featureController_->toggleFeature(featureController_->currentFeature());
     }
     else if(message == "--change"){
         if(mainWindowLaunched_){
@@ -311,34 +306,6 @@ void NonGuiManager::doAction(const QString &message){
             wallpapersFeature_->setPaused(false);
             timerManager_->start();
         }
-    }
-    else if(message == "--stop"){
-        if(mainWindowLaunched_){
-            Q_EMIT closeWhatsRunning();
-            return;
-        }
-
-        timerManager_->stop();
-
-        if(featureController_->isWallpapersRunning())
-        {
-            wallpaperManager_->startOver();
-
-            wallpapersFeature_->setPaused(false);
-
-            timerManager_->secondsRemaining_=timerManager_->totalSeconds_;
-
-            timerManager_->saveSecondsLeftNow(false);
-        }
-        else if(featureController_->isLiveEarthRunning() || featureController_->isWebsiteRunning()){
-            timerManager_->secondsRemaining_=timerManager_->totalSeconds_;
-        }
-
-        if(featureController_->isLiveEarthRunning() || featureController_->isPotdRunning()){
-            imageFetcher_->abort();
-        }
-
-        featureController_->setCurrentFeature(FeatureController::Feature::None);
     }
     else if(message == "--next"){
         if (featureController_->isWallpapersRunning()) {
@@ -401,11 +368,6 @@ void NonGuiManager::connectMainwindowWithExternalActions(MainWindow *w){
     connect(this, &NonGuiManager::signalPause, w, &MainWindow::handleStartButtonClick);
     connect(this, &NonGuiManager::signalPrevious, w, &MainWindow::handlePreviousButtonClick);
     connect(this, &NonGuiManager::signalNext, w, &MainWindow::handleNextButtonClick);
-    connect(this, &NonGuiManager::signalStart, w, &MainWindow::handleStartButtonClick);
-    connect(this, &NonGuiManager::signalActivateLivearth, w, &MainWindow::handleActivateLiveEarthClick);
-    connect(this, &NonGuiManager::signalActivatePotd, w, &MainWindow::handleActivatePotdClick);
-    connect(this, &NonGuiManager::signalActivateLiveWebsite, w, &MainWindow::handleActivateWebsiteClick);
-    connect(this, &NonGuiManager::closeWhatsRunning, w, &MainWindow::closeWhatsRunning);
     connect(this, &NonGuiManager::signalQuit, w, &MainWindow::doQuit);
     connect(this, &NonGuiManager::signalAddFolderForMonitor, w, &MainWindow::addFolderForMonitor);
     connect(this, &NonGuiManager::signalFocus, w, &MainWindow::showNormal);
@@ -631,44 +593,4 @@ int NonGuiManager::startProgram(int argc, char *argv[]){
 
         return 0;
     }
-}
-
-void NonGuiManager::startFeature(FeatureController::Feature feature) {
-    // Handle the GUI-mode toggle
-    if (mainWindowLaunched_) {
-        bool isRunning = (featureController_->currentFeature() == feature) && !featureController_->isFeaturePaused();
-
-        if (isRunning) {
-            Q_EMIT closeWhatsRunning();
-        } else {
-            switch (feature) {
-            case FeatureController::Feature::Wallpapers:      Q_EMIT signalStart(); break;
-            case FeatureController::Feature::LiveEarth:       Q_EMIT signalActivateLivearth(); break;
-            case FeatureController::Feature::PictureOfTheDay: Q_EMIT signalActivatePotd(); break;
-            case FeatureController::Feature::Website:         Q_EMIT signalActivateLiveWebsite(); break;
-            case FeatureController::Feature::None:            break;
-            }
-        }
-        return;
-    }
-
-    if (feature == FeatureController::Feature::Wallpapers && featureController_->isWallpapersRunning() && wallpapersFeature_->isPaused()) {
-        doAction("--pause"); // This will un-pause it
-        return;
-    }
-
-    // Command-line toggle logic
-    const bool wasRunning = (featureController_->currentFeature() == feature);
-
-    doAction("--stop");
-
-    if (wasRunning) {
-        Global::debug("Toggled feature off.");
-        SettingsManager::updateStartup(featureController_->currentFeature());
-        return;
-    }
-
-    // If it wasn't running, start the new requested feature
-    featureController_->setCurrentFeature(feature);
-    featureController_->launchFeature(feature);
 }

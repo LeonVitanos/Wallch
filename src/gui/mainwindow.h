@@ -277,10 +277,11 @@ public Q_SLOTS:
     void handleActivateLiveEarthClick();
     void handleActivatePotdClick();
     void handleActivateWebsiteClick();
-    void closeWhatsRunning();
     void doQuit();
     void showNormal();
     void hideOrShow();
+    void onFeatureStopped(FeatureController::Feature stoppedFeature);
+    void onFeatureToggled(FeatureController::Feature feature);
 
 private Q_SLOTS:
 #ifdef Q_OS_LINUX

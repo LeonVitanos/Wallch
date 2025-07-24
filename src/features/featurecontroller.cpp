@@ -22,6 +22,7 @@
 #include "websitefeature.h"
 #include "potdfeature.h"
 #include "settingsmanager.h"
+#include "glob.h"
 
 FeatureController::FeatureController(WallpapersFeature *wallpapersFeature,
                                      LiveEarthFeature *liveEarthFeature,
@@ -37,26 +38,62 @@ FeatureController::FeatureController(WallpapersFeature *wallpapersFeature,
     connect(m_wallpapersFeature, &WallpapersFeature::pausedStateChanged, this, &FeatureController::pausedStateChanged);
 }
 
+void FeatureController::toggleFeature(FeatureController::Feature feature)
+{
+    const bool wasRunningThisFeature = (m_currentFeature == feature) && !isFeaturePaused();
+
+    // Stop whatever is currently running
+    if (m_currentFeature != Feature::None) {
+        Feature featureToStop = m_currentFeature;
+        if (isWallpapersRunning()) {
+            m_wallpapersFeature->setPaused(true);
+        } else if (isLiveEarthRunning()) {
+            m_liveEarthFeature->stop();
+        } else if (isPotdRunning()) {
+            m_potdFeature->stop();
+        } else if (isWebsiteRunning()) {
+            m_websiteFeature->stop();
+        }
+        setCurrentFeature(Feature::None);
+        Q_EMIT featureStopped(featureToStop);
+    }
+
+    if (!wasRunningThisFeature) {
+        // If we were running something else (or nothing), start the new feature.
+        setCurrentFeature(feature);
+        launchFeature(feature);
+        Q_EMIT featureToggled(feature);
+        Global::debug("Toggled feature on.");
+    }
+}
+
 void FeatureController::launchFeature(FeatureController::Feature feature)
 {
+    bool success = true;
     switch (feature) {
     case Feature::Wallpapers:
-        // setPaused(false) will initialize and start the timer if needed.
-        if (!m_wallpapersFeature->setPaused(false)) {
-            Q_EMIT launchFailed();
-        }
+        success = m_wallpapersFeature->setPaused(false);
         break;
     case Feature::LiveEarth:
         m_liveEarthFeature->start();
+        // TODO: return a bool on success/failure
         break;
     case Feature::PictureOfTheDay:
         m_potdFeature->start();
+        // TODO: return a bool on success/failure
         break;
     case Feature::Website:
         m_websiteFeature->start();
+        // TODO: return a bool on success/failure
         break;
     case Feature::None:
-        break; // Do nothing
+        break;
+    }
+
+    if (!success) {
+        Feature failedFeature = m_currentFeature;
+        setCurrentFeature(Feature::None);
+        Q_EMIT featureStopped(failedFeature);
     }
 }
 

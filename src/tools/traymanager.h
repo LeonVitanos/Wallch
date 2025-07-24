@@ -49,14 +49,10 @@ protected:
 private Q_SLOTS:
     void onTrayActivated(QSystemTrayIcon::ActivationReason reason);
     void onShowWindowAction();
-    void onWallpapersAction();
     void onWallpapersOnceAction();
     void onWallpapersPauseAction();
     void onWallpapersNextAction();
     void onWallpapersPreviousAction();
-    void onLiveEarthAction();
-    void onPictureOfTheDayAction();
-    void onLiveWebsiteAction();
 
 public Q_SLOTS:
     void updateMenu();

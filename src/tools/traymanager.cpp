@@ -79,7 +79,7 @@ void TrayManager::createActions()
     connect(m_openCurrentImagePropertiesAction, &QAction::triggered, this, [=] { m_dialogHelper->showPropertiesDialog(); });
 
     m_wallpapersAction = new QAction(tr("Wallpapers"), this);
-    connect(m_wallpapersAction, &QAction::triggered, this, &TrayManager::onWallpapersAction);
+    connect(m_wallpapersAction, &QAction::triggered, this, [this]() { m_featureController->toggleFeature(FeatureController::Feature::Wallpapers); });
 
     m_wallpapersOnceAction = new QAction("    " + tr("Change wallpaper once"), this);
     connect(m_wallpapersOnceAction, &QAction::triggered, this, &TrayManager::onWallpapersOnceAction);
@@ -94,13 +94,13 @@ void TrayManager::createActions()
     connect(m_wallpapersPreviousAction, &QAction::triggered, this, &TrayManager::onWallpapersPreviousAction);
 
     m_liveEarthAction = new QAction(tr("Live Earth"), this);
-    connect(m_liveEarthAction, &QAction::triggered, this, &TrayManager::onLiveEarthAction);
+    connect(m_liveEarthAction, &QAction::triggered, this, [this](){ m_featureController->toggleFeature(FeatureController::Feature::LiveEarth); });
 
     m_pictureOfTheDayAction = new QAction(tr("Picture Of The Day"), this);
-    connect(m_pictureOfTheDayAction, &QAction::triggered, this, &TrayManager::onPictureOfTheDayAction);
+    connect(m_pictureOfTheDayAction, &QAction::triggered, this, [this](){ m_featureController->toggleFeature(FeatureController::Feature::PictureOfTheDay); });
 
     m_liveWebsiteAction = new QAction(tr("Live Website"), this);
-    connect(m_liveWebsiteAction, &QAction::triggered, this, &TrayManager::onLiveWebsiteAction);
+    connect(m_liveWebsiteAction, &QAction::triggered, this, [this](){ m_featureController->toggleFeature(FeatureController::Feature::Website); });
 
     m_preferencesAction = new QAction(tr("Preferences"), this);
     connect(m_preferencesAction, &QAction::triggered, m_dialogHelper, &DialogHelper::showPreferencesDialog);
@@ -222,11 +222,7 @@ void TrayManager::uncheckAllActions()
 // --- Action Handlers ---
 
 void TrayManager::onShowWindowAction() { Q_EMIT showMainWindowRequested(); }
-void TrayManager::onWallpapersAction() { Q_EMIT featureActionRequested(m_featureController->isWallpapersRunning() ? "--stop" : "--start"); }
 void TrayManager::onWallpapersOnceAction() { Q_EMIT featureActionRequested("--change"); }
 void TrayManager::onWallpapersPauseAction() { Q_EMIT featureActionRequested("--pause"); }
 void TrayManager::onWallpapersNextAction() { Q_EMIT featureActionRequested("--next"); }
 void TrayManager::onWallpapersPreviousAction() { Q_EMIT featureActionRequested("--previous"); }
-void TrayManager::onLiveEarthAction() { Q_EMIT featureActionRequested("--earth"); }
-void TrayManager::onPictureOfTheDayAction() { Q_EMIT featureActionRequested("--potd"); }
-void TrayManager::onLiveWebsiteAction() { Q_EMIT featureActionRequested("--website"); }

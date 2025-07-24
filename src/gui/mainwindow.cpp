@@ -274,6 +274,8 @@ void MainWindow::connectSignalSlots(){
 
     connect(featureController_, &FeatureController::pausedStateChanged, this, &MainWindow::onPausedStateChanged);
     connect(dialogHelper_, &DialogHelper::preferencesDialogCreated, this, &MainWindow::onPreferencesDialogCreated);
+    connect(featureController_, &FeatureController::featureToggled, this, &MainWindow::onFeatureToggled);
+    connect(featureController_, &FeatureController::featureStopped, this, &MainWindow::onFeatureStopped);
 
 #ifdef Q_OS_LINUX
     dconf = new QProcess(this);
@@ -535,21 +537,6 @@ void MainWindow::continueAlreadyRunningFeature()
 
         //the app has opened normally, so there is no point in keeping a previous independent interval
         timerManager_->saveSecondsLeftNow(false);
-    }
-}
-
-void MainWindow::closeWhatsRunning(){
-    if(featureController_->isWallpapersRunning()){
-        handleStopButtonClick();
-    }
-    else if(featureController_->isLiveEarthRunning()){
-        handleDeactivateLiveEarthClick();
-    }
-    else if(featureController_->isPotdRunning()){
-        handleDeactivatePotdClick();
-    }
-    else if(featureController_->isWebsiteRunning()){
-        handleDeactivateWebsiteClick();
     }
 }
 
@@ -1499,30 +1486,7 @@ void MainWindow::startPauseWallpaperChangingProcess(){
 }
 
 void MainWindow::handleStopButtonClick(){
-    if (!ui->stopButton->isEnabled())
-        return;
-
-    featureController_->setPaused(true);
-    featureController_->setCurrentFeature(FeatureController::Feature::None);
-    updateWallpaperUiForState(WallpaperUiState::Stopped);
-
-    //TODO: Rest of the code to be removed in the future:
-    if(wallpaperManager_->wallpapersCount()!=0)
-        ui->shuffle_images_checkbox->setEnabled(true);
-
-    stoppedBecauseOnBattery_=false;
-    firstRandomImageIsntRandom_=false;
-    timerManager_->secondsRemaining_=0;
-
-#ifdef Q_OS_LINUX
-    if(gv.pauseOnBattery){
-        if(batteryStatusChecker_->isActive()){
-            batteryStatusChecker_->stop();
-        }
-    }
-#endif
-    timerManager_->saveSecondsLeftNow(false);
-    Q_EMIT signalUncheckRunningFeatureOnTray();
+    featureController_->toggleFeature(FeatureController::Feature::Wallpapers);
 }
 
 void MainWindow::handleNextButtonClick()
@@ -2063,41 +2027,12 @@ void MainWindow::picturesLocationsChanged()
 
 void MainWindow::handleActivateLiveEarthClick()
 {
-    if(!ui->activate_livearth->isEnabled()){
-        return;
-    }
-    stopEverythingThatsRunning(2);
-    handlePageButtonClick(1);
-    ui->activate_livearth->setEnabled(false);
-    ui->deactivate_livearth->setEnabled(true);
-    featureController_->setCurrentFeature(FeatureController::Feature::LiveEarth);
-    Q_EMIT signalRecreateTray();
-    setProgressbarsValue(100);
-    startUpdateSeconds();
-    animateProgressbarOpacity(1);
+    featureController_->toggleFeature(FeatureController::Feature::LiveEarth);
 }
 
 void MainWindow::handleDeactivateLiveEarthClick()
 {
-    if(!ui->deactivate_livearth->isEnabled()){
-        return;
-    }
-
-    timerManager_->secondsRemaining_=0;
-    imageFetcher_->abort();
-    featureController_->setCurrentFeature(FeatureController::Feature::None);
-    processRequestStop();
-
-    if(updateSecondsTimer_->isActive()){
-        updateSecondsTimer_->stop();
-    }
-    timerManager_->saveSecondsLeftNow(false);
-    animateProgressbarOpacity(0);
-    ui->deactivate_livearth->setEnabled(false);
-    ui->activate_livearth->setEnabled(true);
-    stoppedBecauseOnBattery_=false;
-
-    Q_EMIT signalUncheckRunningFeatureOnTray();
+    featureController_->toggleFeature(FeatureController::Feature::LiveEarth);
 }
 
 void MainWindow::handleLiveEarthTagCheck(bool checked)
@@ -2138,12 +2073,7 @@ void MainWindow::lePointDestroyed(){
 
 void MainWindow::handleActivatePotdClick()
 {
-    if(!ui->activate_potd->isEnabled()){
-        return;
-    }
-    stopEverythingThatsRunning(3);
-    handlePageButtonClick(2);
-    startPotd(true);
+    featureController_->toggleFeature(FeatureController::Feature::PictureOfTheDay);
 }
 
 void MainWindow::startPotd(bool launchNow){
@@ -2163,24 +2093,7 @@ void MainWindow::startPotd(bool launchNow){
 
 void MainWindow::handleDeactivatePotdClick()
 {
-    if(!ui->deactivate_potd->isEnabled()){
-        return;
-    }
-
-    timerManager_->secondsRemaining_=0;
-    processRequestStop();
-    imageFetcher_->abort();
-    featureController_->setCurrentFeature(FeatureController::Feature::None);
-
-    if(updateSecondsTimer_->isActive()){
-        updateSecondsTimer_->stop();
-    }
-    animateProgressbarOpacity(0);
-    ui->activate_potd->setEnabled(true);
-    ui->deactivate_potd->setEnabled(false);
-    stoppedBecauseOnBattery_=false;
-
-    Q_EMIT signalUncheckRunningFeatureOnTray();
+    featureController_->toggleFeature(FeatureController::Feature::PictureOfTheDay);
 }
 
 void MainWindow::restartPotdIfRunningAfterSettingChange(){
@@ -2218,64 +2131,12 @@ void MainWindow::restartLeIfRunningAfterSettingChange()
 //Live Website Code
 void MainWindow::handleActivateWebsiteClick()
 {   
-    stopEverythingThatsRunning(5);
-    loadLiveWebsitePage();
-
-    if(websiteSnapshot_==NULL || !ui->activate_website->isEnabled() || !websiteConfiguredCorrectly()){
-        return;
-    }
-
-    gv.websiteWebpageToLoad=gv.onlineLinkForHistory=ui->website->text();
-    gv.websiteInterval=ui->website_slider->value();
-
-    handlePageButtonClick(4);
-
-    ui->deactivate_website->setEnabled(true);
-    ui->activate_website->setEnabled(false);
-    ui->website_timeout_label->setText(QString::number(WEBSITE_TIMEOUT)+" "+tr("seconds")+"...");
-    ui->timeout_text_label->show();
-    ui->website_timeout_label->show();
-    timePassedForLiveWebsiteRequest_=1;
-    ui->live_website_login_widget->setEnabled(false);
-
-    QApplication::processEvents(QEventLoop::AllEvents);
-
-    featureController_->setCurrentFeature(FeatureController::Feature::Website);
-
-    Q_EMIT signalRecreateTray();
-    setProgressbarsValue(100);
-    animateProgressbarOpacity(1);
-
-    /*prepareWebsiteSnapshot();
-    websiteSnapshot_->setCrop(ui->website_crop_checkbox->isChecked(), gv.websiteCropArea);
-    disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageCreated(QImage*,short)));
-    connect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageCreated(QImage*,short)));
-    startUpdateSeconds();*/
+    featureController_->toggleFeature(FeatureController::Feature::Website);
 }
 
 void MainWindow::handleDeactivateWebsiteClick()
 {
-    if(!ui->deactivate_website->isEnabled()){
-        return;
-    }
-
-    stoppedBecauseOnBattery_=false;
-    featureController_->setCurrentFeature(FeatureController::Feature::None);
-    timerManager_->secondsRemaining_=0;
-    if(updateSecondsTimer_->isActive()){
-        updateSecondsTimer_->stop();
-    }
-    timerManager_->saveSecondsLeftNow(false);
-    ui->live_website_login_widget->setEnabled(true);
-    animateProgressbarOpacity(0);
-
-    Q_EMIT signalUncheckRunningFeatureOnTray();
-    /*disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageCreated(QImage*,short)));
-    ui->deactivate_website->setEnabled(false); ui->activate_website->setEnabled(true);
-    ui->timeout_text_label->hide();
-    ui->website_timeout_label->hide();
-    processRequestStop();
-    websiteSnapshot_->stop();*/
+    featureController_->toggleFeature(FeatureController::Feature::Website);
 }
 
 void MainWindow::liveWebsiteImageCreated(QImage *image, short errorCode){
@@ -3517,5 +3378,109 @@ void MainWindow::updateWallpaperUiForState(WallpaperUiState state){
         break;
 
     }
+    Q_EMIT signalRecreateTray();
+}
+
+void MainWindow::onFeatureToggled(FeatureController::Feature feature)
+{
+    handlePageButtonClick(static_cast<int>(feature) - 1);
+
+    switch (feature) {
+    case FeatureController::Feature::Wallpapers:
+        // This is handled by onPausedStateChanged
+        break;
+    case FeatureController::Feature::LiveEarth:
+        ui->activate_livearth->setEnabled(false);
+        ui->deactivate_livearth->setEnabled(true);
+        setProgressbarsValue(100);
+        startUpdateSeconds();
+        animateProgressbarOpacity(1);
+        break;
+    case FeatureController::Feature::PictureOfTheDay:
+        ui->deactivate_potd->setEnabled(true);
+        ui->activate_potd->setEnabled(false);
+        justUpdatedPotd_ = false;
+        actionsOnWallpaperChange();
+        animateProgressbarOpacity(1);
+        startUpdateSeconds();
+        updatePotdProgress();
+        break;
+    case FeatureController::Feature::Website:
+        if(websiteSnapshot_==NULL || !ui->activate_website->isEnabled() || !websiteConfiguredCorrectly()){
+            return;
+        }
+
+        gv.websiteWebpageToLoad=gv.onlineLinkForHistory=ui->website->text();
+        gv.websiteInterval=ui->website_slider->value();
+
+        ui->deactivate_website->setEnabled(true);
+        ui->activate_website->setEnabled(false);
+        ui->live_website_login_widget->setEnabled(false);
+        ui->website_timeout_label->setText(QString::number(WEBSITE_TIMEOUT)+" "+tr("seconds")+"...");
+        ui->timeout_text_label->show();
+        ui->website_timeout_label->show();
+        timePassedForLiveWebsiteRequest_=1;
+
+        QApplication::processEvents(QEventLoop::AllEvents);
+
+        /*prepareWebsiteSnapshot();
+        websiteSnapshot_->setCrop(ui->website_crop_checkbox->isChecked(), gv.websiteCropArea);
+        disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageCreated(QImage*,short)));
+        connect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageCreated(QImage*,short)));
+        startUpdateSeconds();*/
+
+        setProgressbarsValue(100);
+        animateProgressbarOpacity(1);
+        startUpdateSeconds();
+        break;
+    case FeatureController::Feature::None:
+        break;
+    }
+    Q_EMIT signalRecreateTray();
+}
+
+void MainWindow::onFeatureStopped(FeatureController::Feature stoppedFeature)
+{
+    processRequestStop();
+    if (updateSecondsTimer_->isActive()) {
+        updateSecondsTimer_->stop();
+    }
+    animateProgressbarOpacity(0);
+    stoppedBecauseOnBattery_ = false;
+    timerManager_->saveSecondsLeftNow(false);
+#ifdef Q_OS_LINUX
+    if(gv.pauseOnBattery && batteryStatusChecker_->isActive()){
+        batteryStatusChecker_->stop();
+    }
+#endif
+
+    switch (stoppedFeature) {
+    case FeatureController::Feature::Wallpapers:
+        updateWallpaperUiForState(WallpaperUiState::Stopped);
+        firstRandomImageIsntRandom_ = false;
+        if(wallpaperManager_->wallpapersCount()!=0)
+            ui->shuffle_images_checkbox->setEnabled(true);
+        break;
+    case FeatureController::Feature::LiveEarth:
+        ui->activate_livearth->setEnabled(true);
+        ui->deactivate_livearth->setEnabled(false);
+        break;
+    case FeatureController::Feature::PictureOfTheDay:
+        ui->activate_potd->setEnabled(true);
+        ui->deactivate_potd->setEnabled(false);
+        break;
+    case FeatureController::Feature::Website:
+        ui->activate_website->setEnabled(true);
+        ui->deactivate_website->setEnabled(false);
+        ui->live_website_login_widget->setEnabled(true);
+        /*disconnect(websiteSnapshot_->asQObject(), SIGNAL(resultedImage(QImage*,short)), this, SLOT(liveWebsiteImageCreated(QImage*,short)));
+        ui->timeout_text_label->hide();
+        ui->website_timeout_label->hide();
+        websiteSnapshot_->stop();*/
+        break;
+    case FeatureController::Feature::None:
+        break;
+    }
+
     Q_EMIT signalRecreateTray();
 }
