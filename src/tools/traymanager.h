@@ -56,7 +56,6 @@ private Q_SLOTS:
 
 public Q_SLOTS:
     void updateMenu();
-    void uncheckAllActions();
 
 Q_SIGNALS:
     void showMainWindowRequested();

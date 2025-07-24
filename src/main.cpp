@@ -116,7 +116,6 @@ int main(int argc, char *argv[])
     QObject::connect(trayManager, &TrayManager::featureActionRequested, &nonGuiManager, &NonGuiManager::doAction);
     QObject::connect(trayManager, &TrayManager::showMainWindowRequested, &nonGuiManager, [&nonGuiManager](){nonGuiManager.doAction("--focus");});
     QObject::connect(&nonGuiManager, &NonGuiManager::trayNeedsUpdate, trayManager, &TrayManager::updateMenu);
-    QObject::connect(&nonGuiManager, &NonGuiManager::trayUncheckRequested, trayManager, &TrayManager::uncheckAllActions);
     trayManager->show();
 
     // 7. Tell the fully constructed manager to start the program.

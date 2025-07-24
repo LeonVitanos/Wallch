@@ -211,14 +211,6 @@ void TrayManager::onTrayActivated(QSystemTrayIcon::ActivationReason reason)
     }
 }
 
-void TrayManager::uncheckAllActions()
-{
-    m_wallpapersAction->setCheckable(false);
-    m_liveEarthAction->setCheckable(false);
-    m_pictureOfTheDayAction->setCheckable(false);
-    m_liveWebsiteAction->setCheckable(false);
-}
-
 // --- Action Handlers ---
 
 void TrayManager::onShowWindowAction() { Q_EMIT showMainWindowRequested(); }

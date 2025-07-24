@@ -411,7 +411,6 @@ private Q_SLOTS:
 Q_SIGNALS:
      void fixLivewebsiteButtons();
      void monitorCheck();
-     void signalUncheckRunningFeatureOnTray();
      void signalRecreateTray();
 
 };
