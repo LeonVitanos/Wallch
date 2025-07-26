@@ -3338,8 +3338,10 @@ void MainWindow::onPausedStateChanged(bool isPaused)
 {
     if (isPaused) {
         updateSecondsTimer_->stop();
+        updateWallpaperUiForState(WallpaperUiState::Paused);
     } else {
         startUpdateSeconds();
+        updateWallpaperUiForState(WallpaperUiState::Running);
     }
 }
 
