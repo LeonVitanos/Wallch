@@ -40,7 +40,7 @@ FeatureController::FeatureController(WallpapersFeature *wallpapersFeature,
 
 void FeatureController::toggleFeature(FeatureController::Feature feature)
 {
-    const bool wasRunningThisFeature = (m_currentFeature == feature) && !isFeaturePaused();
+    const bool wasRunningThisFeature = (m_currentFeature == feature);
 
     // Stop whatever is currently running
     if (m_currentFeature != Feature::None) {
