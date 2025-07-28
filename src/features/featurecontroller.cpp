@@ -35,7 +35,7 @@ FeatureController::FeatureController(WallpapersFeature *wallpapersFeature,
     , m_websiteFeature(websiteFeature)
     , m_potdFeature(potdFeature)
 {
-    connect(m_wallpapersFeature, &WallpapersFeature::pausedStateChanged, this, &FeatureController::pausedStateChanged);
+    connect(m_wallpapersFeature, &WallpapersFeature::stateChanged, this, &FeatureController::wallpaperStateChanged);
 }
 
 void FeatureController::toggleFeature(FeatureController::Feature feature)
@@ -46,7 +46,7 @@ void FeatureController::toggleFeature(FeatureController::Feature feature)
     if (m_currentFeature != Feature::None) {
         Feature featureToStop = m_currentFeature;
         if (isWallpapersRunning()) {
-            m_wallpapersFeature->setPaused(true);
+            m_wallpapersFeature->stop();
         } else if (isLiveEarthRunning()) {
             m_liveEarthFeature->stop();
         } else if (isPotdRunning()) {
@@ -72,7 +72,7 @@ void FeatureController::launchFeature(FeatureController::Feature feature)
     bool success = true;
     switch (feature) {
     case Feature::Wallpapers:
-        success = m_wallpapersFeature->setPaused(false);
+        success = m_wallpapersFeature->start();
         break;
     case Feature::LiveEarth:
         m_liveEarthFeature->start();
@@ -160,19 +160,19 @@ FeatureController::Feature FeatureController::getLaunchFeature() const
     return m_launchFeature;
 }
 
-bool FeatureController::isFeaturePaused() const
+void FeatureController::pauseWallpapers()
 {
-    if (m_currentFeature == Feature::Wallpapers) {
-        return m_wallpapersFeature->isPaused();
-    }
-    return false;
+    m_wallpapersFeature->pause();
 }
 
-void FeatureController::setPaused(bool paused)
+void FeatureController::resumeWallpapers()
 {
-    if (m_currentFeature == Feature::Wallpapers) {
-        m_wallpapersFeature->setPaused(paused);
-    }
+    m_wallpapersFeature->resume();
+}
+
+WallpapersFeature::State FeatureController::wallpapersState() const
+{
+    return m_wallpapersFeature->state();
 }
 
 void FeatureController::onPersistencePrefixNeeded(QChar &prefix) const

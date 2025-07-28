@@ -29,6 +29,13 @@ class WallpapersFeature : public QObject
 {
     Q_OBJECT
 public:
+    enum class State {
+        Stopped,
+        Running,
+        Paused
+    };
+    Q_ENUM(State)
+
     explicit WallpapersFeature(WallpaperManager *wallpaperManager,
                                TimerManager *timerManager,
                                FileManager *fileManager,
@@ -41,21 +48,22 @@ public:
     bool previousWasClicked_ = false;
     bool startedWithJustChange_ = false;
 
-    bool isPaused() const;
-    bool setPaused(bool paused);
+    bool start();
+    void pause();
+    void resume();
+    void stop();
+    State state() const;
 
 Q_SIGNALS:
-    void pausedStateChanged(bool isPaused);
+    void stateChanged(WallpapersFeature::State newState);
 
 private:
     WallpaperManager *m_wallpaperManager;
     TimerManager *m_timerManager;
     FileManager *m_fileManager;
 
-    bool m_isPaused = true;
-
-    bool initialize();
-    bool m_isInitialized = false;
+    State m_state = State::Stopped;
+    void setState(State newState);
 };
 
 #endif // WALLPAPERSFEATURE_H

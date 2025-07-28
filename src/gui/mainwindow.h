@@ -197,7 +197,6 @@ private:
     bool potdPreviewShown_ = false;
     bool locationsShown_ = false;
 
-    bool actAsStart_ = true;
     bool startWasJustClicked_ = false;
     bool justUpdatedPotd_ = false;
     bool loadedPages_[6] = {false,false,false,false,false,false};
@@ -228,7 +227,6 @@ private:
     void connectSignalSlots();
     void startUpdateSeconds();    
     void animateProgressbarOpacity(bool show);
-    void startPauseWallpaperChangingProcess();
     void animateScreenLabel(bool onlyHide);
     void loadWallpapersPage();
     void handlePicturesLocationWhileLoading(bool, int);
@@ -405,7 +403,7 @@ private Q_SLOTS:
     void openImageFolderMassive();
     void showProperties();
 
-    void onPausedStateChanged(bool isPaused);
+    void onWallpaperStateChanged(WallpapersFeature::State newState);
     void onPreferencesDialogCreated(Preferences* dialog);
 
 Q_SIGNALS:

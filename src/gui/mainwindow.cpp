@@ -272,7 +272,7 @@ void MainWindow::connectSignalSlots(){
     connect(QGuiApplication::primaryScreen(), SIGNAL(geometryChanged(QRect)), this, SLOT(getScreenResolution(QRect)));
     connect(QGuiApplication::primaryScreen(), SIGNAL(availableGeometryChanged(QRect)), this, SLOT(getScreenAvailableResolution(QRect)));
 
-    connect(featureController_, &FeatureController::pausedStateChanged, this, &MainWindow::onPausedStateChanged);
+    connect(featureController_, &FeatureController::wallpaperStateChanged, this, &MainWindow::onWallpaperStateChanged);
     connect(dialogHelper_, &DialogHelper::preferencesDialogCreated, this, &MainWindow::onPreferencesDialogCreated);
     connect(featureController_, &FeatureController::featureToggled, this, &MainWindow::onFeatureToggled);
     connect(featureController_, &FeatureController::featureStopped, this, &MainWindow::onFeatureStopped);
@@ -489,9 +489,10 @@ void MainWindow::continueAlreadyRunningFeature()
     {
         loadWallpapersPage();
 
-        const bool isPaused = featureController_->isFeaturePaused();
-        onPausedStateChanged(isPaused);
-        if (isPaused) {
+        // Restore UI state based on the actual feature state
+        onWallpaperStateChanged(featureController_->wallpapersState());
+
+        if (featureController_->wallpapersState() == WallpapersFeature::State::Paused) {
             timerManager_->findSeconds(true);
             timerManager_->secondsRemaining_ += 1;
             globalParser_->resetSleepProtection(timerManager_->secondsRemaining_);
@@ -1302,7 +1303,7 @@ void MainWindow::stopEverythingThatsRunning(short excludingFeature)
 void MainWindow::pauseEverythingThatsRunning()
 {
     if(featureController_->isWallpapersRunning()){
-        featureController_->setPaused(true);
+        featureController_->pauseWallpapers();
     }
     else if(featureController_->isLiveEarthRunning()){
         handleDeactivateLiveEarthClick();
@@ -1414,74 +1415,21 @@ void MainWindow::justChangeWallpaper(){
 void MainWindow::handleStartButtonClick(){
     loadWallpapersPage();
 
-    if (!ui->startButton->isEnabled()){
-        globalParser_->desktopNotify(tr("Not enough pictures to start chaning wallpapers."), false, "info");
-        globalParser_->error("Too few images for wallpaper feature to start. Make sure there are at least 2 pictures at the selected folder.");
-        return;
-    }
-
-    stopEverythingThatsRunning(1);
-    startPauseWallpaperChangingProcess();
-}
-
-void MainWindow::startPauseWallpaperChangingProcess(){
-    if(!fileManager_->currentFolderExists()){
-        return;
-    }
-    if (actAsStart_){
-        const bool wasPaused = featureController_->isFeaturePaused();
-
-        if (!wasPaused) {
-            featureController_->setCurrentFeature(FeatureController::Feature::Wallpapers);
-
-            shuffleWasChecked_ = ui->shuffle_images_checkbox->isChecked();
-            if (shuffleWasChecked_) {
-                if (firstRandomImageIsntRandom_) {
-                    firstRandomImageIsntRandom_ = false;
-                    if (ui->wallpapersList->currentItem()->isSelected())
-                        wallpaperManager_->setRandomMode(true, -1, ui->wallpapersList->currentRow());
-                } else {
-                    wallpaperManager_->setRandomMode(true);
-                }
-            } else {
-                wallpaperManager_->setRandomMode(false);
-            }
+    switch (featureController_->wallpapersState()) {
+    case WallpapersFeature::State::Running:
+        featureController_->pauseWallpapers();
+        break;
+    case WallpapersFeature::State::Paused:
+        featureController_->resumeWallpapers();
+        break;
+    case WallpapersFeature::State::Stopped:
+        if (!ui->startButton->isEnabled()){
+            globalParser_->desktopNotify(tr("Not enough pictures to start chaning wallpapers."), false, "info");
+            globalParser_->error("Too few images for wallpaper feature to start. Make sure there are at least 2 pictures at the selected folder.");
+            return;
         }
-
-        if (wasPaused) {
-            timerManager_->secondsRemaining_ += 1;
-        }
-
-        startWasJustClicked_ = true;
-
-        globalParser_->resetSleepProtection(timerManager_->secondsRemaining_);
-
-        if(gv.pauseOnBattery){
-            if(globalParser_->runsOnBattery()){
-                //manually started
-#ifdef Q_OS_LINUX
-                if(batteryStatusChecker_->isActive()){
-                    batteryStatusChecker_->stop();
-                }
-#endif
-                manuallyStartedOnBattery_=true;
-            }
-            else
-            {
-                manuallyStartedOnBattery_=false;
-            }
-        }
-
-        featureController_->setPaused(false);
-        updateWallpaperUiForState(WallpaperUiState::Running);
-
-        handlePageButtonClick(0);
-    }
-    else
-    {
-        featureController_->setPaused(true);
-        updateWallpaperUiForState(WallpaperUiState::Paused);
-        timerManager_->saveSecondsLeftNow();
+        featureController_->toggleFeature(FeatureController::Feature::Wallpapers);
+        break;
     }
 }
 
@@ -3333,36 +3281,36 @@ void MainWindow::handleSearchShortcut() {
     if (ui->stackedWidget->currentIndex() == 0)
         searchImages_->showHideSearchBox();
 }
-
-void MainWindow::onPausedStateChanged(bool isPaused)
+void MainWindow::onWallpaperStateChanged(WallpapersFeature::State newState)
 {
-    if (isPaused) {
-        updateSecondsTimer_->stop();
-        updateWallpaperUiForState(WallpaperUiState::Paused);
-    } else {
+    switch (newState) {
+    case WallpapersFeature::State::Running:
         startUpdateSeconds();
         updateWallpaperUiForState(WallpaperUiState::Running);
+        break;
+    case WallpapersFeature::State::Paused:
+        updateSecondsTimer_->stop();
+        updateWallpaperUiForState(WallpaperUiState::Paused);
+        break;
+    case WallpapersFeature::State::Stopped:
+        // This is handled by onFeatureStopped, which calls updateWallpaperUiForState(Stopped)
+        break;
     }
 }
 
 void MainWindow::updateWallpaperUiForState(WallpaperUiState state){
     switch (state) {
     case WallpaperUiState::Running:
-        actAsStart_ = false;
         ui->startButton->setText(tr("Pau&se"));
         ui->startButton->setIcon(QIcon::fromTheme("media-playback-pause", QIcon(":/images/media-playback-pause.png")));
         ui->timeForNext->setFormat(timerManager_->secondsToMinutesHoursDays(timerManager_->totalSeconds_));
-        if(!featureController_->isFeaturePaused()){
-            animateProgressbarOpacity(1);
-        }
+        animateProgressbarOpacity(1);
         ui->stopButton->setEnabled(true);
         previousAndNextButtonsSetEnabled(true);
         ui->shuffle_images_checkbox->setEnabled(false);
         break;
-
     case WallpaperUiState::Stopped:
     case WallpaperUiState::Paused:
-        actAsStart_ = true;
         ui->startButton->setText(tr("&Start"));
         ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
         ui->shuffle_images_checkbox->setEnabled(true);
@@ -3373,7 +3321,6 @@ void MainWindow::updateWallpaperUiForState(WallpaperUiState state){
             ui->stopButton->setEnabled(true);
 
         } else {
-            ui->timeForNext->setFormat(timerManager_->secondsToMinutesHoursDays(timerManager_->totalSeconds_));
             animateProgressbarOpacity(0);
             ui->stopButton->setEnabled(false);
         }
@@ -3389,7 +3336,7 @@ void MainWindow::onFeatureToggled(FeatureController::Feature feature)
 
     switch (feature) {
     case FeatureController::Feature::Wallpapers:
-        // This is handled by onPausedStateChanged
+        // This is now handled by onWallpaperStateChanged
         break;
     case FeatureController::Feature::LiveEarth:
         ui->activate_livearth->setEnabled(false);

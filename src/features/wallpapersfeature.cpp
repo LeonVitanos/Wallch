@@ -16,28 +16,6 @@ WallpapersFeature::WallpapersFeature(WallpaperManager *wallpaperManager,
 {
 }
 
-bool WallpapersFeature::initialize()
-{
-    if (m_isInitialized) {
-        return true;
-    }
-
-    if (!getPicturesLocation(true)) {
-        return false;
-    }
-
-    if (gv.randomImagesEnabled) {
-        m_wallpaperManager->setRandomMode(true);
-    }
-
-    getDelay();
-    Global::debug("Your Desktop Background will change every " + QString::number(m_timerManager->totalSeconds_) + " seconds.");
-    m_timerManager->secondsRemaining_ = 0;
-
-    m_isInitialized = true;
-    return true;
-}
-
 void WallpapersFeature::getDelay()
 {
     m_timerManager->totalSeconds_=settings->value("delay", DEFAULT_SLIDER_DELAY).toInt();
@@ -85,27 +63,63 @@ bool WallpapersFeature::getPicturesLocation(bool init)
     return true;
 }
 
-bool WallpapersFeature::isPaused() const
+WallpapersFeature::State WallpapersFeature::state() const
 {
-    return m_isPaused;
+    return m_state;
 }
 
-bool WallpapersFeature::setPaused(bool paused)
+bool WallpapersFeature::start()
 {
-    m_isPaused = paused;
-
-    if (!m_isPaused) {
-        if (!m_isInitialized) {
-            if (!initialize()) {
-                return false;
-            }
-        }
-        Global::resetSleepProtection(m_timerManager->secondsRemaining_);
-        m_timerManager->start();
-    } else {
-        m_timerManager->stop();
+    if (m_state != State::Stopped) {
+        return true;
     }
 
-    Q_EMIT pausedStateChanged(m_isPaused);
+    if (!getPicturesLocation(true)) {
+        setState(State::Stopped);
+        return false;
+    }
+
+    if (gv.randomImagesEnabled) {
+        m_wallpaperManager->setRandomMode(true);
+    }
+
+    getDelay();
+    Global::debug("Your Desktop Background will change every " + QString::number(m_timerManager->totalSeconds_) + " seconds.");
+    m_timerManager->secondsRemaining_ = 0;
+
+    Global::resetSleepProtection(m_timerManager->secondsRemaining_);
+    m_timerManager->start();
+    setState(State::Running);
     return true;
+}
+
+void WallpapersFeature::pause()
+{
+    if (m_state == State::Running) {
+        m_timerManager->stop();
+        setState(State::Paused);
+    }
+}
+
+void WallpapersFeature::resume()
+{
+    if (m_state == State::Paused) {
+        Global::resetSleepProtection(m_timerManager->secondsRemaining_);
+        m_timerManager->start();
+        setState(State::Running);
+    }
+}
+
+void WallpapersFeature::stop()
+{
+    if (m_state != State::Stopped) {
+        m_timerManager->stop();
+        setState(State::Stopped);
+    }
+}
+
+void WallpapersFeature::setState(State newState) {
+    if (m_state == newState) return;
+    m_state = newState;
+    Q_EMIT stateChanged(m_state);
 }

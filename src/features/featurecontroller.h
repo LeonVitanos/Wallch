@@ -19,7 +19,7 @@
 #ifndef FEATURECONTROLLER_H
 #define FEATURECONTROLLER_H
 
-#include <QObject>
+#include "wallpapersfeature.h"
 
 class WallpapersFeature;
 class LiveEarthFeature;
@@ -50,7 +50,7 @@ public:
     bool isPotdRunning() const;
     bool isWebsiteRunning() const;
 
-    bool isFeaturePaused() const;
+    WallpapersFeature::State wallpapersState() const;
 
     Feature currentFeature() const;
     void setCurrentFeature(Feature newFeature);
@@ -58,15 +58,15 @@ public:
     void setLaunchFeature(Feature feature);
     void launchFeature(Feature feature);
 
-    void setPaused(bool paused);
-
 public Q_SLOTS:
     void onTimeToChangeWallpaper();
     void onPersistencePrefixNeeded(QChar &prefix) const;
     void toggleFeature(Feature feature);
+    void pauseWallpapers();
+    void resumeWallpapers();
 
 Q_SIGNALS:
-    void pausedStateChanged(bool isPaused);
+    void wallpaperStateChanged(WallpapersFeature::State newState);
     void featureToggled(FeatureController::Feature feature);
     void featureStopped(FeatureController::Feature stoppedFeature);
 

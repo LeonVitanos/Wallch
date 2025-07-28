@@ -144,7 +144,7 @@ void TrayManager::updateMenu()
     if (m_featureController->isWallpapersRunning()) {
         m_wallpapersAction->setCheckable(true);
         m_wallpapersAction->setChecked(true);
-        if (m_featureController->isFeaturePaused()) {
+        if (m_featureController->wallpapersState() == WallpapersFeature::State::Paused) {
             m_wallpapersPauseAction->setText("    " + tr("Start"));
             m_trayIconMenu->addAction(m_wallpapersPauseAction);
         } else {

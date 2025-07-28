@@ -290,20 +290,20 @@ void NonGuiManager::doAction(const QString &message){
             return;
         }
 
-        if(!featureController_->isWallpapersRunning() && !wallpapersFeature_->isPaused()){
+        if(!featureController_->isWallpapersRunning()){
             Global::error("Cannot pause to any other process rather than Wallpapers!");
             return;
         }
-        if(!wallpapersFeature_->isPaused()){
+        if(featureController_->wallpapersState() == WallpapersFeature::State::Running){
             Global::debug("Pausing the Wallpapers process.");
             timerManager_->stop();
-            wallpapersFeature_->setPaused(true);
+            featureController_->pauseWallpapers();
         }
         else
         {
             Global::resetSleepProtection(timerManager_->secondsRemaining_);
             Global::debug("Continuing from the pause...");
-            wallpapersFeature_->setPaused(false);
+            featureController_->resumeWallpapers();
             timerManager_->start();
         }
     }
