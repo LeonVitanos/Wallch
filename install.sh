@@ -62,6 +62,14 @@ make || (error_report "make failed")
 
 report_step "Compiling translations"
 
+cd data/;
+mkdir to_usr_share;
+cd to_usr_share/;
+mkdir wallch;
+cd wallch/;
+mkdir translations;
+cd ../../..;
+
 install_tr data/translations/wallch_el.ts data/to_usr_share/wallch/translations/wallch_el.qm
 
 report_step "Installing Wallch to your system"
