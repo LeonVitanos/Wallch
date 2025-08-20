@@ -48,7 +48,7 @@ fi
 report_step "Installing the needed packages"
 apt-get install debhelper qt5-qmake qttools5-dev-tools libqt5core5a libqt5widgets5 qtbase5-dev libqt5network5 libqt5dbus5 libnotify-dev libkeybinder-dev libdee-dev libexif-dev libappindicator3-dev libglib2.0-dev qtdeclarative5-dev libqt5opengl5-dev libgstreamer-plugins-base1.0-dev libsqlite3-dev libxslt1-dev libqt5webkit5-dev || (error_report "installing build dependencies failed")
 apt-get install xdg-utils libstdc++6 libappindicator3-1 libc6 libdbusmenu-glib4 libexif12 libgcc1 libglib2.0-0 libnotify4 || (error_report "installing dependencies failed")
-
+apt-get install libgl1-mesa-dev cmake pkg-config mesa-utils libglu1-mesa-dev freeglut3-dev mesa-common-dev libglew-dev libglfw3-dev libglm-dev libao-dev libmpg123-dev || (error_report "installing dependencies failed")
 report_step "Building the source code"
 
 if [ -f "wallch" ]; then
