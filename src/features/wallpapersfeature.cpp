@@ -48,9 +48,7 @@ bool WallpapersFeature::getPicturesLocation(bool init)
 
     m_fileManager->picturesLocationChanged();
 
-    if (gv.randomImagesEnabled) {
-        m_wallpaperManager->setRandomMode(true);
-    }
+    m_wallpaperManager->setRandomMode(gv.randomImagesEnabled);
 
     // Check for errors
     if ( (startedWithJustChange_ && m_wallpaperManager->wallpapersCount() == 0) ||
@@ -77,10 +75,6 @@ bool WallpapersFeature::start()
     if (!getPicturesLocation(true)) {
         setState(State::Stopped);
         return false;
-    }
-
-    if (gv.randomImagesEnabled) {
-        m_wallpaperManager->setRandomMode(true);
     }
 
     getDelay();
@@ -115,6 +109,7 @@ void WallpapersFeature::stop()
     if (m_state != State::Stopped) {
         m_timerManager->stop();
         setState(State::Stopped);
+        m_wallpaperManager->startOver();
     }
 }
 

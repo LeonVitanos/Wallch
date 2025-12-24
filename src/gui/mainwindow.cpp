@@ -2751,7 +2751,9 @@ void MainWindow::potdPreviewDestroyed()
 // Settings
 void MainWindow::handleShuffleImagesCheck()
 {
-    settings->setValue("random_images_enabled", ui->shuffle_images_checkbox->isChecked());
+    gv.randomImagesEnabled = ui->shuffle_images_checkbox->isChecked();
+    settings->setValue("random_images_enabled", gv.randomImagesEnabled);
+    wallpaperManager_->setRandomMode(gv.randomImagesEnabled);
 }
 
 void MainWindow::handlePageChange(int page)

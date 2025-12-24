@@ -39,7 +39,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 WallpaperManager::WallpaperManager(QObject *parent):
     QObject(parent)
-{}
+{
+    randomMode_ = gv.randomImagesEnabled;
+}
 
 void WallpaperManager::addToPreviousWallpapers(const QString &wallpaper){
     previousWallpapers_ << wallpaper;
@@ -141,14 +143,8 @@ QString WallpaperManager::randomButNotCurrentWallpaper(){
 }
 
 void WallpaperManager::convertRandomToNormal(){
-    setRandomMode(false);
-    if(currentRandomWallpaperIndex_>(randomWallpapersRow_.count()-1)){
-        currentWallpaperIndex_=-1;
-    }
-    else
-    {
-        currentWallpaperIndex_=randomWallpapersRow_[currentRandomWallpaperIndex_];
-    }
+    randomMode_ = false;
+    currentWallpaperIndex_=-1;
 }
 
 void WallpaperManager::startOver(){
@@ -174,7 +170,8 @@ short WallpaperManager::indexOfCurrentBackgroundWallpaper(){
 }
 
 void WallpaperManager::setRandomMode(bool randomMode, short indexToExclude /*=-1*/, short indexToInclude /*=-1*/){
-    if( (randomMode_=randomMode) == true){
+    randomMode_ = randomMode;
+    if(randomMode_){
         if(indexToInclude!=-1){
             //random mode with a specific image as first
             generateRandomImages(indexToInclude);
