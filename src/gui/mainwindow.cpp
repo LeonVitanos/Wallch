@@ -2996,9 +2996,6 @@ void MainWindow::handleWallpaperListContextMenu()
         connect(enterAction, SIGNAL(triggered()), this, SLOT(handleWallpaperListDoubleClick()));
         listwidgetMenu_->addAction(enterAction);
 
-        if(wallpaperManager_->wallpapersCount()>2)
-           listwidgetMenu_->addAction(tr("Start from this image"), this, SLOT(startWithThisImage()));
-
         listwidgetMenu_->addAction(tr("Open Image"), this, SLOT(openImage()));
         listwidgetMenu_->addAction(tr("Open folder"), this, SLOT(openImageFolder()));
         listwidgetMenu_->addAction(tr("Rotate Right"), this, SLOT(rotateRight()));
@@ -3171,15 +3168,6 @@ void MainWindow::openImageFolder(){
 
 void MainWindow::openImageFolderMassive(){
     FileManager::openMultipleFolders(ui->wallpapersList->selectedItems());
-}
-
-void MainWindow::startWithThisImage(){
-    stopEverythingThatsRunning(0);
-
-    if(ui->shuffle_images_checkbox->isChecked())
-        firstRandomImageIsntRandom_=true;
-
-    handleStartButtonClick();
 }
 
 void MainWindow::removeImageFromDisk(){

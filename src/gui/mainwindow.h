@@ -390,7 +390,6 @@ private Q_SLOTS:
     void addPicturesToWallpaperList(const QStringList &pictures);
 
     // 'Wallpapers' ListWidget right-click menu functions
-    void startWithThisImage();
     void openImage();
     void removeImageFromDisk();
     void removeImagesFromDisk();
