@@ -2991,27 +2991,29 @@ void MainWindow::handleWallpaperListContextMenu()
 
     if (selectedCount<2){
 
-        QAction *enterAction = new QAction(tr("Set this item as Background"), listwidgetMenu_);
+        QAction *enterAction = new QAction(tr("Set as Background"), listwidgetMenu_);
         enterAction->setShortcut(QKeySequence("Enter"));
         connect(enterAction, SIGNAL(triggered()), this, SLOT(handleWallpaperListDoubleClick()));
         listwidgetMenu_->addAction(enterAction);
+        listwidgetMenu_->addSeparator();
 
-        listwidgetMenu_->addAction(tr("Open Image"), this, SLOT(openImage()));
+        listwidgetMenu_->addAction(tr("Open"), this, SLOT(openImage()));
         listwidgetMenu_->addAction(tr("Open folder"), this, SLOT(openImageFolder()));
+        listwidgetMenu_->addSeparator();
+        listwidgetMenu_->addAction(tr("Copy"), this, SLOT(copyImage()));
+        listwidgetMenu_->addAction(tr("Copy as path"), this, SLOT(copyImagePath()));
         listwidgetMenu_->addAction(tr("Rotate Right"), this, SLOT(rotateRight()));
         listwidgetMenu_->addAction(tr("Rotate Left"), this, SLOT(rotateLeft()));
-        listwidgetMenu_->addAction(tr("Copy path to clipboard"), this, SLOT(copyImagePath()));
-        listwidgetMenu_->addAction(tr("Copy image to clipboard"), this, SLOT(copyImage()));
-
         QAction *findAction = new QAction(tr("Find an image by name"), listwidgetMenu_);
         findAction->setShortcut(QKeySequence("Ctrl+F"));
         connect(findAction, SIGNAL(triggered()), searchImages_, SLOT(showHideSearchBoxMenu()));
         listwidgetMenu_->addAction(findAction);
 
-        QAction *deleteAction = new QAction(tr("Delete image from disk"), listwidgetMenu_);
+        QAction *deleteAction = new QAction(tr("Delete"), listwidgetMenu_);
         deleteAction->setShortcut(QKeySequence::Delete);
         connect(deleteAction, SIGNAL(triggered()), this, SLOT(removeImageFromDisk()));
         listwidgetMenu_->addAction(deleteAction);
+        listwidgetMenu_->addSeparator();
 
         QAction *propertiesAction = new QAction(tr("Properties"), listwidgetMenu_);
         propertiesAction->setShortcut(QKeySequence("Alt+Enter"));
