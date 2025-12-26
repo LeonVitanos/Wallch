@@ -285,7 +285,6 @@ private Q_SLOTS:
 #ifdef Q_OS_LINUX
     void dconfChanges();
 #endif
-    void handleSearchShortcut();
     void timeSpinboxChanged();
     void intervalTypeChanged();
     void checkBatteryStatus();
@@ -299,7 +298,6 @@ private Q_SLOTS:
     void setWebsitePreviewImage(QImage *image);
     void setImage(bool addToPrevious, const QString &image, int index);
     void setButtonColor();
-    void enterPressed();
     void openCloseAddLoginAnimationFinished();
     void updateSeconds();
     void liveWebsiteImageCreated(QImage *image, short errorCode);

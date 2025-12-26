@@ -1,6 +1,8 @@
 #include "searchimages.h"
 
-SearchImages::SearchImages(QListWidget* wallpapersList, QLineEdit* searchBox, QWidget* searchWidget, QStringList* allWallpapers)
+SearchImages::SearchImages(QListWidget* wallpapersList, QLineEdit* searchBox, QWidget* searchWidget,
+                           QPushButton* searchUp, QPushButton* searchDown, QPushButton* searchClose,
+                           QStringList* allWallpapers)
     : wallpapersList_(wallpapersList), searchBox_(searchBox), searchWidget_(searchWidget), allWallpapers_(allWallpapers)
 {
     openCloseSearch_ = new QPropertyAnimation(searchWidget_, "maximumHeight");
@@ -11,6 +13,21 @@ SearchImages::SearchImages(QListWidget* wallpapersList, QLineEdit* searchBox, QW
     match_.setPatternOptions(QRegularExpression::CaseInsensitiveOption);
 
     connect(searchBox_, &QLineEdit::textChanged, this, &SearchImages::searchFor);
+    connect(searchBox_, &QLineEdit::returnPressed, this, &SearchImages::enterPressed);
+
+    searchClose->setIcon(QIcon::fromTheme("window-close", QIcon(":/images/window-close.png")));
+    searchDown->setIcon(QIcon::fromTheme("go-down", QIcon(":/images/go-down.png")));
+    searchUp->setIcon(QIcon::fromTheme("go-up", QIcon(":/images/go-up.png")));
+
+    connect(searchUp, &QPushButton::clicked, this, &SearchImages::handleSearchUpClick);
+    connect(searchDown, &QPushButton::clicked, this, &SearchImages::handleSearchDownClick);
+    connect(searchClose, &QPushButton::clicked, this, &SearchImages::hideSearch);
+
+    QShortcut* shortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_F), wallpapersList_);
+    connect(shortcut, &QShortcut::activated, this, [this]() {
+        if (wallpapersList_->isVisible())
+            showHideSearchBox();
+    });
 }
 
 void SearchImages::searchFor(const QString &term){
@@ -108,13 +125,6 @@ void SearchImages::showHideSearchBox() {
         searchIsOn_ = false;
     }
     openCloseSearch_->start();
-}
-
-void SearchImages::showHideSearchBoxMenu(){
-    if(searchIsOn_)
-        searchBox_->setFocus();
-    else
-        showHideSearchBox();
 }
 
 void SearchImages::handleSearchUpClick()

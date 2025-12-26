@@ -4,6 +4,7 @@
 #include "qpropertyanimation.h"
 #include <QListWidget>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QRegularExpression>
 #include <QString>
 #include <QShortcut>
@@ -14,20 +15,20 @@ class SearchImages : public QObject
     Q_OBJECT
 
 public:
-    SearchImages(QListWidget* wallpapersList, QLineEdit* searchBox, QWidget* searchWidget, QStringList* allWallpapers);
+    SearchImages(QListWidget* wallpapersList, QLineEdit* searchBox, QWidget* searchWidget,
+                 QPushButton* searchUp, QPushButton* searchDown, QPushButton* searchClose,
+                 QStringList* allWallpapers);
 
     void continueToNextMatch();
     void continueToPreviousMatch();
     void doesMatch();
     void doesntMatch();
     void clearSearchBox();
-    void enterPressed();
     int matchIndex_;
     QStringList filteredList_;
     void selectItem();
 
 public Q_SLOTS:
-    void showHideSearchBoxMenu();
     void showHideSearchBox();
     void searchFor(const QString &term);
     void handleSearchDownClick();
@@ -36,7 +37,7 @@ public Q_SLOTS:
 
 private Q_SLOTS:
     void openCloseSearchAnimationFinished();
-
+    void enterPressed();
 
 private:
     QListWidget* wallpapersList_;

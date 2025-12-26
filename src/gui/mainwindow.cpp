@@ -243,7 +243,7 @@ void MainWindow::connectSignalSlots(){
     connect(ui->minutes_spinBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MainWindow::handleMinutesSpinBoxChange);
     connect(ui->seconds_spinBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MainWindow::handleSecondsSpinBoxChange);
     connect(ui->wallpapersList, &QListWidget::customContextMenuRequested, this, &MainWindow::handleWallpaperListContextMenu);
-    connect(ui->wallpapersList, &QListWidget::itemDoubleClicked, this, &MainWindow::handleWallpaperListDoubleClick);
+    connect(ui->wallpapersList, &QListWidget::itemActivated, this, &MainWindow::handleWallpaperListDoubleClick);
     connect(ui->wallpapersList, &QListWidget::itemSelectionChanged, this, &MainWindow::handleWallpaperListSelectionChange);
 
     connect(imageFetcher_, SIGNAL(fail()), this, SLOT(onlineRequestFailed()));
@@ -315,7 +315,6 @@ void MainWindow::setupKeyboardShortcuts(){
     (void) new QShortcut(Qt::Key_Escape, this, SLOT(escapePressed()));
     (void) new QShortcut(Qt::Key_Delete, this, SLOT(deletePressed()));
     (void) new QShortcut(Qt::ALT | Qt::Key_Return, this, SLOT(showProperties()));
-    (void) new QShortcut(Qt::Key_Return, this, SLOT(enterPressed()));
     (void) new QShortcut(Qt::CTRL | Qt::Key_PageUp, this, SLOT(previousPage()));
     (void) new QShortcut(Qt::CTRL | Qt::Key_PageDown, this, SLOT(nextPage()));
     (void) new QShortcut(Qt::ALT | Qt::Key_F4, this, SLOT(escapePressed()));
@@ -1799,13 +1798,6 @@ void MainWindow::handleBrowseFoldersClick()
     addFolderForMonitor(folder);
 }
 
-void MainWindow::enterPressed(){
-    if(ui->search_box->hasFocus())
-        searchImages_->enterPressed();
-    else if(ui->stackedWidget->currentIndex()==0)
-        handleWallpaperListDoubleClick();
-}
-
 void MainWindow::delayed_pictures_location_change()
 {
     ui->pictures_location_comboBox->setCurrentIndex(tempForDelayedPicturesLocationChange_);
@@ -2274,9 +2266,6 @@ void MainWindow::loadWallpapersPage(){
     ui->startButton->setIcon(QIcon::fromTheme("media-playback-start", QIcon(":/images/media-playback-start.png")));
     ui->stopButton->setIcon(QIcon::fromTheme("media-playback-stop", QIcon(":/images/media-playback-stop.png")));
     ui->next_Button->setIcon(QIcon::fromTheme("media-seek-forward", QIcon(":/images/media-seek-forward.png")));
-    ui->search_close->setIcon(QIcon::fromTheme("window-close", QIcon(":/images/window-close.png")));
-    ui->search_down->setIcon(QIcon::fromTheme("go-down", QIcon(":/images/go-down.png")));
-    ui->search_up->setIcon(QIcon::fromTheme("go-up", QIcon(":/images/go-up.png")));
 
     ui->wallpapersList->setItemDelegate(new HideGrayLinesDelegate(ui->wallpapersList));
 
@@ -2288,14 +2277,10 @@ void MainWindow::loadWallpapersPage(){
     ui->pictures_location_comboBox->setItemText(1, tr("My Pictures"));
     ui->pictures_location_comboBox->setItemData(1, gv.defaultPicturesLocation, Qt::UserRole);
 
-    searchImages_ = new SearchImages(ui->wallpapersList, ui->search_box, ui->search_widget, &wallpaperManager_->allWallpapers_);
+    searchImages_ = new SearchImages(ui->wallpapersList, ui->search_box, ui->search_widget,
+                                     ui->search_up, ui->search_down, ui->search_close,
+                                     &wallpaperManager_->allWallpapers_);
     connect(searchImages_, SIGNAL(launchTimerToUpdateIcons()), this, SLOT(launchTimerToUpdateIcons()));
-    (void) new QShortcut(Qt::CTRL | Qt::Key_F, this, SLOT(handleSearchShortcut()));
-
-    connect(ui->search_up, SIGNAL(clicked()), searchImages_, SLOT(handleSearchUpClick()));
-    connect(ui->search_down, SIGNAL(clicked()), searchImages_, SLOT(handleSearchDownClick()));
-    connect(ui->search_close, SIGNAL(clicked()), searchImages_, SLOT(hideSearch()));
-
 
 
     short size=settings->beginReadArray("pictures_locations");
@@ -3004,10 +2989,6 @@ void MainWindow::handleWallpaperListContextMenu()
         listwidgetMenu_->addAction(tr("Copy as path"), this, SLOT(copyImagePath()));
         listwidgetMenu_->addAction(tr("Rotate Right"), this, SLOT(rotateRight()));
         listwidgetMenu_->addAction(tr("Rotate Left"), this, SLOT(rotateLeft()));
-        QAction *findAction = new QAction(tr("Find an image by name"), listwidgetMenu_);
-        findAction->setShortcut(QKeySequence("Ctrl+F"));
-        connect(findAction, SIGNAL(triggered()), searchImages_, SLOT(showHideSearchBoxMenu()));
-        listwidgetMenu_->addAction(findAction);
 
         QAction *deleteAction = new QAction(tr("Delete"), listwidgetMenu_);
         deleteAction->setShortcut(QKeySequence::Delete);
@@ -3269,10 +3250,6 @@ void MainWindow::showProperties(){
     dialogHelper_->showPropertiesDialog(ui->wallpapersList->currentRow());
 }
 
-void MainWindow::handleSearchShortcut() {
-    if (ui->stackedWidget->currentIndex() == 0)
-        searchImages_->showHideSearchBox();
-}
 void MainWindow::onWallpaperStateChanged(WallpapersFeature::State newState)
 {
     switch (newState) {
