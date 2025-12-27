@@ -184,9 +184,6 @@ private:
     short timePassedForLiveWebsiteRequest_;
     short tempForDelayedPicturesLocationChange_;
 
-    //seach box
-    QString nameOfSelectionPriorFolderChange_;
-
     //dialogs
     bool addDialogShown_ = false;
     bool historyShown_ = false;

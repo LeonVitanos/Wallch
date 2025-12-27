@@ -3068,17 +3068,7 @@ void MainWindow::deletePressed(){
 void MainWindow::prepareToSearchFolders(){
     if(gv.previewImagesOnScreen){
         //keep the current selected file (it will be selected again after the folder researching has finished)
-
-        if(ui->wallpapersList->selectedItems().count()){
-           if(gv.iconMode){
-               if(ui->wallpapersList->selectedItems().at(0)->statusTip().isEmpty())
-                   nameOfSelectionPriorFolderChange_=ui->wallpapersList->selectedItems().at(0)->toolTip();
-               else
-                   nameOfSelectionPriorFolderChange_=ui->wallpapersList->selectedItems().at(0)->statusTip();
-           }
-           else
-               nameOfSelectionPriorFolderChange_=ui->wallpapersList->selectedItems().at(0)->text();
-        }
+        searchImages_->saveSelection();
     }
     clearWallpapersList();
     searchImages_->clearSearchBox();
@@ -3119,7 +3109,7 @@ void MainWindow::monitoredFoldersUpdated(){
         startButtonsSetEnabled(true);
 
     if(gv.previewImagesOnScreen && ui->stackedWidget->currentIndex()==0){
-        searchImages_->searchFor(nameOfSelectionPriorFolderChange_);
+        searchImages_->restoreSelection();
         ui->screen_label_info->clear();
         updateScreenLabel();
     }

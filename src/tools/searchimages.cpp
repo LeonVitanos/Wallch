@@ -168,3 +168,36 @@ void SearchImages::clearSearchBox(){
     hideSearch();
     searchBox_->clear();
 }
+
+void SearchImages::saveSelection()
+{
+    if (wallpapersList_->selectedItems().isEmpty()) {
+        savedSelection_.clear();
+        return;
+    }
+
+    QListWidgetItem *item = wallpapersList_->selectedItems().first();
+    if (wallpapersList_->viewMode() == QListView::IconMode) {
+        savedSelection_ = item->statusTip().isEmpty() ? item->toolTip() : item->statusTip();
+    } else {
+        savedSelection_ = item->text();
+    }
+}
+
+void SearchImages::restoreSelection()
+{
+    if (savedSelection_.isEmpty())
+        return;
+
+    for (int i = 0; i < wallpapersList_->count(); ++i) {
+        QListWidgetItem *item = wallpapersList_->item(i);
+        QString itemPath = (wallpapersList_->viewMode() == QListView::IconMode) ? (item->statusTip().isEmpty() ? item->toolTip() : item->statusTip()) : item->text();
+
+        if (itemPath == savedSelection_) {
+            wallpapersList_->setCurrentItem(item);
+            item->setSelected(true);
+            wallpapersList_->scrollToItem(item);
+            break;
+        }
+    }
+}

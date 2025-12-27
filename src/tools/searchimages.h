@@ -27,6 +27,8 @@ public:
     int matchIndex_;
     QStringList filteredList_;
     void selectItem();
+    void saveSelection();
+    void restoreSelection();
 
 public Q_SLOTS:
     void showHideSearchBox();
@@ -51,6 +53,7 @@ private:
     bool searchIsOn_ = false;
     QStringList* allWallpapers_;
     QStringList allWallpapersBasename_;
+    QString savedSelection_;
 
 Q_SIGNALS:
     void launchTimerToUpdateIcons();
