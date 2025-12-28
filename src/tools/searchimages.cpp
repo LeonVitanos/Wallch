@@ -151,7 +151,7 @@ void SearchImages::openCloseSearchAnimationFinished()
 
 bool SearchImages::hideSearch()
 {
-    if(searchBox_->hasFocus() && searchIsOn_){
+    if(searchIsOn_){
         showHideSearchBox();
         return true;
     }
@@ -194,10 +194,33 @@ void SearchImages::restoreSelection()
         QString itemPath = (wallpapersList_->viewMode() == QListView::IconMode) ? (item->statusTip().isEmpty() ? item->toolTip() : item->statusTip()) : item->text();
 
         if (itemPath == savedSelection_) {
+            wallpapersList_->clearSelection();
             wallpapersList_->setCurrentItem(item);
             item->setSelected(true);
             wallpapersList_->scrollToItem(item);
+
+            if (searchIsOn_ && !searchBox_->text().isEmpty()) {
+                QRegularExpression regex(searchBox_->text(), QRegularExpression::CaseInsensitiveOption);
+                // If the restored item is part of the current search, update matchIndex_
+                if (i < allWallpapersBasename_.count() && allWallpapersBasename_.at(i).contains(regex)) {
+                    int newMatchIndex = 0;
+                    for (int j = 0; j < i; ++j) {
+                        if (allWallpapersBasename_.at(j).contains(regex)) {
+                            newMatchIndex++;
+                        }
+                    }
+                    matchIndex_ = newMatchIndex;
+                }
+            }
             break;
         }
+    }
+}
+
+void SearchImages::updateSearch()
+{
+    allWallpapersBasename_.clear();
+    if (searchIsOn_) {
+        searchFor(searchBox_->text());
     }
 }

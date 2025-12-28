@@ -3071,7 +3071,6 @@ void MainWindow::prepareToSearchFolders(){
         searchImages_->saveSelection();
     }
     clearWallpapersList();
-    searchImages_->clearSearchBox();
 }
 
 void MainWindow::monitoredFoldersUpdated(){
@@ -3107,6 +3106,8 @@ void MainWindow::monitoredFoldersUpdated(){
     }
     else
         startButtonsSetEnabled(true);
+
+    searchImages_->updateSearch();
 
     if(gv.previewImagesOnScreen && ui->stackedWidget->currentIndex()==0){
         searchImages_->restoreSelection();

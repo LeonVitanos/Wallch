@@ -29,6 +29,7 @@ public:
     void selectItem();
     void saveSelection();
     void restoreSelection();
+    void updateSearch();
 
 public Q_SLOTS:
     void showHideSearchBox();
