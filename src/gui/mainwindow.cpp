@@ -2279,7 +2279,7 @@ void MainWindow::loadWallpapersPage(){
 
     searchImages_ = new SearchImages(ui->wallpapersList, ui->search_box, ui->search_widget,
                                      ui->search_up, ui->search_down, ui->search_close,
-                                     &wallpaperManager_->allWallpapers_);
+                                     &wallpaperManager_->allWallpapers_, this);
     connect(searchImages_, SIGNAL(launchTimerToUpdateIcons()), this, SLOT(launchTimerToUpdateIcons()));
 
 

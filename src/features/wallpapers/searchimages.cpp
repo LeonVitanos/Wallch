@@ -2,10 +2,11 @@
 
 SearchImages::SearchImages(QListWidget* wallpapersList, QLineEdit* searchBox, QWidget* searchWidget,
                            QPushButton* searchUp, QPushButton* searchDown, QPushButton* searchClose,
-                           QStringList* allWallpapers)
-    : wallpapersList_(wallpapersList), searchBox_(searchBox), searchWidget_(searchWidget), allWallpapers_(allWallpapers)
+                           QStringList* allWallpapers, QObject *parent)
+    : QObject(parent),
+      wallpapersList_(wallpapersList), searchBox_(searchBox), searchWidget_(searchWidget), allWallpapers_(allWallpapers)
 {
-    openCloseSearch_ = new QPropertyAnimation(searchWidget_, "maximumHeight");
+    openCloseSearch_ = new QPropertyAnimation(searchWidget_, "maximumHeight", this);
     connect(openCloseSearch_, SIGNAL(finished()), this, SLOT(openCloseSearchAnimationFinished()));
     openCloseSearch_->setDuration(GENERAL_ANIMATION_DURATION);
 

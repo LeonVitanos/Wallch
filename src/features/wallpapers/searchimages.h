@@ -17,7 +17,7 @@ class SearchImages : public QObject
 public:
     SearchImages(QListWidget* wallpapersList, QLineEdit* searchBox, QWidget* searchWidget,
                  QPushButton* searchUp, QPushButton* searchDown, QPushButton* searchClose,
-                 QStringList* allWallpapers);
+                 QStringList* allWallpapers, QObject *parent = nullptr);
 
     void continueToNextMatch();
     void continueToPreviousMatch();
