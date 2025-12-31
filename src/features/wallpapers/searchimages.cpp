@@ -1,4 +1,6 @@
 #include "searchimages.h"
+#include "glob.h"
+#include <QFileInfo>
 
 SearchImages::SearchImages(QListWidget* wallpapersList, QLineEdit* searchBox, QWidget* searchWidget,
                            QPushButton* searchUp, QPushButton* searchDown, QPushButton* searchClose,

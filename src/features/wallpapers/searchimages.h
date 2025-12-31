@@ -1,14 +1,13 @@
 #ifndef SEARCHIMAGES_H
 #define SEARCHIMAGES_H
 
-#include "qpropertyanimation.h"
+#include <QPropertyAnimation>
 #include <QListWidget>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QString>
 #include <QShortcut>
-#include <glob.h>
 
 class SearchImages : public QObject
 {
