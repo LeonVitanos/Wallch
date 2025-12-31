@@ -67,12 +67,12 @@ MainWindow::MainWindow(QSharedMemory *attachedMemory,
     imagePreviewResizeFactorY_ = SCREEN_LABEL_SIZE_Y*2.0/(gv.screenAvailableHeight*1.0);
 
     btn_group = new QButtonGroup(this);
-    btn_group->addButton(ui->page_0_wallpapers, 0);
-    btn_group->addButton(ui->page_1_earth, 1);
-    btn_group->addButton(ui->page_2_potd, 2);
-    btn_group->addButton(ui->page_3_clock, 3);
-    btn_group->addButton(ui->page_4_web, 4);
-    btn_group->addButton(ui->page_5_other, 5);
+    btn_group->addButton(ui->page_0_wallpapers, WallpapersPage);
+    btn_group->addButton(ui->page_1_earth, LiveEarthPage);
+    btn_group->addButton(ui->page_2_potd, PotdPage);
+    btn_group->addButton(ui->page_3_clock, ClockPage);
+    btn_group->addButton(ui->page_4_web, WebsitePage);
+    btn_group->addButton(ui->page_5_other, MelloriPage);
 
     setupMenu();
     connectSignalSlots();
@@ -123,7 +123,7 @@ void MainWindow::actionsOnClose()
     settings->setValue("height", this->height());
     settings->sync();
 
-    if(loadedPages_[0])
+    if(loadedPages_[WallpapersPage])
         savePicturesLocations();
 
     appAboutToClose_ = true;
@@ -134,7 +134,7 @@ void MainWindow::resizeEvent(QResizeEvent *e){
     if(!gv.mainwindowLoaded)
         return;
 
-    if(ui->stackedWidget->currentIndex() == 0)
+    if(ui->stackedWidget->currentIndex() == WallpapersPage)
         launchTimerToUpdateIcons();
 
     ui->screen_label->update();
@@ -500,7 +500,7 @@ void MainWindow::continueAlreadyRunningFeature()
             timerManager_->findSeconds(true);
             startWasJustClicked_ = true;
         }
-        ui->stackedWidget->setCurrentIndex(0);
+        ui->stackedWidget->setCurrentIndex(WallpapersPage);
         ui->stopButton->setEnabled(true);
     }
     else if(featureController_->isLiveEarthRunning())
@@ -508,14 +508,14 @@ void MainWindow::continueAlreadyRunningFeature()
         ui->activate_livearth->setEnabled(false);
         ui->deactivate_livearth->setEnabled(true);
         startUpdateSeconds();
-        handlePageButtonClick(1);
+        handlePageButtonClick(LiveEarthPage);
         animateProgressbarOpacity(1);
     }
     else if(featureController_->isPotdRunning())
     {
         ui->deactivate_potd->setEnabled(true);
         ui->activate_potd->setEnabled(false);
-        handlePageButtonClick(2);
+        handlePageButtonClick(PotdPage);
         startPotd(false);
     }
     else if(featureController_->isWebsiteRunning())
@@ -523,7 +523,7 @@ void MainWindow::continueAlreadyRunningFeature()
         ui->deactivate_website->setEnabled(true);
         ui->activate_website->setEnabled(false);
         startUpdateSeconds();
-        handlePageButtonClick(4);
+        handlePageButtonClick(WebsitePage);
         animateProgressbarOpacity(1);
     }
     else
@@ -533,7 +533,7 @@ void MainWindow::continueAlreadyRunningFeature()
         previousAndNextButtonsSetEnabled(false);
 
         hideTimeForNext();
-        handlePageButtonClick(settings->value("current_page", 0).toInt());
+        handlePageButtonClick(settings->value("current_page", WallpapersPage).toInt());
 
         //the app has opened normally, so there is no point in keeping a previous independent interval
         timerManager_->saveSecondsLeftNow(false);
@@ -559,7 +559,7 @@ void MainWindow::onlineImageRequestReady(QString image){
 }
 
 void MainWindow::escapePressed(){
-    if(ui->stackedWidget->currentIndex() == 0 && searchImages_->hideSearch())
+    if(ui->stackedWidget->currentIndex() == WallpapersPage && searchImages_->hideSearch())
         return;
     else
         this->hide();
@@ -896,7 +896,7 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 void MainWindow::dropEvent(QDropEvent *event)
 {
     switch(ui->stackedWidget->currentIndex()){
-    case 0:
+    case WallpapersPage:
     {
         //something was dropped inside the Wallpapers page!
         const QList<QUrl> urlList = event->mimeData()->urls();
@@ -976,7 +976,7 @@ void MainWindow::processRequestStop(){
     }
     if(featureController_->isPotdRunning()){
         QString filename=globalParser_->getFilename(gv.wallchHomePath+POTD_IMAGE+"*");
-        if(!filename.isEmpty() && ui->stackedWidget->currentIndex()==2 && QFile::exists(filename)){
+        if(!filename.isEmpty() && ui->stackedWidget->currentIndex()==PotdPage && QFile::exists(filename)){
             imageTransition(filename);
         }
     }
@@ -1337,7 +1337,7 @@ void MainWindow::updateScreenLabel()
     ui->screen_label_text->clear();
 
     switch(ui->stackedWidget->currentIndex()){
-    case 0:
+    case WallpapersPage:
     {
         if(wallpaperManager_->wallpapersCount()==0 || ui->wallpapersList->selectedItems().count()==0)
             changeTextOfScreenLabelTo(tr("Select an image to preview")); //TODO: Stays on top sometimes
@@ -1345,7 +1345,7 @@ void MainWindow::updateScreenLabel()
             handleWallpaperListSelectionChange();
         break;
     }
-    case 1:
+    case LiveEarthPage:
     {
         QString filename=globalParser_->getFilename(gv.wallchHomePath+"liveEarth*");
         if(!filename.isEmpty())
@@ -1354,7 +1354,7 @@ void MainWindow::updateScreenLabel()
             changeTextOfScreenLabelTo(tr("Preview not available"));
         break;
     }
-    case 2:
+    case PotdPage:
     {
         QString filename=globalParser_->getFilename(gv.wallchHomePath+POTD_IMAGE+"*");
         if(!filename.isEmpty())
@@ -1363,7 +1363,7 @@ void MainWindow::updateScreenLabel()
             changeTextOfScreenLabelTo(tr("Preview not available"));
         break;
     }
-    case 4:
+    case WebsitePage:
     {
         if(QFile::exists(gv.wallchHomePath+LW_PREVIEW_IMAGE))
             imageTransition(gv.wallchHomePath+LW_PREVIEW_IMAGE);
@@ -1564,7 +1564,7 @@ void MainWindow::updateTiming(){
     if(updateCheckTime_->isActive())
         updateCheckTime_->stop();
 
-    if(!loadedPages_[0])
+    if(!loadedPages_[WallpapersPage])
         return;
 
     settings->setValue( "timeSlider", ui->timerSlider->value());
@@ -1679,7 +1679,7 @@ void MainWindow::changeIconsToPaths(){
 }
 
 void MainWindow::iconsPathsChanged(){
-    if(ui->stackedWidget->currentIndex()==0){
+    if(ui->stackedWidget->currentIndex()==WallpapersPage){
         animateScreenLabel(true);
         updateScreenLabel();
     }
@@ -1768,7 +1768,7 @@ void MainWindow::forceUpdateIconOf(int index){
 
     ui->wallpapersList->item(index)->setIcon(QIcon(QPixmap::fromImage(thumbnail)));
 
-    if(ui->wallpapersList->currentRow() == index && ui->stackedWidget->currentIndex() == 0)
+    if(ui->wallpapersList->currentRow() == index && ui->stackedWidget->currentIndex() == WallpapersPage)
         updateScreenLabel();
 }
 
@@ -2256,7 +2256,7 @@ bool MainWindow::websiteConfiguredCorrectly(){
 //Pages code
 
 void MainWindow::loadWallpapersPage(){
-    if(loadedPages_[0])
+    if(loadedPages_[WallpapersPage])
         return;
 
     if(wallpaperManager_==NULL)
@@ -2354,7 +2354,7 @@ void MainWindow::handlePicturesLocationWhileLoading(bool condition, int currentF
 }
 
 void MainWindow::loadLePage(){
-    if(loadedPages_[1])
+    if(loadedPages_[LiveEarthPage])
         return;
 
     ui->le_tag_checkbox->setChecked(gv.leEnableTag);
@@ -2362,7 +2362,7 @@ void MainWindow::loadLePage(){
 }
 
 void MainWindow::loadPotdPage(){
-    if(loadedPages_[2])
+    if(loadedPages_[PotdPage])
         return;
 
     ui->label_5->setText("<span style=\"font-style:italic;\">"+tr("Style")+"</span><span style=\" font-weight:600; font-style:italic;\"> "+tr("Scale")+"</span><span style=\" font-style:italic;\"> "+tr("is highly recommended for this feature")+"</span>");
@@ -2372,12 +2372,12 @@ void MainWindow::loadPotdPage(){
 
 void MainWindow::loadWallpaperClocksPage()
 {
-    if(loadedPages_[3])
+    if(loadedPages_[ClockPage])
         return;
 }
 
 void MainWindow::loadLiveWebsitePage(){
-    if(loadedPages_[4])
+    if(loadedPages_[WebsitePage])
         return;
 
     //add login details information
@@ -2419,7 +2419,7 @@ void MainWindow::loadLiveWebsitePage(){
 
 void MainWindow::loadMelloriPage()
 {
-    if(loadedPages_[5])
+    if(loadedPages_[MelloriPage])
         return;
 }
 
@@ -2468,11 +2468,14 @@ void MainWindow::handleAddLoginDetailsCheck(bool checked)
 }
 
 void MainWindow::handlePageButtonClick(int btn){
+    if (btn < 0 || btn >= PageCount)
+        return;
+
     if(gv.mainwindowLoaded && ui->stackedWidget->currentIndex()==btn)
         return;
 
     switch(btn){
-    case 0:
+    case WallpapersPage:
     {
         loadWallpapersPage();
         launchTimerToUpdateIcons();
@@ -2481,35 +2484,35 @@ void MainWindow::handlePageButtonClick(int btn){
         ui->sep1->raise();
         break;
     }
-    case 1:
+    case LiveEarthPage:
     {
         loadLePage();
         ui->sep1->raise();
         ui->sep2->raise();
         break;
     }
-    case 2:
+    case PotdPage:
     {
         loadPotdPage();
         ui->sep2->raise();
         ui->sep3->raise();
         break;
     }
-    case 3:
+    case ClockPage:
     {
         loadWallpaperClocksPage();
         ui->sep3->raise();
         ui->sep4->raise();
         break;
     }
-    case 4:
+    case WebsitePage:
     {
         loadLiveWebsitePage();
         ui->sep4->raise();
         ui->sep5->raise();
         break;
     }
-    case 5:
+    case MelloriPage:
     {
         loadMelloriPage();
         ui->sep5->raise();
@@ -2527,15 +2530,15 @@ void MainWindow::handlePageButtonClick(int btn){
 }
 
 void MainWindow::previousPage(){
-    if(ui->stackedWidget->currentIndex()==0)
-        handlePageButtonClick(5);
+    if(ui->stackedWidget->currentIndex()==WallpapersPage)
+        handlePageButtonClick(MelloriPage);
     else
         handlePageButtonClick(ui->stackedWidget->currentIndex()-1);
 }
 
 void MainWindow::nextPage(){
-    if(ui->stackedWidget->currentIndex()==5)
-        handlePageButtonClick(0);
+    if(ui->stackedWidget->currentIndex()==MelloriPage)
+        handlePageButtonClick(WallpapersPage);
     else
         handlePageButtonClick(ui->stackedWidget->currentIndex()+1);
 }
@@ -2759,7 +2762,7 @@ void MainWindow::handlePageChange(int page)
 
 void MainWindow::update_website_settings()
 {
-    if(!loadedPages_[4])
+    if(!loadedPages_[WebsitePage])
         return;
 
     gv.websiteWebpageToLoad=ui->website->text();
@@ -2814,7 +2817,7 @@ void MainWindow::hidePreview()
     ui->timeForNext->setMinimumWidth(300);
     bottomWidgetsAnimation();
     QTimer::singleShot(260, this, SLOT(launchTimerToUpdateIcons()));
-    if(loadedPages_[4])
+    if(loadedPages_[WebsitePage])
     {
         ui->horizontalLayout_23->addWidget(ui->timeout_text_label);
         ui->horizontalLayout_23->addWidget(ui->website_timeout_label);
@@ -2829,7 +2832,7 @@ void MainWindow::showPreview()
     ui->horizontalLayout_progressbar->addWidget(ui->timeForNext);
     rightWidgetAnimation_->start();
     ui->timeForNext->setMinimumWidth(0);
-    if(loadedPages_[4])
+    if(loadedPages_[WebsitePage])
     {
         ui->verticalLayout_11->addWidget(ui->timeout_text_label);
         ui->verticalLayout_11->addWidget(ui->website_timeout_label);
@@ -3048,7 +3051,7 @@ void MainWindow::handleWallpaperListSelectionChange()
 }
 
 void MainWindow::deletePressed(){
-    if(ui->stackedWidget->currentIndex() == 0 && ui->wallpapersList->selectedItems().count() > 0){
+    if(ui->stackedWidget->currentIndex() == WallpapersPage && ui->wallpapersList->selectedItems().count() > 0){
         if(ui->wallpapersList->selectedItems().count() > 1)
            removeImagesFromDisk();
         else
@@ -3109,7 +3112,7 @@ void MainWindow::monitoredFoldersUpdated(){
 
     searchImages_->updateSearch();
 
-    if(gv.previewImagesOnScreen && ui->stackedWidget->currentIndex()==0){
+    if(gv.previewImagesOnScreen && ui->stackedWidget->currentIndex()==WallpapersPage){
         searchImages_->restoreSelection();
         ui->screen_label_info->clear();
         updateScreenLabel();
@@ -3235,7 +3238,7 @@ void MainWindow::copyImage(){
 }
 
 void MainWindow::showProperties(){
-    if(!ui->wallpapersList->currentItem()->isSelected() || ui->stackedWidget->currentIndex()!=0)
+    if(!ui->wallpapersList->currentItem()->isSelected() || ui->stackedWidget->currentIndex()!=WallpapersPage)
         return;
 
     dialogHelper_->showPropertiesDialog(ui->wallpapersList->currentRow());

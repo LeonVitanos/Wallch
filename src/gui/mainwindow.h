@@ -114,6 +114,16 @@ protected:
 #endif // Q_OS_WIN
 
 private:
+    enum PageIndex {
+        WallpapersPage = 0,
+        LiveEarthPage,
+        PotdPage,
+        ClockPage,
+        WebsitePage,
+        MelloriPage,
+        PageCount
+    };
+
 #ifdef Q_OS_LINUX
     QTimer *batteryStatusChecker_;
     QString getSecondaryColor();
@@ -196,7 +206,7 @@ private:
 
     bool startWasJustClicked_ = false;
     bool justUpdatedPotd_ = false;
-    bool loadedPages_[6] = {false,false,false,false,false,false};
+    bool loadedPages_[PageCount] = {false};
     bool firstRandomImageIsntRandom_ = false;
     bool shuffleWasChecked_ = false;
     bool changingPicturesLocations_ = false;
