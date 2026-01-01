@@ -358,6 +358,9 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
             return result;
         });
         break;
+    case DE::KDE:
+        result = DesktopEnvironment::setKdeWallpaper(image);
+        break;
     default:
         result=false;
         break;

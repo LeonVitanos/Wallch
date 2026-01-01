@@ -68,6 +68,8 @@ DE::Value DesktopEnvironment::detectCurrentDe(){
         return DE::XFCE;
     else if(xdg.contains("MATE", Qt::CaseInsensitive))
         return DE::Mate;
+    else if(xdg.contains("KDE", Qt::CaseInsensitive))
+        return DE::KDE;
     else if(xdg.contains("GNOME", Qt::CaseInsensitive) || xdg.contains("UNITY", Qt::CaseInsensitive))
         return DE::Gnome;
     else{

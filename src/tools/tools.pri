@@ -1,9 +1,12 @@
 INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
+INCLUDEPATH += $$PWD/desktop
+
 HEADERS += $$PWD/glob.h \
            $$PWD/colormanager.h \
-           $$PWD/desktopenvironment.h \
+           $$PWD/desktop/desktopenvironment.h \
+           $$PWD/desktop/desktopenvironment_kde.h \
            $$PWD/dialoghelper.h \
            $$PWD/imageorientationhandler.h \
            $$PWD/nonguimanager.h \
@@ -17,7 +20,8 @@ HEADERS += $$PWD/glob.h \
 
 SOURCES += $$PWD/glob.cpp \
            $$PWD/colormanager.cpp \
-           $$PWD/desktopenvironment.cpp \
+           $$PWD/desktop/desktopenvironment.cpp \
+           $$PWD/desktop/desktopenvironment_kde.cpp \
            $$PWD/dialoghelper.cpp \
            $$PWD/imageorientationhandler.cpp \
            $$PWD/nonguimanager.cpp \

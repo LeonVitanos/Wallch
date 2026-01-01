@@ -8,7 +8,7 @@
 #ifdef Q_OS_LINUX
     struct DE {
         enum Value {
-            Gnome, XFCE, LXDE, Mate
+            Gnome, XFCE, LXDE, Mate, KDE
         };
     };
 
@@ -52,6 +52,19 @@ public:
     static void processXfconfQuery(const QStringList &keywordsToFind,
                                   std::function<bool(const QString&)> processor);
     static bool runXfconf(QStringList args);
+
+    //KDE
+    static bool setKdeWallpaper(const QString &image);
+#endif
+
+private:
+#ifdef Q_OS_LINUX
+         //KDE
+    static QString s_cachedKdeGroup;
+    static QString probeKdeGroup();
+    static int getKdeMajorVersion();
+    static QString getKdeScriptTemplate(int version, const QString &image);
+    static bool executeKdeScript(const QString &script);
 #endif
 };
 

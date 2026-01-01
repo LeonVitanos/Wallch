@@ -26,6 +26,7 @@ unix:!macx {
     # See: https://doc.qt.io/qt-6/signalsandslots.html#using-qt-with-3rd-party-signals-and-slots
     CONFIG += link_pkgconfig no_keywords
     PKGCONFIG += libnotify libexif
+    QT += dbus
 }
 
 macx {
