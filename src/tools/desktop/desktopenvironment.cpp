@@ -8,6 +8,7 @@
 #ifdef Q_OS_LINUX
     #include <gio/gio.h>
     DE::Value currentDE = DE::Gnome;
+    #include "desktopenvironment_kde.h"
 #endif
 
 DesktopEnvironment::DesktopEnvironment(){}
@@ -243,5 +244,15 @@ void DesktopEnvironment::processXfconfQuery(const QStringList &keywordsToFind,
             }
         }
     }
+}
+
+// KDE
+
+bool DesktopEnvironment::setKdeWallpaper(const QString &image) {
+    return desktopenvironment_kde::setKdeWallpaper(image);
+}
+
+short DesktopEnvironment::getKdeWallpaperStyle() {
+    return desktopenvironment_kde::getKdeWallpaperStyle();
 }
 #endif

@@ -53,18 +53,9 @@ public:
                                   std::function<bool(const QString&)> processor);
     static bool runXfconf(QStringList args);
 
-    //KDE
+    // KDE
     static bool setKdeWallpaper(const QString &image);
-#endif
-
-private:
-#ifdef Q_OS_LINUX
-         //KDE
-    static QString s_cachedKdeGroup;
-    static QString probeKdeGroup();
-    static int getKdeMajorVersion();
-    static QString getKdeScriptTemplate(int version, const QString &image);
-    static bool executeKdeScript(const QString &script);
+    static short getKdeWallpaperStyle();
 #endif
 };
 

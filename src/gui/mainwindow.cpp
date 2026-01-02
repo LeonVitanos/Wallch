@@ -1015,6 +1015,14 @@ void MainWindow::findAvailableWallpaperStyles(){
         ui->image_style_combo->addItem(tr("Center"), Center);
         ui->image_style_combo->addItem(tr("Tile"), Tile);
     }
+    else if(currentDE == DE::KDE){
+        ui->image_style_combo->addItem(tr("Plain Color"), NoneStyle);
+        ui->image_style_combo->addItem(tr("Scaled and Cropped"), Zoom);
+        ui->image_style_combo->addItem(tr("Scaled"), Stretch);
+        ui->image_style_combo->addItem(tr("Scaled, Keep Proportions"), Scale);
+        ui->image_style_combo->addItem(tr("Centered"), Center);
+        ui->image_style_combo->addItem(tr("Tiled"), Tile);
+    }
 #else
 # ifdef Q_OS_WIN
     ui->image_style_combo->addItem(tr("Color"), NoneStyle);

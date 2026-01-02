@@ -473,6 +473,9 @@ short WallpaperManager::getCurrentFit(){
     }
     else if(currentDE == DE::LXDE)
         return DesktopEnvironment::getPcManFmValue("wallpaper_mode").toInt();
+    else if(currentDE == DE::KDE) {
+        return DesktopEnvironment::getKdeWallpaperStyle();
+    }
 #else
 # ifdef Q_OS_WIN
     QSettings desktop_settings("HKEY_CURRENT_USER\\Control Panel\\Desktop", QSettings::NativeFormat);
