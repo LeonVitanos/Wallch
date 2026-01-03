@@ -579,6 +579,12 @@ void WallpaperManager::setCurrentFit(short index){
             qWarning() << "LXDE: Failed to set fit style";
         }
     }
+    else if(currentDE == DE::KDE) {
+        result = DesktopEnvironment::setKdeWallpaperStyle(index);
+        if(!result) {
+            qWarning() << "KDE: Failed to set fit style";
+        }
+    }
 #else
 # ifdef Q_OS_WIN
     QString currentBg = currentBackgroundWallpaper();

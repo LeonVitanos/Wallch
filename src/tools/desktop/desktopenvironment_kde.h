@@ -1,6 +1,7 @@
 #ifndef DESKTOPENVIRONMENT_KDE_H
 #define DESKTOPENVIRONMENT_KDE_H
 
+#include <QString>
 
 class desktopenvironment_kde
 {
@@ -8,6 +9,7 @@ public:
     desktopenvironment_kde();
     static bool setKdeWallpaper(const QString &image);
     static short getKdeWallpaperStyle();
+    static bool setKdeWallpaperStyle(short index);
 
 private:
     static QString s_cachedKdeGroup;

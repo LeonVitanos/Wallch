@@ -39,23 +39,23 @@ QString desktopenvironment_kde::getKdeScriptTemplate(int version, const QString 
     if (version >= 6) {
         // Modern ECMAScript (Plasma 6)
         return QString(
-                   "desktops().forEach(d => {"
-                   "    d.currentConfigGroup = ['%1', 'org.kde.image', 'General'];"
-                   "    d.writeConfig('Image', 'file://%2');"
-                   "    d.reloadConfig();"
-                   "})"
-                   ).arg(s_cachedKdeGroup, image);
+           "desktops().forEach(d => {"
+           "    d.currentConfigGroup = ['%1', 'org.kde.image', 'General'];"
+           "    d.writeConfig('Image', 'file://%2');"
+           "    d.reloadConfig();"
+           "})"
+           ).arg(s_cachedKdeGroup, image);
     } else {
         // Legacy Javascript (Plasma 5)
         return QString(
-                   "var allDesktops = desktops();"
-                   "for (var i = 0; i < allDesktops.length; i++) {"
-                   "    var d = allDesktops[i];"
-                   "    d.currentConfigGroup = ['%1', 'org.kde.image', 'General'];"
-                   "    d.writeConfig('Image', 'file://%2');"
-                   "    d.reloadConfig();"
-                   "}"
-                   ).arg(s_cachedKdeGroup, image);
+           "var allDesktops = desktops();"
+           "for (var i = 0; i < allDesktops.length; i++) {"
+           "    var d = allDesktops[i];"
+           "    d.currentConfigGroup = ['%1', 'org.kde.image', 'General'];"
+           "    d.writeConfig('Image', 'file://%2');"
+           "    d.reloadConfig();"
+           "}"
+           ).arg(s_cachedKdeGroup, image);
     }
 }
 
@@ -105,5 +105,34 @@ short desktopenvironment_kde::getKdeWallpaperStyle() {
     else if (mode == 6) return 4; // Centered
     else if (mode == 3) return 5; // Tiled
 
-    return 1; // Safeguard
+    return 1;
+}
+
+bool desktopenvironment_kde::setKdeWallpaperStyle(short index) {
+    if (s_cachedKdeGroup.isEmpty()) s_cachedKdeGroup = probeKdeGroup();
+
+    QString plugin = "org.kde.image";
+    int fillMode=1;
+
+    switch (index) {
+        case 0: plugin = "org.kde.color"; break; // None / Color
+        case 1: fillMode = 2; break; // Scaled and Cropped
+        case 2: fillMode = 0; break; // Scaled
+        case 3: fillMode = 1; break; // Scaled, Keep Proportions
+        case 4: fillMode = 6; break; // Centered
+        case 5: fillMode = 3; break; // Tiled
+    }
+
+    QString script = QString(
+        "var allDesktops = desktops();"
+        "for (var i = 0; i < allDesktops.length; i++) {"
+        "    var d = allDesktops[i];"
+        "    d.wallpaperPlugin = '%1';"
+        "    d.currentConfigGroup = ['%2', '%1', 'General'];"
+        "    d.writeConfig('FillMode', %3);"
+        "    d.reloadConfig();"
+        "}"
+        ).arg(plugin, s_cachedKdeGroup).arg(fillMode);
+
+    return !executeKdeScript(script).isNull();
 }
