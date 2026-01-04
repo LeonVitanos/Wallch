@@ -8,7 +8,9 @@
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 1))
 #if defined(Q_OS_LINUX) && (defined(__GNUC__) || defined(__clang__))
 #pragma GCC diagnostic push
+#if (defined(__GNUC__) && __GNUC__ >= 13) || (defined(__clang__) && __clang_major__ >= 18)
 #pragma GCC diagnostic ignored "-Wtemplate-id-cdtor"
+#endif
 #endif
 #endif
 
