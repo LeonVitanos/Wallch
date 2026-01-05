@@ -136,3 +136,18 @@ bool desktopenvironment_kde::setKdeWallpaperStyle(short index) {
 
     return !executeKdeScript(script).isNull();
 }
+
+QString desktopenvironment_kde::getCurrentWallpaper() {
+    QString script =
+        "var d = desktops()[0];"
+        "d.currentConfigGroup = ['Wallpaper', 'org.kde.image', 'General'];"
+        "print(d.readConfig('Image'));";
+
+    QString path = executeKdeScript(script).trimmed();
+
+    if (path.startsWith("file://")) {
+        path = path.mid(7);
+    }
+
+    return path;
+}

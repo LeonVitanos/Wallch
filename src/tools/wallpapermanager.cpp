@@ -293,6 +293,9 @@ QString WallpaperManager::currentBackgroundWallpaper(){
     else if(currentDE == DE::LXDE){
         currentImage=DesktopEnvironment::getPcManFmValue("wallpaper");
     }
+    else if(currentDE == DE::KDE){
+        currentImage = DesktopEnvironment::getCurrentWallpaper();
+    }
 #else
 # ifdef Q_OS_WIN
     char *current_image = (char*) malloc(MAX_PATH*sizeof(char));

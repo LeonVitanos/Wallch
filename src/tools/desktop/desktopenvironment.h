@@ -57,6 +57,7 @@ public:
     static bool setKdeWallpaper(const QString &image);
     static short getKdeWallpaperStyle();
     static bool setKdeWallpaperStyle(short index);
+    static QString getCurrentWallpaper();
 #endif
 };
 

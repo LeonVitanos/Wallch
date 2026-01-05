@@ -259,4 +259,9 @@ short DesktopEnvironment::getKdeWallpaperStyle() {
 bool DesktopEnvironment::setKdeWallpaperStyle(short index) {
     return desktopenvironment_kde::setKdeWallpaperStyle(index);
 }
+
+QString DesktopEnvironment::getCurrentWallpaper() {
+    return desktopenvironment_kde::getCurrentWallpaper();
+}
+
 #endif
