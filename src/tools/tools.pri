@@ -6,7 +6,6 @@ INCLUDEPATH += $$PWD/desktop
 HEADERS += $$PWD/glob.h \
            $$PWD/colormanager.h \
            $$PWD/desktop/desktopenvironment.h \
-           $$PWD/desktop/desktopenvironment_kde.h \
            $$PWD/dialoghelper.h \
            $$PWD/imageorientationhandler.h \
            $$PWD/nonguimanager.h \
@@ -21,7 +20,6 @@ HEADERS += $$PWD/glob.h \
 SOURCES += $$PWD/glob.cpp \
            $$PWD/colormanager.cpp \
            $$PWD/desktop/desktopenvironment.cpp \
-           $$PWD/desktop/desktopenvironment_kde.cpp \
            $$PWD/dialoghelper.cpp \
            $$PWD/imageorientationhandler.cpp \
            $$PWD/nonguimanager.cpp \
@@ -31,3 +29,8 @@ SOURCES += $$PWD/glob.cpp \
            $$PWD/wallpapermanager.cpp \
            $$PWD/imagefetcher.cpp \
            $$PWD/tryhard.cpp
+
+unix:!macx {
+    HEADERS += $$PWD/desktop/desktopenvironment_kde.h
+    SOURCES += $$PWD/desktop/desktopenvironment_kde.cpp
+}
