@@ -44,16 +44,17 @@ History::History(WallpaperManager *wallpaperManager,
     dialogHelper_(dialogHelper)
 {
     ui->setupUi(this);
+
     connect(ui->daysTree, &QTreeWidget::itemClicked, this, &History::handleDaysTreeItemClick);
     connect(ui->remove_history, &QPushButton::clicked, this, &History::handleRemoveHistoryClick);
     connect(ui->closeButton, &QPushButton::clicked, this, &History::handleCloseButtonClick);
     connect(ui->daysTree, &QTreeWidget::customContextMenuRequested, this, &History::handleDaysTreeContextMenu);
     connect(ui->historyInfo, &QListWidget::customContextMenuRequested, this, &History::handleHistoryInfoContextMenu);
-
-    wallpaperManager_ = wallpaperManager;
+    connect(ui->historyInfo, &QListWidget::itemDoubleClicked, this, &History::handleHistoryInfoDoubleClick);
 
     ui->keepHistory->setChecked(settings->value("history", true).toBool());
     readHistoryFiles();
+
     (void) new QShortcut(Qt::Key_Return, this, SLOT(handleHistoryInfoDoubleClick()));
 }
 
@@ -234,9 +235,12 @@ void History::handleHistoryInfoContextMenu()
                 if(!QFile(ui->historyInfo->currentItem()->data(11).toString()).exists()){
                     return;
                 }
+                infoMenu->addAction(tr("Open"),this,SLOT(handleHistoryInfoDoubleClick()));
                 infoMenu->addAction(tr("Open Folder"),this,SLOT(openFolder()));
+                infoMenu->addSeparator();
                 infoMenu->addAction(tr("Set this item as Background"), this, SLOT(setAsBackground()));
                 infoMenu->addAction(tr("Copy path to clipboard"), this, SLOT(copyPath()));
+                infoMenu->addSeparator();
                 infoMenu->addAction(tr("Properties"), this, SLOT(showProperties()));
             }
             else if(data=="link")
@@ -296,7 +300,7 @@ void History::handleHistoryInfoDoubleClick()
                 if(!QFile(ui->historyInfo->currentItem()->data(11).toString()).exists())
                     return;
 
-                Global::openUrl("file:///"+ui->historyInfo->currentItem()->data(11).toString());
+                FileManager::openItem(ui->historyInfo->currentItem()->data(11).toString());
             }
             else if (type=="link")
                 launchInBrowser();

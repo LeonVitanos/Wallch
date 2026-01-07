@@ -18,6 +18,7 @@ public:
     static void openFolderOf(QString image = "");
     static void openMultipleFolders(QList<QListWidgetItem*> images);
     static bool foldersAreSame(QString folder1, QString folder2);
+    static void openItem(const QString &path);
 
     void resetWatchFolders();
     void addPathToWatcher(QString path);

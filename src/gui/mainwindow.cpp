@@ -3141,7 +3141,7 @@ void MainWindow::openImage()
     if(!ui->wallpapersList->currentItem()->isSelected())
         return;
 
-    Global::openUrl("file:///" + wallpaperHelper_->getPathOfListItem());
+    fileManager_->openItem(wallpaperHelper_->getPathOfListItem());
 }
 
 void MainWindow::openImageFolder(){

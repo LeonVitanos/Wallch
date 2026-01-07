@@ -713,7 +713,7 @@ void WallpaperManager::openCurrentBackgroundImage(){
     if(!currentBackgroundExists())
         return;
 
-    Global::openUrl("file:///"+WallpaperManager::currentBackgroundWallpaper());
+    FileManager::openItem(WallpaperManager::currentBackgroundWallpaper());
 }
 
 void WallpaperManager::openCurrentBackgroundFolder(){

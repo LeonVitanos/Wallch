@@ -14,7 +14,7 @@ FileManager::FileManager(WallpaperManager *wallpaperManager){
 }
 
 void FileManager::openFolderOf(QString image){
-    Global::openUrl("file:///" + Global::dirnameOf(image));
+    openItem(Global::dirnameOf(image));
 }
 
 void FileManager::openMultipleFolders(QList<QListWidgetItem*> images){
@@ -222,4 +222,8 @@ void FileManager::addWallpapersFromDirectory(const QString &path){
     }
 
     wallpaperManager_->addWallpapers(files);
+}
+
+void FileManager::openItem(const QString &path){
+    Global::openUrl(QUrl::fromLocalFile(path).toString());
 }
