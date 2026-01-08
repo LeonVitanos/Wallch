@@ -136,23 +136,44 @@ void DesktopEnvironment::gsettingsSet(const QString &schema, const QString &key,
 }
 
 QString DesktopEnvironment::gsettingsGet(const QString &schema, const QString &key){
-    GSettings *settings = g_settings_new(schema.toLocal8Bit().data());
-    gchar *printed = g_settings_get_string (settings, key.toLocal8Bit().data());
-    QString finalSetting = QString(printed);
-    g_free (printed);
+    GSettingsSchemaSource *source = g_settings_schema_source_get_default();
+    GSettingsSchema *s = g_settings_schema_source_lookup(source, schema.toLocal8Bit().data(), TRUE);
 
-    if (settings != NULL)
-        g_object_unref (settings);
+    if (!s) return QString();
+
+    if (!g_settings_schema_has_key(s, key.toLocal8Bit().data())) {
+        g_settings_schema_unref(s);
+        return QString();
+    }
+
+    GSettings *settings = g_settings_new_full(s, NULL, NULL);
+    gchar *printed = g_settings_get_string(settings, key.toLocal8Bit().data());
+    QString finalSetting = QString(printed);
+
+    g_free(printed);
+    g_object_unref(settings);
+    g_settings_schema_unref(s);
 
     return finalSetting;
 }
 
 QString DesktopEnvironment::getPictureUriName(){
-    // From Ubuntu 22.04, there is a different setting for light and dark theme
-    if(DesktopEnvironment::getOSproductType() == "ubuntu" && DesktopEnvironment::getOSproductVersion()>=22.04 && DesktopEnvironment::gsettingsGet("org.gnome.desktop.interface", "color-scheme") == "prefer-dark")
-        return "picture-uri-dark";
-    else
-        return "picture-uri";
+    if (currentDE == DE::Mate) {
+        QString probe = DesktopEnvironment::gsettingsGet("org.mate.background", "picture-uri");
+        return (!probe.isEmpty()) ? "picture-uri" : "picture-filename";
+    }
+
+    if (DesktopEnvironment::getOSproductType() == "ubuntu" &&
+        DesktopEnvironment::getOSproductVersion() >= 22.04) {
+
+        QString colorScheme = DesktopEnvironment::gsettingsGet("org.gnome.desktop.interface", "color-scheme");
+
+        if (colorScheme == "prefer-dark") {
+            return "picture-uri-dark";
+        }
+    }
+
+    return "picture-uri";
 }
 
 //LXDE

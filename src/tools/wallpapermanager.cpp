@@ -279,10 +279,8 @@ QString WallpaperManager::currentBackgroundWallpaper(){
     QString currentImage;
 #ifdef Q_OS_LINUX
     if(currentDE == DE::Gnome || currentDE == DE::Mate){
-        currentImage = DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", DesktopEnvironment::getPictureUriName());
-        if(currentImage.startsWith("file://")){
-            currentImage=currentImage.right(currentImage.size()-7);
-        }
+        QString schema = (currentDE == DE::Mate) ? "org.mate.background" : "org.gnome.desktop.background";
+        currentImage = DesktopEnvironment::gsettingsGet(schema, DesktopEnvironment::getPictureUriName());
     }
     else if(currentDE == DE::XFCE){
         DesktopEnvironment::processXfconfQuery({"image-path", "last-image"}, [&](const QString &entry) {
@@ -343,9 +341,14 @@ void WallpaperManager::setBackground(const QString &image, bool changeAverageCol
     switch(currentDE){
     case DE::Gnome:
     case DE::Mate:{
-        DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", DesktopEnvironment::getPictureUriName(), "file://"+image);
-        if(DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", "picture-options") == "none"){
-            DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "picture-options", "zoom");
+        QString schema = (currentDE == DE::Mate) ? "org.mate.background" : "org.gnome.desktop.background";
+        QString key = DesktopEnvironment::getPictureUriName();
+        QString value = (currentDE == DE::Mate && key == "picture-filename") ? image : "file://" + image;
+
+        DesktopEnvironment::gsettingsSet(schema, key, value);
+
+        if (DesktopEnvironment::gsettingsGet(schema, "picture-options") == "none") {
+            DesktopEnvironment::gsettingsSet(schema, "picture-options", "zoom");
             Q_EMIT updateImageStyle();
         }
         break;
