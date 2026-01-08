@@ -281,6 +281,9 @@ QString WallpaperManager::currentBackgroundWallpaper(){
     if(currentDE == DE::Gnome || currentDE == DE::Mate){
         QString schema = (currentDE == DE::Mate) ? "org.mate.background" : "org.gnome.desktop.background";
         currentImage = DesktopEnvironment::gsettingsGet(schema, DesktopEnvironment::getPictureUriName());
+        if(currentImage.startsWith("file://")){
+            currentImage=currentImage.right(currentImage.size()-7);
+        }
     }
     else if(currentDE == DE::XFCE){
         DesktopEnvironment::processXfconfQuery({"image-path", "last-image"}, [&](const QString &entry) {
