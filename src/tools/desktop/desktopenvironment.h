@@ -25,9 +25,7 @@ public:
     static QString getOSWallpaperPath();
 
 #ifdef Q_OS_LINUX
-    static void setCurrentDE();
-    static DE::Value detectCurrentDe();
-    static QString getCurrentDEprettyName();
+    static void detectCurrentDe();
     static QStringList runCommand(
         const QString &command,
         const QStringList &parameters = QStringList(),

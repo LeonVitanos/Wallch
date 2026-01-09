@@ -2667,7 +2667,6 @@ void MainWindow::onPreferencesDialogCreated(Preferences* dialog)
     connect(dialog, &Preferences::intervalTypeChanged, this, &MainWindow::intervalTypeChanged);
     connect(dialog, &Preferences::changeTheme, this, &MainWindow::changeCurrentTheme);
     connect(dialog, &Preferences::maxCacheChanged, cacheManager_, &CacheManager::setMaxCache);
-    connect(dialog, &Preferences::deManuallyChanged, this, &MainWindow::deChanged);
 }
 
 void MainWindow::handleSetDesktopColorClick()

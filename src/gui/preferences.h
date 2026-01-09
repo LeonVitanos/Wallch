@@ -77,7 +77,6 @@ Q_SIGNALS:
     void changeTheme();
     void researchFolders();
     void previewChanged();
-    void deManuallyChanged();
     void maxCacheChanged(qint64 maxCache);
 };
 

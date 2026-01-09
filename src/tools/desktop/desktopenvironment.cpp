@@ -52,53 +52,27 @@ QString DesktopEnvironment::getOSWallpaperPath(){
 }
 
 #ifdef Q_OS_LINUX
-void DesktopEnvironment::setCurrentDE(){
-    if(settings->value("desktopEnvironment", 0).toInt() != 0)
-        currentDE = static_cast<DE::Value>(settings->value("desktopEnvironment", 0).toInt()-1);
-    else
-        currentDE = detectCurrentDe();
-}
-
-DE::Value DesktopEnvironment::detectCurrentDe(){
+void DesktopEnvironment::detectCurrentDe(){
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    QString xdg = env.value("XDG_CURRENT_DESKTOP");
+    QString xdg = env.value("XDG_CURRENT_DESKTOP").toUpper();
 
-    if(xdg.contains("LXDE", Qt::CaseInsensitive) || xdg.contains("LXQT", Qt::CaseInsensitive))
-        return DE::LXDE;
-    else if(xdg.contains("XFCE", Qt::CaseInsensitive))
-        return DE::XFCE;
-    else if(xdg.contains("MATE", Qt::CaseInsensitive))
-        return DE::Mate;
-    else if(xdg.contains("KDE", Qt::CaseInsensitive))
-        return DE::KDE;
-    else if(xdg.contains("GNOME", Qt::CaseInsensitive) || xdg.contains("UNITY", Qt::CaseInsensitive))
-        return DE::Gnome;
-    else{
-        if(QFile::exists("/usr/bin/xfconf-query"))
-            return DE::XFCE;
-        else if(QFile::exists("/usr/bin/mate-help"))
-            return DE::Mate;
-        else if(QDir("/etc/xdg/lubuntu").exists())
-            return DE::LXDE;
-        else
-            return DE::Gnome;
+    if (xdg.contains("LXDE") || xdg.contains("LXQT")) {
+        currentDE = DE::LXDE;
+    } else if (xdg.contains("XFCE")) {
+        currentDE = DE::XFCE;
+    } else if (xdg.contains("MATE")) {
+        currentDE = DE::Mate;
+    } else if (xdg.contains("KDE") || xdg.contains("PLASMA")) {
+        currentDE = DE::KDE;
+    } else if (xdg.contains("GNOME") || xdg.contains("UNITY")) {
+        currentDE = DE::Gnome;
     }
-}
-
-QString DesktopEnvironment::getCurrentDEprettyName(){
-    DE::Value detected = detectCurrentDe();
-
-    switch(detected){
-    case DE::Gnome:
-        return "Gnome";
-    case DE::LXDE:
-        return "LXDE";
-    case DE::XFCE:
-        return "XFCE";
-    case DE::Mate:
-        return "Mate";
-    default:
-        return "Unknown";
+    else if (QFile::exists("/usr/bin/xfconf-query")) {
+        currentDE = DE::XFCE;
+    } else if (QFile::exists("/usr/bin/mate-session")) {
+        currentDE = DE::Mate;
+    } else if (QDir("/etc/xdg/lubuntu").exists()) {
+        currentDE = DE::LXDE;
     }
 }
 

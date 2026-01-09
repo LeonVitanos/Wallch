@@ -20,7 +20,7 @@ void SettingsManager::initializeSettings(){
     loadSettings();
 
 #ifdef Q_OS_LINUX
-    DesktopEnvironment::setCurrentDE();
+    DesktopEnvironment::detectCurrentDe();
 #endif
 }
 

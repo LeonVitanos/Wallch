@@ -78,12 +78,6 @@ Preferences::Preferences(FeatureController *featureController, QWidget *parent) 
     ui->showPreview_checkBox->setChecked(gv.previewImagesOnScreen);
     ui->startup_timeout_spinbox->setValue(settings->value("startup_timeout", 3).toInt());
 
-#ifdef Q_OS_LINUX
-    ui->DEname->setText(DesktopEnvironment::getCurrentDEprettyName());
-    ui->de_combo->setCurrentIndex(settings->value("desktopEnvironment", 0).toInt());
-#else
-    ui->integrationgroupBox->hide();
-#endif
     QString curTheme = settings->value("theme", "autodetect").toString();
     if(curTheme=="ambiance")
         ui->theme_combo->setCurrentIndex(0);
@@ -261,18 +255,6 @@ void Preferences::handleSaveClick()
         Q_EMIT previewChanged();
     }
 
-#ifdef Q_OS_LINUX
-    short index = ui->de_combo->currentIndex();
-    int prIndex = settings->value("desktopEnvironment", 0).toInt();
-    if(index != prIndex){
-        settings->setValue("desktopEnvironment", ui->de_combo->currentIndex());
-        DesktopEnvironment::setCurrentDE();
-
-        QList<int> GnomeMate = {1,4};
-        if(!(GnomeMate.contains(index) && GnomeMate.contains(prIndex)))
-            Q_EMIT deManuallyChanged();
-    }
-#endif
     oldTheme = ui->theme_combo->currentIndex();
 
     //'Wallpapers' Page
@@ -365,7 +347,6 @@ void Preferences::handleResetClick()
 
         //Integration
         ui->theme_combo->setCurrentIndex(2);
-        ui->de_combo->setCurrentIndex(0);
 
         //applying these settings and closing the dialog...
         handleSaveClick();
