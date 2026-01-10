@@ -34,16 +34,15 @@ Wallch 5 is in active development. I am modernizing the entire application by re
 
 Below is a snapshot of the current compatibility based on recent testing.
 
-| OS / DE      | Tested On                    | Status | Change Image (Local) | Solid Color | Style/Sizing |
+| OS / DE      | Tested On                    | Status | Change Image (Local) | Solid Color | Fit / Sizing |
 | :----------- | :--------------------------- | :----: | :------------------: | :---------: | :----------: |
 | **macOS** | Monterey v12.7.6             |   ➖   |          ✅          |      ❌      |      ❌      |
 | **Windows** | Windows 11                   |   ➖   |          ✅          |      ❌      |      ✅      |
 | **Linux** |                              |        |                      |             |              |
 | GNOME        | Ubuntu 22.04 & 25.04         |   ✅   |          ✅          |      ✅      |      ✅      |
 | XFCE         | Linux Mint 21.1              |   ➖   |          ✅          |      ❌      |      ❌      |
-| LXDE         | Fedora 37                    |   ❌   |          ❌          |      ❌      |      ❌      |
-| LXDE         | Lubuntu 18.04                |   ❌   |          ❌          |      ❌      |      ❌      |
-| KDE Plasma   | Kubuntu 22.04                |   ❌   |          ❌          |      ❌      |      ❌      |
+| LXDE         | Fedora 37, Lubuntu 18.04                    |   ❌   |          ❌          |      ❌      |      ❌      |
+| KDE Plasma 5/6   | Kubuntu 22.04, KDE neon (User Ed. 20260108)                 |   ➖   |          ✅          |      ❌      |      ✅      |
 | LXQt         | Lubuntu 22.04                |   ➖   |          ✅          |      ❌      |      ❌      |
 
 
