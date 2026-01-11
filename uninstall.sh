@@ -1,6 +1,12 @@
 #!/bin/bash
-#Wallch Unonstallation file
-#Created by Alex Solanos <alexsol.developer@gmail.com> for Wallch v4.0
+# Wallch Uninstallation Script
+#
+# CREDITS:
+# Created by Alex Solanos <alexsol.developer@gmail.com> for v4.0
+#
+# COPYRIGHT:
+# Copyright © 2010-2015, Alexandros Solanos, Leon Vitanos
+# Copyright © 2025-2026, Leon Vitanos (Modernization)
 
 error_report()
 {

@@ -1,14 +1,20 @@
 #!/bin/bash
-#Wallch Installation file
-#Original file made by Devyn Collier Johnson <DevynCJohnson@Gmail.com> for Wallch v3.xx
-#Edited by Alex Solanos <alexsol.developer@gmail.com> for Wallch v4.0
+# Wallch Installation Script
+#
+# CREDITS:
+# Original file created by Devyn Collier Johnson <DevynCJohnson@gmail.com> for v3.xx
+# Edited by Alex Solanos <alexsol.developer@gmail.com> for v4.0
+#
+# COPYRIGHT:
+# Copyright © 2010-2015, Alexandros Solanos, Leon Vitanos
+# Copyright © 2025-2026, Leon Vitanos (Modernization)
 
 set -e
 
 error_report()
 {
 	echo "ERROR: $1";
-	echo "Please report this at wallch.developers@gmail.com. Somebody will ACTUALLY have a look :)"
+	echo "Please report this at leon.vitanos@gmail.com. Somebody will ACTUALLY have a look :)"
 	exit 1
 }
 

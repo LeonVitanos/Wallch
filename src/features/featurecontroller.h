@@ -1,9 +1,8 @@
 /*
  Wallch - A Modern, Cross-Platform Wallpaper Changer
 
- Copyright © 2010-2025, The Wallch Team.
- Original Authors (2010-2015): Alexandros Solanos, Leon Vitanos
- Modernization & New Code (2025-): Leon Vitanos
+ Copyright © 2010-2015, Alexandros Solanos, Leon Vitanos
+ Copyright © 2025-2026, Leon Vitanos (Modernization)
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
