@@ -144,7 +144,14 @@ void MainWindow::resizeEvent(QResizeEvent *e){
 }
 
 bool MainWindow::eventFilter(QObject *object, QEvent *event){
-    if (object == settingsMenu_ && event->type() == QEvent::Show)
+    if (object == ui->wallpapersList && event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+        if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
+            handleWallpaperListDoubleClick();
+            return true;
+        }
+    }
+    else if (object == settingsMenu_ && event->type() == QEvent::Show)
     {
         settingsMenu_->move(calculateSettingsMenuPos());
         return true;
@@ -242,8 +249,9 @@ void MainWindow::connectSignalSlots(){
     connect(ui->minutes_spinBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MainWindow::handleMinutesSpinBoxChange);
     connect(ui->seconds_spinBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MainWindow::handleSecondsSpinBoxChange);
     connect(ui->wallpapersList, &QListWidget::customContextMenuRequested, this, &MainWindow::handleWallpaperListContextMenu);
-    connect(ui->wallpapersList, &QListWidget::itemActivated, this, &MainWindow::handleWallpaperListDoubleClick);
+    connect(ui->wallpapersList, &QListWidget::itemDoubleClicked, this, &MainWindow::handleWallpaperListDoubleClick);
     connect(ui->wallpapersList, &QListWidget::itemSelectionChanged, this, &MainWindow::handleWallpaperListSelectionChange);
+    ui->wallpapersList->installEventFilter(this);
 
     connect(imageFetcher_, SIGNAL(fail()), this, SLOT(onlineRequestFailed()));
     connect(imageFetcher_, SIGNAL(success(QString)), this, SLOT(onlineImageRequestReady(QString)));
