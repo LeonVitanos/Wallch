@@ -39,11 +39,11 @@ Below is a snapshot of the current compatibility based on recent testing.
 | **macOS** | Monterey v12.7.6             |   ➖   |          ✅          |      ❌      |      ❌      |
 | **Windows** | Windows 11                   |   ➖   |          ✅          |      ❌      |      ✅      |
 | **Linux** |                              |        |                      |             |              |
-| GNOME        | Ubuntu 22.04 & 25.04         |   ✅   |          ✅          |      ✅      |      ✅      |
+| GNOME 3/40+        | Ubuntu 20.04, 22.04, 25.04         |   ✅   |          ✅          |      ✅      |      ✅      |
 | XFCE         | Linux Mint 21.1              |   ➖   |          ✅          |      ❌      |      ❌      |
 | LXDE         | Fedora 37, Lubuntu 18.04                    |   ❌   |          ❌          |      ❌      |      ❌      |
-| KDE Plasma 5/6   | Kubuntu 22.04, KDE neon (User Ed. 20260108)                 |   ➖   |          ✅          |      ❌      |      ✅      |
-| LXQt         | Lubuntu 22.04                |   ➖   |          ✅          |      ❌      |      ❌      |
+| KDE Plasma 5/6   | Kubuntu 22.04, KDE neon 2026                 |   ➖   |          ✅          |      ❌      |      ✅      |
+| LXQt         | Lubuntu 22.04                |   ➖   |          ❌          |      ❌      |      ❌      |
 
 
 ## Reviews & Community
