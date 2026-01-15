@@ -16,6 +16,8 @@
 */
 
 #include "desktopenvironment_kde.h"
+#include <QColor>
+#include <QProcess>
 
 #ifdef Q_OS_LINUX
     #include <QtDBus/QDBusInterface>
@@ -167,4 +169,47 @@ QString desktopenvironment_kde::getCurrentWallpaper() {
     }
 
     return path;
+}
+
+void desktopenvironment_kde::setKdeColor(const QString &colorName) {
+    QColor color(colorName);
+    QString val = QString("%1,%2,%3").arg(color.red()).arg(color.green()).arg(color.blue());
+
+    QString targetPlugin = (getKdeWallpaperStyle() == 0) ? "org.kde.color" : "org.kde.image";
+
+    QString injectScript = QString(
+                               "var all = desktops();"
+                               "for (var i in all) {"
+                               "    var d = all[i];"
+                               "    d.currentConfigGroup = ['Wallpaper', '%1', 'General'];"
+                               "    d.writeConfig('Color', '%2');"
+                               "    d.reloadConfig();"
+                               "}"
+                               ).arg(targetPlugin, val);
+
+    executeKdeScript(injectScript);
+}
+
+QString desktopenvironment_kde::getKdeColor() {
+    QString targetPlugin = (getKdeWallpaperStyle() == 0) ? "org.kde.color" : "org.kde.image";
+
+    QString script = QString(
+                         "var d = desktops()[0];"
+                         "d.currentConfigGroup = ['Wallpaper', '%1', 'General'];"
+                         "print(d.readConfig('Color'));"
+                         ).arg(targetPlugin);
+
+    QString response = executeKdeScript(script).trimmed();
+
+    if (response.isEmpty()) {
+        return "#3daee9";
+    }
+
+    QStringList parts = response.split(',');
+    if (parts.size() >= 3) {
+        QColor color(parts[0].toInt(), parts[1].toInt(), parts[2].toInt());
+        return color.name();
+    }
+
+    return "#3daee9";
 }

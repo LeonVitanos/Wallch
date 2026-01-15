@@ -23,6 +23,7 @@
 
 #ifdef Q_OS_LINUX
     #include "desktopenvironment.h"
+    #include "desktopenvironment_kde.h"
 #endif
 
 ColoringType::Value currentShading = ColoringType::Solid;
@@ -133,6 +134,8 @@ QString ColorManager::getColor(short num){
         });
         return color;
     }
+    else if(currentDE == DE::KDE)
+        return desktopenvironment_kde::getKdeColor();
 
     return "black";
 }
@@ -154,6 +157,9 @@ void ColorManager::setColor(short num, QString colorName){
                                           << "-t" << "uint" << "-s" << colorValues.at(3));
             return false;
         });
+    }
+    else if(currentDE == DE::KDE){
+        desktopenvironment_kde::setKdeColor(colorName);
     }
 }
 #endif

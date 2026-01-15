@@ -28,6 +28,8 @@ public:
     static short getKdeWallpaperStyle();
     static bool setKdeWallpaperStyle(short index);
     static QString getCurrentWallpaper();
+    static QString getKdeColor();
+    static void setKdeColor(const QString &colorName);
 
 private:
     static QString s_cachedKdeGroup;
