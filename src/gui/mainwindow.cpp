@@ -284,6 +284,8 @@ void MainWindow::connectSignalSlots(){
     connect(featureController_, &FeatureController::featureToggled, this, &MainWindow::onFeatureToggled);
     connect(featureController_, &FeatureController::featureStopped, this, &MainWindow::onFeatureStopped);
 
+    connect(wallpaperManager_, SIGNAL(updateDesktopColor()), this, SLOT(setButtonColor()));
+
 #ifdef Q_OS_LINUX
     dconf = new QProcess(this);
     connect(dconf, SIGNAL(readyReadStandardOutput()), this, SLOT(dconfChanges()));
@@ -1090,6 +1092,7 @@ void MainWindow::setImage(bool addToPrevious, const QString &image, int index){
 }
 
 void MainWindow::setButtonColor(){
+    qDebug() << "style";
     QImage image(40, 19, QImage::Format_RGB32);
 
     if(currentShading == ColoringType::Solid)

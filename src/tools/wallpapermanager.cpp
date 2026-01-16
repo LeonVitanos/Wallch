@@ -585,9 +585,12 @@ void WallpaperManager::setCurrentFit(short index){
         }
     }
     else if(currentDE == DE::KDE) {
-        result = DesktopEnvironment::setKdeWallpaperStyle(index);
-        if(!result) {
+        int transitionResult = DesktopEnvironment::setKdeWallpaperStyle(index);
+
+        if(transitionResult == -1) {
             qWarning() << "KDE: Failed to set fit style";
+        } else if(transitionResult == 1) {
+            Q_EMIT updateDesktopColor();
         }
     }
 #else

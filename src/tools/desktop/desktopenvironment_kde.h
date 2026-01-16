@@ -26,10 +26,10 @@ public:
     desktopenvironment_kde();
     static bool setKdeWallpaper(const QString &image);
     static short getKdeWallpaperStyle();
-    static bool setKdeWallpaperStyle(short index);
     static QString getCurrentWallpaper();
     static QString getKdeColor();
     static void setKdeColor(const QString &colorName);
+    static int setKdeWallpaperStyleWithTransition(short index);
 
 private:
     static QString s_cachedKdeGroup;
@@ -37,6 +37,7 @@ private:
     static int getKdeMajorVersion();
     static QString executeKdeScript(const QString &script);
     static QString getKdeScriptTemplate(int version, const QString &image);
+    static bool setKdeWallpaperStyle(short index);
 };
 
 #endif // DESKTOPENVIRONMENT_KDE_H

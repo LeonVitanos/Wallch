@@ -82,6 +82,7 @@ public:
 Q_SIGNALS:
     void updateImageStyle();
     void addPicturesToWallpaperList(const QStringList &wallpapers);
+    void updateDesktopColor();
 };
 
 #endif // WALLPAPERMANAGER_H

@@ -127,6 +127,19 @@ short desktopenvironment_kde::getKdeWallpaperStyle() {
     return 1;
 }
 
+int desktopenvironment_kde::setKdeWallpaperStyleWithTransition(short index) {
+    int oldStyle = getKdeWallpaperStyle();
+
+    bool success = setKdeWallpaperStyle(index);
+
+    if (!success) return -1;
+
+    bool wasColor = (oldStyle == 0);
+    bool isColor = (index == 0);
+
+    return (wasColor != isColor) ? 1 : 0;
+}
+
 bool desktopenvironment_kde::setKdeWallpaperStyle(short index) {
     if (s_cachedKdeGroup.isEmpty()) s_cachedKdeGroup = probeKdeGroup();
 
@@ -175,7 +188,8 @@ void desktopenvironment_kde::setKdeColor(const QString &colorName) {
     QColor color(colorName);
     QString val = QString("%1,%2,%3").arg(color.red()).arg(color.green()).arg(color.blue());
 
-    QString targetPlugin = (getKdeWallpaperStyle() == 0) ? "org.kde.color" : "org.kde.image";
+    int currentStyle = getKdeWallpaperStyle();
+    QString targetPlugin = (currentStyle == 0) ? "org.kde.color" : "org.kde.image";
 
     QString injectScript = QString(
                                "var all = desktops();"
@@ -188,6 +202,10 @@ void desktopenvironment_kde::setKdeColor(const QString &colorName) {
                                ).arg(targetPlugin, val);
 
     executeKdeScript(injectScript);
+
+    int tempStyle = (currentStyle == 0) ? 1 : 0;
+    setKdeWallpaperStyle(tempStyle);
+    setKdeWallpaperStyle(currentStyle);
 }
 
 QString desktopenvironment_kde::getKdeColor() {
