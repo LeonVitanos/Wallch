@@ -1092,7 +1092,6 @@ void MainWindow::setImage(bool addToPrevious, const QString &image, int index){
 }
 
 void MainWindow::setButtonColor(){
-    qDebug() << "style";
     QImage image(40, 19, QImage::Format_RGB32);
 
     if(currentShading == ColoringType::Solid)

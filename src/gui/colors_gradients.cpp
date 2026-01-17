@@ -154,7 +154,6 @@ void ColorsGradients::handlePrimaryColorButtonClick()
         return;
 
     ColorManager::setPrimaryColor(color.name());
-    Q_EMIT updateDesktopColor();
     updateGradientsOnlyColors(true);
     if(gv.previewImagesOnScreen)
         Q_EMIT updateTv();
