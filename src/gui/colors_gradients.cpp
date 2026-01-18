@@ -235,6 +235,8 @@ void ColorsGradients::handleHorizontalRadioClick()
     if(currentShading == ColoringType::Horizontal)
         return;
 
+    currentShading = ColoringType::Horizontal;
+
 #ifdef Q_OS_LINUX
     if(currentDE == DE::Gnome || currentDE == DE::Mate){
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "horizontal");
@@ -248,7 +250,6 @@ void ColorsGradients::handleHorizontalRadioClick()
     settings->setValue("ShadingType", "horizontal");
 #endif
 
-    currentShading = ColoringType::Horizontal;
     actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
     Q_EMIT updateTv();
@@ -258,6 +259,8 @@ void ColorsGradients::handleVerticalRadioClick()
 {
     if(currentShading == ColoringType::Vertical)
         return;
+
+    currentShading = ColoringType::Vertical;
 
 #ifdef Q_OS_LINUX
     if(currentDE == DE::Gnome || currentDE == DE::Mate)
@@ -271,7 +274,6 @@ void ColorsGradients::handleVerticalRadioClick()
     settings->setValue("ShadingType", "vertical");
 #endif
 
-    currentShading = ColoringType::Vertical;
     actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
     Q_EMIT updateTv();
