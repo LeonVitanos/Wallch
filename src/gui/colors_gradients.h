@@ -53,6 +53,7 @@ private:
     WallpaperManager *wallpaperManager_;
     void actionForSecondaryButtons();
     void updateGradientsOnlyColors(bool updateLeftRightSolid);
+    void applyColorImageBackground();
 
 #ifdef Q_OS_LINUX
     // XFCE

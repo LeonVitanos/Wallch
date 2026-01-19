@@ -244,15 +244,28 @@ void ColorsGradients::handleHorizontalRadioClick()
     else if(currentDE == DE::XFCE){
         changeXfColorStyle(1);
     }
+    else{
+        applyColorImageBackground();
+    }
 #else
-    ColorManager::createVerticalHorizontalImage(gv.screenWidth, gv.screenHeight).save(gv.wallchHomePath+COLOR_IMAGE, 0, 80);
-    wallpaperManager_->setBackground(gv.wallchHomePath+COLOR_IMAGE, false, false, 0);
-    settings->setValue("ShadingType", "horizontal");
+    applyColorImageBackground();
 #endif
 
     actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
     Q_EMIT updateTv();
+}
+
+void ColorsGradients::applyColorImageBackground() {
+    ColorManager::createVerticalHorizontalImage(gv.screenWidth, gv.screenHeight).save(gv.wallchHomePath + COLOR_IMAGE, 0, 80);
+    wallpaperManager_->setBackground(gv.wallchHomePath + COLOR_IMAGE, false, false, 0);
+
+    QString shadingStr = (currentShading == ColoringType::Horizontal) ? "horizontal" : "vertical";
+    settings->setValue("ShadingType", shadingStr);
+
+    if (currentDE == DE::KDE) {
+        wallpaperManager_->setCurrentFit(1);
+    }
 }
 
 void ColorsGradients::handleVerticalRadioClick()
@@ -268,10 +281,11 @@ void ColorsGradients::handleVerticalRadioClick()
     else if(currentDE == DE::XFCE){
         changeXfColorStyle(2);
     }
+    else{
+        applyColorImageBackground();
+    }
 #else
-    ColorManager::createVerticalHorizontalImage(gv.screenWidth, gv.screenHeight).save(gv.wallchHomePath+COLOR_IMAGE, 0, 80);
-    wallpaperManager_->setBackground(gv.wallchHomePath+COLOR_IMAGE, false, false, 0);
-    settings->setValue("ShadingType", "vertical");
+    applyColorImageBackground();
 #endif
 
     actionForSecondaryButtons();
