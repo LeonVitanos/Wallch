@@ -15,9 +15,11 @@
  GNU General Public License for more details.
 */
 
+#include "desktopenvironment.h"
 #include "desktopenvironment_kde.h"
 #include <QColor>
 #include <QProcess>
+#include <QDateTime>
 #include "settingsmanager.h"
 
 #ifdef Q_OS_LINUX
@@ -32,8 +34,14 @@ bool desktopenvironment_kde::setKdeWallpaper(const QString &image) {
         s_cachedKdeGroup = probeKdeGroup();
     }
 
+    QString finalImage = image;
+
+    if (image == DesktopEnvironment::getCurrentWallpaper()) {
+        finalImage += "?t=" + QString::number(QDateTime::currentMSecsSinceEpoch());
+    }
+
     int version = getKdeMajorVersion();
-    QString script = getKdeScriptTemplate(version, image);
+    QString script = getKdeScriptTemplate(version, finalImage);
 
     return !executeKdeScript(script).isNull();
 }
