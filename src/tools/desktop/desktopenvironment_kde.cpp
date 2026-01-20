@@ -18,6 +18,7 @@
 #include "desktopenvironment_kde.h"
 #include <QColor>
 #include <QProcess>
+#include "settingsmanager.h"
 
 #ifdef Q_OS_LINUX
     #include <QtDBus/QDBusInterface>
@@ -184,7 +185,12 @@ QString desktopenvironment_kde::getCurrentWallpaper() {
     return path;
 }
 
-void desktopenvironment_kde::setKdeColor(const QString &colorName) {
+void desktopenvironment_kde::setKdeColor(const QString &colorName, const bool isPrimary) {
+    if(!isPrimary){
+        settings->setValue("secondaryColor", colorName);
+        return;
+    }
+
     QColor color(colorName);
     QString val = QString("%1,%2,%3").arg(color.red()).arg(color.green()).arg(color.blue());
 
@@ -208,7 +214,11 @@ void desktopenvironment_kde::setKdeColor(const QString &colorName) {
     setKdeWallpaperStyle(currentStyle);
 }
 
-QString desktopenvironment_kde::getKdeColor() {
+QString desktopenvironment_kde::getKdeColor(const bool isPrimary) {
+    if(!isPrimary){
+        return settings->value("secondaryColor", "#3daee9").toString();;
+    }
+
     QString targetPlugin = (getKdeWallpaperStyle() == 0) ? "org.kde.color" : "org.kde.image";
 
     QString script = QString(

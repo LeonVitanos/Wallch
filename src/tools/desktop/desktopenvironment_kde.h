@@ -27,8 +27,8 @@ public:
     static bool setKdeWallpaper(const QString &image);
     static short getKdeWallpaperStyle();
     static QString getCurrentWallpaper();
-    static QString getKdeColor();
-    static void setKdeColor(const QString &colorName);
+    static QString getKdeColor(const bool isPrimary);
+    static void setKdeColor(const QString &colorName, const bool isPrimary);
     static int setKdeWallpaperStyleWithTransition(short index);
 
 private:

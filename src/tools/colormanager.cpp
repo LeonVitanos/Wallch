@@ -135,7 +135,7 @@ QString ColorManager::getColor(short num){
         return color;
     }
     else if(currentDE == DE::KDE)
-        return desktopenvironment_kde::getKdeColor();
+        return desktopenvironment_kde::getKdeColor(num==1);
 
     return "black";
 }
@@ -159,7 +159,7 @@ void ColorManager::setColor(short num, QString colorName){
         });
     }
     else if(currentDE == DE::KDE){
-        desktopenvironment_kde::setKdeColor(colorName);
+        desktopenvironment_kde::setKdeColor(colorName, num==1);
     }
 }
 #endif
