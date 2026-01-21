@@ -189,7 +189,7 @@ void ColorsGradients::handleChangeOrderClick()
 
 void ColorsGradients::actionForSecondaryButtons()
 {
-    bool action = currentShading != ColoringType::Solid && wallpaperManager_->getCurrentFit() == 0;
+    bool action = currentShading != ColoringType::Solid;
 
     if(action){
         ui->change_order->show();
@@ -212,6 +212,8 @@ void ColorsGradients::handleSolidRadioClick()
     if(currentShading == ColoringType::Solid)
         return;
 
+    currentShading = ColoringType::Solid;
+
 #ifdef Q_OS_LINUX
     if(currentDE == DE::Gnome || currentDE == DE::Mate){
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", "color-shading-type", "solid");
@@ -219,12 +221,14 @@ void ColorsGradients::handleSolidRadioClick()
     else if(currentDE == DE::XFCE){
         changeXfColorStyle(0);
     }
+    else if(currentDE == DE::KDE){
+        wallpaperManager_->setCurrentFit(0);
+    }
 #else
     settings->setValue("ShadingType", "solid");
     wallpaperManager_->setBackground("", false, false, 0);
 #endif
 
-    currentShading = ColoringType::Solid;
     actionForSecondaryButtons();
     updateGradientsOnlyColors(false);
     Q_EMIT updateTv();
@@ -263,9 +267,11 @@ void ColorsGradients::applyColorImageBackground() {
     QString shadingStr = (currentShading == ColoringType::Horizontal) ? "horizontal" : "vertical";
     settings->setValue("ShadingType", shadingStr);
 
+#ifdef Q_OS_LINUX
     if (currentDE == DE::KDE) {
         wallpaperManager_->setCurrentFit(1);
     }
+#endif
 }
 
 void ColorsGradients::handleVerticalRadioClick()
