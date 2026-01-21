@@ -70,7 +70,7 @@ ColorsGradients::ColorsGradients(WallpaperManager *wallpaperManager, QWidget *pa
 
     //determining current primary color
     QImage image(60, 60, QImage::Format_ARGB32_Premultiplied);
-    image.fill(ColorManager::getPrimaryColor());
+    image.fill(ColorManager::getPrimaryColor(true));
     ui->primary_color_button->setIcon(QIcon(QPixmap::fromImage(image)));
 
     //determining secondary color
@@ -113,7 +113,7 @@ void ColorsGradients::updateGradientsOnlyColors(bool updateLeftRightSolid){
     QImage image(dim, dim, QImage::Format_RGB32);
 
     if(updateLeftRightSolid){
-        image.fill(QColor(ColorManager::getPrimaryColor()));
+        image.fill(QColor(ColorManager::getPrimaryColor(true)));
         ui->primary_color_button->setIcon(QIcon(QPixmap::fromImage(
             image.scaled(60, 60, Qt::IgnoreAspectRatio, Qt::FastTransformation))));
     }
@@ -178,7 +178,7 @@ void ColorsGradients::handleSecondaryColorButtonClick()
 void ColorsGradients::handleChangeOrderClick()
 {
     //this turns the secondary color primary and vice versa...
-    QString temp = ColorManager::getPrimaryColor();
+    QString temp = ColorManager::getPrimaryColor(true);
     ColorManager::setPrimaryColor(ColorManager::getSecondaryColor());
     ColorManager::setSecondaryColor(temp);
 

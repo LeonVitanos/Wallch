@@ -222,12 +222,12 @@ void desktopenvironment_kde::setKdeColor(const QString &colorName, const bool is
     setKdeWallpaperStyle(currentStyle);
 }
 
-QString desktopenvironment_kde::getKdeColor(const bool isPrimary) {
+QString desktopenvironment_kde::getKdeColor(const bool isPrimary, bool forcePlainColor) {
     if(!isPrimary){
         return settings->value("secondaryColor", "#3daee9").toString();;
     }
 
-    QString targetPlugin = (getKdeWallpaperStyle() == 0) ? "org.kde.color" : "org.kde.image";
+    QString targetPlugin = (getKdeWallpaperStyle() == 0 || forcePlainColor) ? "org.kde.color" : "org.kde.image";
 
     QString script = QString(
                          "var d = desktops()[0];"

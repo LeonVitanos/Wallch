@@ -30,12 +30,12 @@ ColoringType::Value currentShading = ColoringType::Solid;
 
 ColorManager::ColorManager(){}
 
-QString ColorManager::getPrimaryColor(){
+QString ColorManager::getPrimaryColor(bool forcePlainColor){
 #ifdef Q_OS_LINUX
     if(currentDE == DE::LXDE)
         return DesktopEnvironment::getPcManFmValue("desktop_bg");
     else
-        return getColor(1);
+        return getColor(1, forcePlainColor);
 #else
 # ifdef Q_OS_WIN
     QSettings collorSetting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
@@ -110,7 +110,7 @@ void ColorManager::setSecondaryColor(const QString &colorName){
 }
 
 #ifdef Q_OS_LINUX
-QString ColorManager::getColor(short num){
+QString ColorManager::getColor(short num, bool forcePlainColor){
     if(currentDE == DE::Gnome || currentDE == DE::Mate)
         return DesktopEnvironment::gsettingsGet("org.gnome.desktop.background", num == 1 ? "primary-color" : "secondary-color");
     else if(currentDE == DE::XFCE){
@@ -135,7 +135,7 @@ QString ColorManager::getColor(short num){
         return color;
     }
     else if(currentDE == DE::KDE)
-        return desktopenvironment_kde::getKdeColor(num==1);
+        return desktopenvironment_kde::getKdeColor(num==1, forcePlainColor);
 
     return "black";
 }
@@ -224,7 +224,7 @@ QImage ColorManager::createVerticalHorizontalImage(int width, int height)
         gradient.setStart(width / 2, 0);
         gradient.setFinalStop(width / 2, height);
     }
-    gradient.setColorAt(0, QColor(getPrimaryColor()));
+    gradient.setColorAt(0, QColor(getPrimaryColor(true)));
     gradient.setColorAt(1, QColor(getSecondaryColor()));
 
     QPainter painter;
