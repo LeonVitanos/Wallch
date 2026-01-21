@@ -41,12 +41,12 @@ class ColorManager
 public:
     ColorManager();
     static QString getPrimaryColor(bool forcePlainColor=false);
-    static void setPrimaryColor(const QString &colorName);
+    static void setPrimaryColor(const QString &colorName, bool forcePlainColor=false);
     static QString getSecondaryColor();
     static void setSecondaryColor(const QString &colorName);
 #ifdef Q_OS_LINUX
     static QString getColor(short num, bool forcePlainColor=false);
-    static void setColor(short num, QString colorName);
+    static void setColor(short num, QString colorName, bool forcePlainColor=false);
 #endif
     static ColoringType::Value getColoringType();
     static void changeCurrentShading();

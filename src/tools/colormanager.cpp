@@ -38,6 +38,8 @@ QString ColorManager::getPrimaryColor(bool forcePlainColor){
         return getColor(1, forcePlainColor);
 #else
 # ifdef Q_OS_WIN
+    Q_UNUSED(forcePlainColor);
+
     QSettings collorSetting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
     if(collorSetting.value("Background").isValid()){
         QString primaryColor = collorSetting.value("Background").toString();
@@ -68,14 +70,16 @@ QString ColorManager::getPrimaryColor(bool forcePlainColor){
     return "";
 }
 
-void ColorManager::setPrimaryColor(const QString &colorName){
+void ColorManager::setPrimaryColor(const QString &colorName, bool forcePlainColor){
 #ifdef Q_OS_LINUX
     if(currentDE == DE::LXDE)
         DesktopEnvironment::setPcManFmValue("desktop_bg", colorName);
     else
-        setColor(1, colorName);
+        setColor(1, colorName, forcePlainColor);
 #else
 # ifdef Q_OS_WIN
+    Q_UNUSED(forcePlainColor);
+
     QColor color = colorName;
     QSettings color_setting("HKEY_CURRENT_USER\\Control Panel\\Colors", QSettings::NativeFormat);
     color_setting.setValue("Background", QString::number(color.red())+' '+QString::number(color.green())+' '+QString::number(color.blue()));
@@ -140,7 +144,7 @@ QString ColorManager::getColor(short num, bool forcePlainColor){
     return "black";
 }
 
-void ColorManager::setColor(short num, QString colorName){
+void ColorManager::setColor(short num, QString colorName, bool forcePlainColor){
     if(currentDE == DE::Gnome ||currentDE == DE::Mate)
         DesktopEnvironment::gsettingsSet("org.gnome.desktop.background", num == 1 ? "primary-color" : "secondary-color", colorName);
     else if(currentDE == DE::XFCE){
@@ -159,7 +163,7 @@ void ColorManager::setColor(short num, QString colorName){
         });
     }
     else if(currentDE == DE::KDE){
-        desktopenvironment_kde::setKdeColor(colorName, num==1);
+        desktopenvironment_kde::setKdeColor(colorName, num==1, forcePlainColor);
     }
 }
 #endif

@@ -193,7 +193,7 @@ QString desktopenvironment_kde::getCurrentWallpaper() {
     return path;
 }
 
-void desktopenvironment_kde::setKdeColor(const QString &colorName, const bool isPrimary) {
+void desktopenvironment_kde::setKdeColor(const QString &colorName, const bool isPrimary, bool forcePlainColor) {
     if(!isPrimary){
         settings->setValue("secondaryColor", colorName);
         return;
@@ -203,7 +203,7 @@ void desktopenvironment_kde::setKdeColor(const QString &colorName, const bool is
     QString val = QString("%1,%2,%3").arg(color.red()).arg(color.green()).arg(color.blue());
 
     int currentStyle = getKdeWallpaperStyle();
-    QString targetPlugin = (currentStyle == 0) ? "org.kde.color" : "org.kde.image";
+    QString targetPlugin = (currentStyle == 0 || forcePlainColor) ? "org.kde.color" : "org.kde.image";
 
     QString injectScript = QString(
                                "var all = desktops();"

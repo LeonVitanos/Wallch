@@ -153,7 +153,7 @@ void ColorsGradients::handlePrimaryColorButtonClick()
     if(!color.isValid())
         return;
 
-    ColorManager::setPrimaryColor(color.name());
+    ColorManager::setPrimaryColor(color.name(), true);
     updateGradientsOnlyColors(true);
     if(gv.previewImagesOnScreen)
         Q_EMIT updateTv();
