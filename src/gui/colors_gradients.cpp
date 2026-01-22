@@ -137,6 +137,17 @@ void ColorsGradients::updateGradientsOnlyColors(bool updateLeftRightSolid){
 
     Q_EMIT updateDesktopColor();
     Q_EMIT updateImageStyle();
+
+    if(!updateLeftRightSolid || currentShading == ColoringType::Solid)
+        return;
+
+#ifdef Q_OS_LINUX
+    if (currentDE == DE::Gnome || currentDE == DE::Mate) {
+        return;
+    }
+#endif
+
+    applyColorImageBackground();
 }
 
 void ColorsGradients::handleSaveButtonClick()
