@@ -190,7 +190,7 @@ void ColorsGradients::handleChangeOrderClick()
 {
     //this turns the secondary color primary and vice versa...
     QString temp = ColorManager::getPrimaryColor(true);
-    ColorManager::setPrimaryColor(ColorManager::getSecondaryColor());
+    ColorManager::setPrimaryColor(ColorManager::getSecondaryColor(), true);
     ColorManager::setSecondaryColor(temp);
 
     updateGradientsOnlyColors(true);
